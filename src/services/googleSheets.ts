@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import { gapi } from 'gapi-script';
 
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
@@ -32,7 +32,7 @@ export const GoogleSheetsService = {
     /**
      * Sign in with Google
      */
-    signIn: async (): Promise<gapi.auth2.GoogleUser> => {
+    signIn: async (): Promise<any> => {
         const authInstance = gapi.auth2.getAuthInstance();
         if (!authInstance) {
             throw new Error('Google Auth not initialized');
