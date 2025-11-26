@@ -13,6 +13,7 @@ import { TripForm } from '@/pages/Viagens/TripForm';
 import { TripSeatMap } from '@/pages/Viagens/TripSeatMap';
 import { PassengerList } from '@/pages/Passageiros/PassengerList';
 import { PassengerForm } from '@/pages/Passageiros/PassengerForm';
+import { Settings } from '@/pages/Settings/Settings';
 import { UserRole } from '@/types';
 
 export const router = createBrowserRouter([
@@ -101,6 +102,14 @@ export const router = createBrowserRouter([
                 element: (
                     <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                         <PassengerForm />
+                    </RoleProtectedRoute>
+                ),
+            },
+            {
+                path: 'settings',
+                element: (
+                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                        <Settings />
                     </RoleProtectedRoute>
                 ),
             },

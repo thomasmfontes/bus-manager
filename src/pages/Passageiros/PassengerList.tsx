@@ -6,16 +6,17 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
-import { Plus, Edit, Trash2, Search, Upload, Trash } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Upload, Trash, RefreshCw } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const PassengerList: React.FC = () => {
-    const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
+    const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, syncFromGoogleSheets, loading } = usePassengerStore();
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [csvUploaderOpen, setCsvUploaderOpen] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         fetchPassageiros();
@@ -55,6 +56,26 @@ export const PassengerList: React.FC = () => {
         }
     };
 
+    const handleGoogleSync = async () => {
+        const clientId = localStorage.getItem('google_client_id');
+        const spreadsheetId = localStorage.getItem('google_spreadsheet_id');
+
+        if (!clientId || !spreadsheetId) {
+            showToast('Configure a integração nas Configurações primeiro!', 'error');
+            return;
+        }
+
+        setIsSyncing(true);
+        try {
+            const result = await syncFromGoogleSheets(clientId, spreadsheetId);
+            showToast(`Sincronização concluída! ${result.success} processados.`, 'success');
+        } catch (error) {
+            showToast('Erro na sincronização. Verifique o console.', 'error');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const filteredPassengers = passengers.filter(
         (p) =>
             p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -83,6 +104,17 @@ export const PassengerList: React.FC = () => {
                         <Button variant="secondary" onClick={() => setCsvUploaderOpen(true)} className="w-full sm:w-auto justify-center">
                             <Upload size={20} className="sm:mr-2" />
                             <span className="hidden sm:inline">Importar CSV</span>
+                        </Button>
+                    </ProtectedAction>
+                    <ProtectedAction requiredPermission="create">
+                        <Button
+                            variant="secondary"
+                            onClick={handleGoogleSync}
+                            disabled={isSyncing}
+                            className="w-full sm:w-auto justify-center"
+                        >
+                            <RefreshCw size={20} className={`sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Google Sheets'}</span>
                         </Button>
                     </ProtectedAction>
                     {passengers.length > 0 && (
