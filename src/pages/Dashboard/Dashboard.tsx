@@ -5,7 +5,7 @@ import { useTripStore } from '@/stores/useTripStore';
 import { useSeatAssignmentStore } from '@/stores/useSeatAssignmentStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { Card } from '@/components/ui/Card';
-import { Bus, MapPin, Users, Calendar, TrendingUp, ArrowRight } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, TrendingUp, ArrowRight, Eye } from 'lucide-react';
 import { SeatStatus } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -122,7 +122,7 @@ export const Dashboard: React.FC = () => {
                         to="/viagens"
                         className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors group"
                     >
-                        Ver todas
+                        <span className="hidden sm:inline">Ver todas</span>
                         <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                     </Link>
                 </div>
@@ -162,10 +162,11 @@ export const Dashboard: React.FC = () => {
                                 </div>
                                 <Link
                                     to={`/viagens/${trip.id}`}
-                                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 group"
+                                    className="px-3 sm:px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 group"
                                 >
-                                    Ver Mapa
-                                    <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                                    <span className="hidden sm:inline">Ver Mapa</span>
+                                    <Eye size={18} className="sm:hidden" />
+                                    <ArrowRight size={14} className="hidden sm:block transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </div>
                         ))}

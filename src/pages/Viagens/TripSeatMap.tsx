@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Lock, Unlock } from 'lucide-react';
 import { SeatStatus } from '@/types';
 
 export const TripSeatMap: React.FC = () => {
@@ -284,19 +284,25 @@ export const TripSeatMap: React.FC = () => {
                                 setSelectedSeat(null);
                             }}
                         >
-                            Cancelar
+                            <X size={20} className="sm:mr-2" />
+                            <span className="hidden sm:inline">Cancelar</span>
                         </Button>
                         {actionType === 'assign' && (
                             <>
-                                <Button onClick={handleAssignSeat}>Atribuir</Button>
+                                <Button onClick={handleAssignSeat}>
+                                    <Check size={20} className="sm:mr-2" />
+                                    <span className="hidden sm:inline">Atribuir</span>
+                                </Button>
                                 <Button variant="danger" onClick={handleBlockSeat}>
-                                    Bloquear
+                                    <Lock size={20} className="sm:mr-2" />
+                                    <span className="hidden sm:inline">Bloquear</span>
                                 </Button>
                             </>
                         )}
                         {actionType === 'release' && (
                             <Button variant="danger" onClick={handleReleaseSeat}>
-                                Liberar
+                                <Unlock size={20} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Liberar</span>
                             </Button>
                         )}
                     </>

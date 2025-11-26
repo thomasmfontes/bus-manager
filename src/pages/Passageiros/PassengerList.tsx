@@ -72,18 +72,18 @@ export const PassengerList: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-2.5">
                     <Link to="/passageiros/novo" className="flex-1 sm:flex-initial">
                         <Button className="w-full sm:w-auto justify-center">
-                            <Plus size={20} />
-                            <span>Novo Passageiro</span>
+                            <Plus size={20} className="sm:mr-2" />
+                            <span className="hidden sm:inline">Novo Passageiro</span>
                         </Button>
                     </Link>
                     <Button variant="secondary" onClick={() => setCsvUploaderOpen(true)} className="w-full sm:w-auto justify-center">
-                        <Upload size={20} />
-                        <span>Importar CSV</span>
+                        <Upload size={20} className="sm:mr-2" />
+                        <span className="hidden sm:inline">Importar CSV</span>
                     </Button>
                     {passengers.length > 0 && (
                         <Button variant="danger" onClick={() => setShowDeleteAllModal(true)} className="w-full sm:w-auto justify-center">
-                            <Trash size={20} />
-                            <span>Excluir Todos</span>
+                            <Trash size={20} className="sm:mr-2" />
+                            <span className="hidden sm:inline">Excluir Todos</span>
                         </Button>
                     )}
                 </div>

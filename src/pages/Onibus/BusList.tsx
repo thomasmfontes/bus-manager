@@ -39,8 +39,8 @@ export const BusList: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-dark">Ônibus</h1>
                 <Link to="/onibus/novo">
                     <Button>
-                        <Plus size={20} className="mr-2" />
-                        Novo Ônibus
+                        <Plus size={20} className="md:mr-2" />
+                        <span className="hidden md:inline">Novo Ônibus</span>
                     </Button>
                 </Link>
             </div>

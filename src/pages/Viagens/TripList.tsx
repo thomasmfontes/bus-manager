@@ -69,8 +69,8 @@ export const TripList: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-dark">Viagens</h1>
                 <Link to="/viagens/nova">
                     <Button>
-                        <Plus size={20} className="mr-2" />
-                        Nova Viagem
+                        <Plus size={20} className="md:mr-2" />
+                        <span className="hidden md:inline">Nova Viagem</span>
                     </Button>
                 </Link>
             </div>
