@@ -140,33 +140,33 @@ export const Dashboard: React.FC = () => {
                         {upcomingTrips.map((trip) => (
                             <div
                                 key={trip.id}
-                                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group border border-gray-100 hover:border-gray-200"
+                                className="flex items-start sm:items-center justify-between p-5 sm:p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group border border-gray-100 hover:border-gray-200 gap-4"
                             >
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <MapPin size={18} className="text-blue-600" />
-                                        <span className="font-semibold text-gray-900">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <MapPin size={20} className="text-blue-600 shrink-0 mt-0.5" />
+                                        <span className="font-semibold text-gray-900 leading-snug">
                                             {trip.origem} → {trip.destino}
                                         </span>
                                     </div>
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-                                        <span className="flex items-center gap-1.5">
-                                            <Calendar size={14} />
+                                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 ml-8">
+                                        <span className="flex items-center gap-2">
+                                            <Calendar size={16} className="shrink-0" />
                                             {formatDate(trip.data)}
                                         </span>
-                                        <span className="flex items-center gap-1.5">
-                                            <Bus size={14} />
+                                        <span className="flex items-center gap-2">
+                                            <Bus size={16} className="shrink-0" />
                                             {trip.onibusIds.length} ônibus
                                         </span>
                                     </div>
                                 </div>
                                 <Link
                                     to={`/viagens/${trip.id}`}
-                                    className="px-3 sm:px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 group"
+                                    className="px-3 sm:px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 group shrink-0 self-start sm:self-center"
                                 >
                                     <span className="hidden sm:inline">Ver Mapa</span>
-                                    <Eye size={18} className="sm:hidden" />
-                                    <ArrowRight size={14} className="hidden sm:block transition-transform group-hover:translate-x-1" />
+                                    <Eye size={20} className="sm:hidden" />
+                                    <ArrowRight size={16} className="hidden sm:block transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </div>
                         ))}
