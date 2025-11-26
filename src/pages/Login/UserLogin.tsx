@@ -59,7 +59,6 @@ export const UserLogin: React.FC = () => {
                         label="CPF ou RG"
                         value={documento}
                         onChange={(e) => setDocumento(e.target.value)}
-                        placeholder="000.000.000-00"
                         required
                     />
 
