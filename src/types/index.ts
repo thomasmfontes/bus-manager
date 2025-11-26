@@ -48,7 +48,16 @@ export interface SeatAssignment {
 }
 
 // User types
+export enum UserRole {
+    ADMIN = 'admin',
+    PASSAGEIRO = 'passageiro',
+    VISUALIZADOR = 'visualizador',
+}
+
 export interface User {
     email: string;
     nome: string;
+    role: UserRole;
+    documento?: string;
+    passageiroId?: string;
 }

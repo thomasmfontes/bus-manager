@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { Plus, Edit, Trash2 } from 'lucide-react';
+import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const BusList: React.FC = () => {
     const { buses, fetchOnibus, deleteOnibus, loading } = useBusStore();
@@ -37,12 +38,14 @@ export const BusList: React.FC = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-gray-dark">Ônibus</h1>
-                <Link to="/onibus/novo">
-                    <Button>
-                        <Plus size={20} className="md:mr-2" />
-                        <span className="hidden md:inline">Novo Ônibus</span>
-                    </Button>
-                </Link>
+                <ProtectedAction requiredPermission="create">
+                    <Link to="/onibus/novo">
+                        <Button>
+                            <Plus size={20} className="md:mr-2" />
+                            <span className="hidden md:inline">Novo Ônibus</span>
+                        </Button>
+                    </Link>
+                </ProtectedAction>
             </div>
 
             <Card>

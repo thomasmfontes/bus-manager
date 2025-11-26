@@ -11,7 +11,8 @@ import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
 import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Lock, Unlock } from 'lucide-react';
-import { SeatStatus } from '@/types';
+import { SeatStatus, UserRole } from '@/types';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export const TripSeatMap: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -26,6 +27,7 @@ export const TripSeatMap: React.FC = () => {
         bloquearAssento,
     } = useSeatAssignmentStore();
     const { showToast } = useToast();
+    const { user } = useAuthStore();
 
     const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
@@ -287,23 +289,39 @@ export const TripSeatMap: React.FC = () => {
                             <X size={20} className="sm:mr-2" />
                             <span className="hidden sm:inline">Cancelar</span>
                         </Button>
-                        {actionType === 'assign' && (
-                            <>
-                                <Button onClick={handleAssignSeat}>
-                                    <Check size={20} className="sm:mr-2" />
-                                    <span className="hidden sm:inline">Atribuir</span>
-                                </Button>
-                                <Button variant="danger" onClick={handleBlockSeat}>
-                                    <Lock size={20} className="sm:mr-2" />
-                                    <span className="hidden sm:inline">Bloquear</span>
-                                </Button>
-                            </>
+                        {/* Visualizador: no action buttons */}
+                        {user?.role === UserRole.VISUALIZADOR && (
+                            <p className="text-sm text-gray-500">Você não tem permissão para modificar assentos</p>
                         )}
-                        {actionType === 'release' && (
-                            <Button variant="danger" onClick={handleReleaseSeat}>
-                                <Unlock size={20} className="sm:mr-2" />
-                                <span className="hidden sm:inline">Liberar</span>
+                        {/* Passageiro: only assign button */}
+                        {user?.role === UserRole.PASSAGEIRO && actionType === 'assign' && (
+                            <Button onClick={handleAssignSeat}>
+                                <Check size={20} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Atribuir</span>
                             </Button>
+                        )}
+                        {/* Admin: all buttons */}
+                        {user?.role === UserRole.ADMIN && (
+                            <>
+                                {actionType === 'assign' && (
+                                    <>
+                                        <Button onClick={handleAssignSeat}>
+                                            <Check size={20} className="sm:mr-2" />
+                                            <span className="hidden sm:inline">Atribuir</span>
+                                        </Button>
+                                        <Button variant="danger" onClick={handleBlockSeat}>
+                                            <Lock size={20} className="sm:mr-2" />
+                                            <span className="hidden sm:inline">Bloquear</span>
+                                        </Button>
+                                    </>
+                                )}
+                                {actionType === 'release' && (
+                                    <Button variant="danger" onClick={handleReleaseSeat}>
+                                        <Unlock size={20} className="sm:mr-2" />
+                                        <span className="hidden sm:inline">Liberar</span>
+                                    </Button>
+                                )}
+                            </>
                         )}
                     </>
                 }

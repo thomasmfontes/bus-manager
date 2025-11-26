@@ -3,6 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { UserRole } from '@/types';
 
 export const AuthenticatedLayout: React.FC = () => {
     const { user, logout } = useAuthStore();
@@ -85,31 +86,41 @@ export const AuthenticatedLayout: React.FC = () => {
 
                 {/* Navigation */}
                 <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto scrollbar-thin">
-                    {menuItems.map((item) => {
-                        const Icon = item.icon;
-                        const active = isActive(item.path);
+                    {menuItems
+                        .filter((item) => {
+                            // Hide Passageiros and Ônibus for non-admin users
+                            if (user?.role !== UserRole.ADMIN) {
+                                if (item.path === '/passageiros' || item.path === '/onibus') {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        })
+                        .map((item) => {
+                            const Icon = item.icon;
+                            const active = isActive(item.path);
 
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                onClick={() => setSidebarOpen(false)}
-                                className={cn(
-                                    'flex items-center gap-3 px-4 py-3 rounded-xl transition-all group',
-                                    'text-sm font-medium',
-                                    active
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                        : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-                                )}
-                            >
-                                <Icon size={20} className={cn(
-                                    'transition-transform',
-                                    active ? 'text-white' : 'text-gray-400 group-hover:text-white'
-                                )} />
-                                <span>{item.label}</span>
-                            </Link>
-                        );
-                    })}
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    onClick={() => setSidebarOpen(false)}
+                                    className={cn(
+                                        'flex items-center gap-3 px-4 py-3 rounded-xl transition-all group',
+                                        'text-sm font-medium',
+                                        active
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                            : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                                    )}
+                                >
+                                    <Icon size={20} className={cn(
+                                        'transition-transform',
+                                        active ? 'text-white' : 'text-gray-400 group-hover:text-white'
+                                    )} />
+                                    <span>{item.label}</span>
+                                </Link>
+                            );
+                        })}
                 </nav>
 
                 {/* User Section */}
@@ -122,7 +133,18 @@ export const AuthenticatedLayout: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-white truncate">{user?.email}</p>
-                            <p className="text-xs text-gray-400">Administrador</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={cn(
+                                    "text-xs px-2 py-0.5 rounded-full font-medium",
+                                    user?.role === UserRole.ADMIN && "bg-blue-500/20 text-blue-300",
+                                    user?.role === UserRole.PASSAGEIRO && "bg-green-500/20 text-green-300",
+                                    user?.role === UserRole.VISUALIZADOR && "bg-gray-500/20 text-gray-300"
+                                )}>
+                                    {user?.role === UserRole.ADMIN && "Admin"}
+                                    {user?.role === UserRole.PASSAGEIRO && "Passageiro"}
+                                    {user?.role === UserRole.VISUALIZADOR && "Visualizador"}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <button

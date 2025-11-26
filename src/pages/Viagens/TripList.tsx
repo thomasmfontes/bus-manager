@@ -9,6 +9,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { Plus, Eye, Trash2 } from 'lucide-react';
 import { SeatStatus } from '@/types';
+import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const TripList: React.FC = () => {
     const { trips, fetchViagens, deleteViagem, loading } = useTripStore();
@@ -67,12 +68,14 @@ export const TripList: React.FC = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-gray-dark">Viagens</h1>
-                <Link to="/viagens/nova">
-                    <Button>
-                        <Plus size={20} className="md:mr-2" />
-                        <span className="hidden md:inline">Nova Viagem</span>
-                    </Button>
-                </Link>
+                <ProtectedAction requiredPermission="create">
+                    <Link to="/viagens/nova">
+                        <Button>
+                            <Plus size={20} className="md:mr-2" />
+                            <span className="hidden md:inline">Nova Viagem</span>
+                        </Button>
+                    </Link>
+                </ProtectedAction>
             </div>
 
             <Card>

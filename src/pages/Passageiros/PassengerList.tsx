@@ -7,6 +7,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
 import { Plus, Edit, Trash2, Search, Upload, Trash } from 'lucide-react';
+import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const PassengerList: React.FC = () => {
     const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
@@ -70,21 +71,27 @@ export const PassengerList: React.FC = () => {
                     <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os passageiros cadastrados</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2.5">
-                    <Link to="/passageiros/novo" className="flex-1 sm:flex-initial">
-                        <Button className="w-full sm:w-auto justify-center">
-                            <Plus size={20} className="sm:mr-2" />
-                            <span className="hidden sm:inline">Novo Passageiro</span>
+                    <ProtectedAction requiredPermission="create">
+                        <Link to="/passageiros/novo" className="w-full sm:w-auto">
+                            <Button className="w-full sm:w-auto justify-center">
+                                <Plus size={20} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Novo Passageiro</span>
+                            </Button>
+                        </Link>
+                    </ProtectedAction>
+                    <ProtectedAction requiredPermission="create">
+                        <Button variant="secondary" onClick={() => setCsvUploaderOpen(true)} className="w-full sm:w-auto justify-center">
+                            <Upload size={20} className="sm:mr-2" />
+                            <span className="hidden sm:inline">Importar CSV</span>
                         </Button>
-                    </Link>
-                    <Button variant="secondary" onClick={() => setCsvUploaderOpen(true)} className="w-full sm:w-auto justify-center">
-                        <Upload size={20} className="sm:mr-2" />
-                        <span className="hidden sm:inline">Importar CSV</span>
-                    </Button>
+                    </ProtectedAction>
                     {passengers.length > 0 && (
-                        <Button variant="danger" onClick={() => setShowDeleteAllModal(true)} className="w-full sm:w-auto justify-center">
-                            <Trash size={20} className="sm:mr-2" />
-                            <span className="hidden sm:inline">Excluir Todos</span>
-                        </Button>
+                        <ProtectedAction requiredPermission="delete">
+                            <Button variant="danger" onClick={() => setShowDeleteAllModal(true)} className="w-full sm:w-auto justify-center">
+                                <Trash size={20} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Excluir Todos</span>
+                            </Button>
+                        </ProtectedAction>
                     )}
                 </div>
             </div>
