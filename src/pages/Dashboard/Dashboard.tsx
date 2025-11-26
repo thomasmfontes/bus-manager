@@ -6,14 +6,16 @@ import { useSeatAssignmentStore } from '@/stores/useSeatAssignmentStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { Card } from '@/components/ui/Card';
 import { Bus, MapPin, Users, Calendar, TrendingUp, ArrowRight, Eye } from 'lucide-react';
-import { SeatStatus } from '@/types';
+import { SeatStatus, UserRole } from '@/types';
 import { cn } from '@/utils/cn';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export const Dashboard: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
     const { trips, fetchViagens } = useTripStore();
     const { assignments } = useSeatAssignmentStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
+    const { user } = useAuthStore();
 
     useEffect(() => {
         fetchOnibus();
@@ -80,11 +82,34 @@ export const Dashboard: React.FC = () => {
     ];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-fade-in">
+            {/* Registration Banner for Visualizadores */}
+            {user?.role === UserRole.VISUALIZADOR && (
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div className="space-y-2 text-center sm:text-left">
+                        <h2 className="text-2xl font-bold">Complete seu Cadastro!</h2>
+                        <p className="text-blue-100 max-w-xl">
+                            Você está visualizando como visitante. Para poder selecionar e reservar assentos,
+                            é necessário completar seu cadastro de passageiro.
+                        </p>
+                    </div>
+                    <a
+                        href="https://excursao-agua-rasa.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="whitespace-nowrap px-6 py-3 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-sm"
+                    >
+                        Cadastrar Agora
+                    </a>
+                </div>
+            )}
+
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-600 mt-1">Visão geral do sistema de gerenciamento</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    <p className="text-gray-500">Visão geral do sistema</p>
+                </div>
             </div>
 
             {/* Stats Grid */}

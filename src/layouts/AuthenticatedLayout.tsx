@@ -4,12 +4,21 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
+import { RegistrationModal } from '@/components/RegistrationModal';
 
 export const AuthenticatedLayout: React.FC = () => {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
+    // Show registration modal on every page load/navigation for Visualizadores
+    useEffect(() => {
+        if (user?.role === UserRole.VISUALIZADOR) {
+            setShowRegistrationModal(true);
+        }
+    }, [location.pathname, user]);
 
     useEffect(() => {
         if (sidebarOpen) {
@@ -158,13 +167,22 @@ export const AuthenticatedLayout: React.FC = () => {
             </aside>
 
             {/* Main Content */}
-            <div className="lg:ml-72 min-h-screen">
-                <main className="pt-20 lg:pt-8 px-4 py-6 sm:px-6 lg:px-8">
-                    <div className="max-w-7xl mx-auto">
-                        <Outlet />
-                    </div>
-                </main>
-            </div>
+            <main
+                className={cn(
+                    'transition-all duration-300 ease-out min-h-screen',
+                    'lg:ml-72',
+                    'pt-20 px-4 pb-8 lg:px-8'
+                )}
+            >
+                <div className="max-w-7xl mx-auto">
+                    <Outlet />
+                </div>
+            </main>
+
+            <RegistrationModal
+                isOpen={showRegistrationModal}
+                onClose={() => setShowRegistrationModal(false)}
+            />
         </div>
     );
 };

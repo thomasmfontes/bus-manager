@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { DocumentInput } from '@/components/ui/DocumentInput';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { Bus, ArrowLeft } from 'lucide-react';
+import { Bus, ArrowLeft, ExternalLink } from 'lucide-react';
 
 export const UserLogin: React.FC = () => {
     const [documento, setDocumento] = useState('');
@@ -87,6 +87,19 @@ export const UserLogin: React.FC = () => {
                     <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
                         <strong>Visualizador:</strong> Qualquer CPF/RG não cadastrado
                     </p>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+                    <p className="text-gray-600 mb-3">Ainda não tem cadastro?</p>
+                    <a
+                        href="https://excursao-agua-rasa.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
+                    >
+                        Preencher formulário de passageiro
+                        <ExternalLink size={16} />
+                    </a>
                 </div>
             </div>
         </div>

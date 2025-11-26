@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Lock, Unlock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Lock, Unlock, AlertCircle, ExternalLink } from 'lucide-react';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -289,9 +289,17 @@ export const TripSeatMap: React.FC = () => {
                             <X size={20} className="sm:mr-2" />
                             <span className="hidden sm:inline">Cancelar</span>
                         </Button>
-                        {/* Visualizador: no action buttons */}
+                        {/* Visualizador: registration link */}
                         {user?.role === UserRole.VISUALIZADOR && (
-                            <p className="text-sm text-gray-500">Você não tem permissão para modificar assentos</p>
+                            <a
+                                href="https://excursao-agua-rasa.vercel.app/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                <ExternalLink size={16} className="mr-2" />
+                                Fazer Cadastro
+                            </a>
                         )}
                         {/* Passageiro: only assign button */}
                         {user?.role === UserRole.PASSAGEIRO && actionType === 'assign' && (
@@ -328,18 +336,29 @@ export const TripSeatMap: React.FC = () => {
             >
                 {actionType === 'assign' ? (
                     <div className="space-y-4">
-                        <p className="text-gray-600">Selecione um passageiro para este assento:</p>
-                        <select
-                            value={selectedPassengerId}
-                            onChange={(e) => setSelectedPassengerId(e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                            {passengerOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
+                        {user?.role === UserRole.VISUALIZADOR ? (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                                <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
+                                <p className="text-sm text-yellow-800">
+                                    Você não tem permissão para modificar assentos. Cadastre-se para poder reservar.
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-gray-600">Selecione um passageiro para este assento:</p>
+                                <select
+                                    value={selectedPassengerId}
+                                    onChange={(e) => setSelectedPassengerId(e.target.value)}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                >
+                                    {passengerOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -354,7 +373,17 @@ export const TripSeatMap: React.FC = () => {
                         {currentAssignment?.status === SeatStatus.BLOQUEADO && (
                             <p className="text-gray-600">Este assento está bloqueado.</p>
                         )}
-                        <p className="text-gray-600">Deseja liberar este assento?</p>
+
+                        {user?.role === UserRole.VISUALIZADOR ? (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                                <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
+                                <p className="text-sm text-yellow-800">
+                                    Você não tem permissão para modificar assentos.
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-gray-600">Deseja liberar este assento?</p>
+                        )}
                     </div>
                 )}
             </Modal>

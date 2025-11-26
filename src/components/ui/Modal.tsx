@@ -10,6 +10,7 @@ interface ModalProps {
     children: React.ReactNode;
     footer?: React.ReactNode;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    className?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -19,6 +20,7 @@ export const Modal: React.FC<ModalProps> = ({
     children,
     footer,
     size = 'md',
+    className,
 }) => {
     useEffect(() => {
         if (isOpen) {
@@ -52,7 +54,8 @@ export const Modal: React.FC<ModalProps> = ({
             <div className={cn(
                 'relative bg-white rounded-2xl shadow-2xl w-full mx-4 max-h-[90vh] overflow-hidden',
                 'animate-in fade-in',
-                sizes[size]
+                sizes[size],
+                className
             )}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
