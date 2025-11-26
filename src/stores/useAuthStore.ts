@@ -76,7 +76,7 @@ export const useAuthStore = create<AuthState>()(
             logout: () => {
                 set({ isAuthenticated: false, user: null });
             },
-            hasPermission: (action: 'create' | 'edit' | 'delete') => {
+            hasPermission: (_action: 'create' | 'edit' | 'delete') => {
                 const { user } = get();
                 return user?.role === UserRole.ADMIN;
             },
