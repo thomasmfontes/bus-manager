@@ -89,6 +89,7 @@ export const GoogleSheetsService = {
 
     /**
      * Fetch data from the spreadsheet using the Sheets API
+     * Uses the EXACT SAME column mapping logic as CSV parser
      */
     fetchSheetData: async (spreadsheetId: string) => {
         if (!accessToken) {
@@ -111,5 +112,46 @@ export const GoogleSheetsService = {
 
             const data = await response.json();
             const rows = data.values;
+
+            if (!rows || rows.length === 0) {
+                return [];
+            }
+
+            // Parse header row (SAME AS CSV PARSER)
+            const headers = rows[0].map((h: string) => h.trim().toLowerCase());
+            const dataRows = rows.slice(1);
+
+            // Find column indices by matching header names (SAME AS CSV PARSER)
+            const nomeIndex = headers.findIndex(h =>
+                h.includes('nome') && (h.includes('completo') || h === 'nome')
+            );
+            const documentoIndex = headers.findIndex(h =>
+                h.includes('cpf') || h.includes('rg') || h.includes('documento')
+            );
+            const telefoneIndex = headers.findIndex(h =>
+                h.includes('telefone') || h.includes('celular') || h.includes('phone')
+            );
+
+            console.log('📊 Headers from Google Sheets:', headers);
+            console.log('📍 Column indices:', { nomeIndex, documentoIndex, telefoneIndex });
+
+            return dataRows.map((row: any[], rowIndex: number) => {
+                // Extract data using the found indices (SAME AS CSV PARSER)
+                const nome = nomeIndex >= 0 ? (row[nomeIndex]?.toString().trim() || '') : '';
+                const documento = documentoIndex >= 0 ? (row[documentoIndex]?.toString().trim() || '') : '';
+                const telefone = telefoneIndex >= 0 ? (row[telefoneIndex]?.toString().trim() || '') : '';
+
+                const passenger = { nome, documento, telefone };
+
+                if (rowIndex < 3) { // Log first 3 rows for debugging
+                    console.log(`👤 Row ${rowIndex + 1}:`, passenger);
+                }
+
+                return passenger;
+            });
+        } catch (error) {
+            console.error('Error fetching sheet data:', error);
+            throw error;
         }
+    }
 };
