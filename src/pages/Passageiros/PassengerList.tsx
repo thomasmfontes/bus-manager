@@ -85,12 +85,152 @@ export const PassengerList: React.FC = () => {
 
     return (
         <div className="space-y-5">
-            {/* Header */}
-            <div className="flex flex-col gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Passageiros</h1>
-                    <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os passageiros cadastrados</p>
+            import React, {useEffect, useState} from 'react';
+            import {Link} from 'react-router-dom';
+            import {usePassengerStore} from '@/stores/usePassengerStore';
+            import {Card} from '@/components/ui/Card';
+            import {Button} from '@/components/ui/Button';
+            import {ConfirmModal} from '@/components/ui/Modal';
+            import {useToast} from '@/components/ui/Toast';
+            import {CsvUploader} from '@/components/passengers/CsvUploader';
+            import {Plus, Edit, Trash2, Search, Upload, Trash, RefreshCw} from 'lucide-react';
+            import {ProtectedAction} from '@/components/ProtectedAction';
+
+export const PassengerList: React.FC = () => {
+    const {passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, syncFromGoogleSheets, loading} = usePassengerStore();
+            const {showToast} = useToast();
+            const [deleteId, setDeleteId] = useState<string | null>(null);
+            const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [csvUploaderOpen, setCsvUploaderOpen] = useState(false);
+            const [isSyncing, setIsSyncing] = useState(false);
+
+    useEffect(() => {
+                fetchPassageiros();
+    }, [fetchPassageiros]);
+
+    const handleDelete = async () => {
+        if (!deleteId) return;
+
+            try {
+                await deletePassageiro(deleteId);
+            showToast('Passageiro excluído com sucesso!', 'success');
+            setDeleteId(null);
+        } catch (error) {
+                showToast('Erro ao excluir passageiro', 'error');
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        try {
+                await deleteAllPassageiros();
+            showToast('Todos os passageiros foram excluídos!', 'success');
+            setShowDeleteAllModal(false);
+        } catch (error) {
+                showToast('Erro ao excluir passageiros', 'error');
+        }
+    };
+
+            const handleCsvImport = async (importedPassengers: {nome: string; documento: string; telefone: string }[]) => {
+        try {
+            for (const passenger of importedPassengers) {
+                await createPassageiro(passenger);
+            }
+            showToast(`${importedPassengers.length} passageiro(s) importado(s) com sucesso!`, 'success');
+            setCsvUploaderOpen(false);
+        } catch (error) {
+                showToast('Erro ao importar passageiros', 'error');
+        }
+    };
+
+    const handleGoogleSync = async () => {
+        const clientId = localStorage.getItem('google_client_id');
+            const spreadsheetId = localStorage.getItem('google_spreadsheet_id');
+
+            if (!clientId || !spreadsheetId) {
+                showToast('Configure a integração nas Configurações primeiro!', 'error');
+            return;
+        }
+
+            setIsSyncing(true);
+            try {
+            const result = await syncFromGoogleSheets(clientId, spreadsheetId);
+            showToast(`Sincronização concluída! ${result.success} processados.`, 'success');
+        } catch (error) {
+                showToast('Erro na sincronização. Verifique o console.', 'error');
+        } finally {
+                setIsSyncing(false);
+        }
+    };
+
+            const filteredPassengers = passengers.filter(
+        (p) =>
+            p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.documento.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.telefone.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            return (
+            <div className="space-y-5">
+                {/* Header */}
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Passageiros</h1>
+                        <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os passageiros cadastrados</p>
+                    </div>
+
+                    {/* Action Buttons - Horizontal Layout */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                        <ProtectedAction requiredPermission="create">
+                            <Link to="/passageiros/novo">
+                                <Button size="sm" className="whitespace-nowrap">
+                                    <Plus size={18} className="sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Novo</span>
+                                </Button>
+                            </Link>
+                        </ProtectedAction>
+
+                        <ProtectedAction requiredPermission="create">
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setCsvUploaderOpen(true)}
+                                className="whitespace-nowrap hidden sm:inline-flex"
+                            >
+                                <Upload size={18} className="mr-1.5" />
+                                <span>CSV</span>
+                            </Button>
+                        </ProtectedAction>
+
+                        <ProtectedAction requiredPermission="create">
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={handleGoogleSync}
+                                disabled={isSyncing}
+                                className="whitespace-nowrap"
+                            >
+                                <RefreshCw size={18} className={`sm:mr-1.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                                <span className="hidden sm:inline">{isSyncing ? 'Sync...' : 'Sheets'}</span>
+                            </Button>
+                        </ProtectedAction>
+
+                        {passengers.length > 0 && (
+                            <ProtectedAction requiredPermission="delete">
+                                <Button
+                                    size="sm"
+                                    variant="danger"
+                                    onClick={() => setShowDeleteAllModal(true)}
+                                    className="whitespace-nowrap ml-auto"
+                                >
+                                    <Trash size={18} className="sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Limpar</span>
+                                </Button>
+                            </ProtectedAction>
+                        )}
+                    </div>
                 </div>
+
                 <Card>
                     {/* Search Bar */}
                     {passengers.length > 0 && (
