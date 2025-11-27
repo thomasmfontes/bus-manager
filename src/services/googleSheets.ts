@@ -98,7 +98,7 @@ export const GoogleSheetsService = {
 
         try {
             const response = await fetch(
-                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A:E`,
+                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A:J`,
                 {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
