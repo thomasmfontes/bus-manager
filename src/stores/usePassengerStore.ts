@@ -86,7 +86,81 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
             console.error('Error deleting all passengers:', error);
             throw error;
         }
-        throw error;
-    }
-},
+    },
+    syncFromGoogleSheets: async (clientId: string, spreadsheetId: string) => {
+        set({ loading: true });
+        try {
+            // Dynamic import to avoid circular dependencies
+            const { GoogleSheetsService } = await import('@/services/googleSheets');
+
+            // Initialize and Auth
+            await GoogleSheetsService.initClient(clientId);
+
+            if (!GoogleSheetsService.isSignedIn()) {
+                await GoogleSheetsService.signIn();
+            }
+
+            // Fetch Data from Google Sheets
+            const sheetPassengers = await GoogleSheetsService.fetchSheetData(spreadsheetId);
+
+            let successCount = 0;
+            let failedCount = 0;
+
+            // Process each passenger with upsert logic to prevent duplicates
+            for (const p of sheetPassengers) {
+                // Validate required fields
+                if (!p.nome || !p.documento) {
+                    failedCount++;
+                    continue;
+                }
+
+                try {
+                    // Check if passenger already exists by documento
+                    const { data: existing } = await supabase
+                        .from('passengers')
+                        .select('id')
+                        .eq('documento', p.documento)
+                        .maybeSingle();
+
+                    const passengerData = {
+                        nome: p.nome,
+                        documento: p.documento,
+                        telefone: p.telefone || '',
+                    };
+
+                    if (existing) {
+                        // Update existing passenger
+                        const { error } = await supabase
+                            .from('passengers')
+                            .update(passengerData)
+                            .eq('id', existing.id);
+
+                        if (error) throw error;
+                    } else {
+                        // Insert new passenger
+                        const { error } = await supabase
+                            .from('passengers')
+                            .insert([passengerData]);
+
+                        if (error) throw error;
+                    }
+
+                    successCount++;
+                } catch (error) {
+                    console.error('Error upserting passenger from sheet:', error);
+                    failedCount++;
+                }
+            }
+
+            // Refresh the passenger list
+            await get().fetchPassageiros();
+            set({ loading: false });
+            return { success: successCount, failed: failedCount };
+
+        } catch (error) {
+            console.error('Error syncing with Google Sheets:', error);
+            set({ loading: false });
+            throw error;
+        }
+    },
 }));
