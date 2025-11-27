@@ -1,52 +1,82 @@
-// @ts-nocheck
-import { gapi } from 'gapi-script';
+/**
+ * Google Sheets Service using modern Google Identity Services (GIS)
+ * This replaces the deprecated gapi-script library
+ */
 
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
-const DISCOVERY_DOCS = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
-
-export interface GoogleSheetConfig {
-    clientId: string;
-    spreadsheetId: string;
+declare global {
+    interface Window {
+        google: any;
+    }
 }
+
+let tokenClient: any = null;
+let accessToken: string | null = null;
 
 export const GoogleSheetsService = {
     /**
-     * Initialize the Google API client
+     * Initialize the Google Identity Services client
      */
     initClient: async (clientId: string): Promise<void> => {
         return new Promise((resolve, reject) => {
-            gapi.load('client:auth2', () => {
-                gapi.client.init({
-                    clientId: clientId,
-                    discoveryDocs: DISCOVERY_DOCS,
-                    scope: SCOPES,
-                }).then(() => {
-                    resolve();
-                }).catch((error: any) => {
-                    reject(error);
+            // Load the Google Identity Services library
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            script.onload = () => {
+                // Initialize the token client
+                tokenClient = window.google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+                    callback: (response: any) => {
+                        if (response.error) {
+                            reject(response);
+                        } else {
+                            accessToken = response.access_token;
+                            resolve();
+                        }
+                    },
                 });
-            });
+                resolve();
+            };
+            script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+            document.head.appendChild(script);
         });
     },
 
     /**
-     * Sign in with Google
+     * Request access token (triggers OAuth popup)
      */
-    signIn: async (): Promise<any> => {
-        const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance) {
-            throw new Error('Google Auth not initialized');
-        }
-        return authInstance.signIn();
+    signIn: async (): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            if (!tokenClient) {
+                reject(new Error('Token client not initialized'));
+                return;
+            }
+
+            // Override callback for this specific request
+            tokenClient.callback = (response: any) => {
+                if (response.error) {
+                    reject(response);
+                } else {
+                    accessToken = response.access_token;
+                    resolve();
+                }
+            };
+
+            // Request access token
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        });
     },
 
     /**
-     * Sign out
+     * Sign out (revoke token)
      */
     signOut: async (): Promise<void> => {
-        const authInstance = gapi.auth2.getAuthInstance();
-        if (authInstance) {
-            await authInstance.signOut();
+        if (accessToken) {
+            window.google.accounts.oauth2.revoke(accessToken, () => {
+                accessToken = null;
+            });
         }
     },
 
@@ -54,30 +84,43 @@ export const GoogleSheetsService = {
      * Check if signed in
      */
     isSignedIn: (): boolean => {
-        const authInstance = gapi.auth2.getAuthInstance();
-        return authInstance ? authInstance.isSignedIn.get() : false;
+        return accessToken !== null;
     },
 
     /**
-     * Fetch data from the spreadsheet
+     * Fetch data from the spreadsheet using the Sheets API
      */
     fetchSheetData: async (spreadsheetId: string) => {
-        try {
-            const response = await gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: spreadsheetId,
-                range: 'A:E', // Fetch first 5 columns, adjust as needed
-            });
+        if (!accessToken) {
+            throw new Error('Not authenticated. Please sign in first.');
+        }
 
-            const rows = response.result.values;
+        try {
+            const response = await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A:E`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const rows = data.values;
+
             if (!rows || rows.length === 0) {
                 return [];
             }
 
             // Assume first row is header
             const headers = rows[0].map((h: string) => h.toLowerCase().trim());
-            const data = rows.slice(1);
+            const dataRows = rows.slice(1);
 
-            return data.map((row: any[]) => {
+            return dataRows.map((row: any[]) => {
                 const passenger: any = {};
                 headers.forEach((header: string, index: number) => {
                     if (index < row.length) {
