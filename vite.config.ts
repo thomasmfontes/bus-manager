@@ -11,10 +11,10 @@ export default defineConfig({
             registerType: 'autoUpdate',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {
-                name: 'Bus Seat Manager',
-                short_name: 'BusManager',
+                name: 'Excursão',
+                short_name: 'Excursão',
                 description: 'Sistema de gerenciamento de assentos de ônibus',
-                theme_color: '#ffffff',
+                theme_color: '#32A2E1',
                 icons: [
                     {
                         src: 'pwa-192x192.png',
