@@ -109,58 +109,16 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
             // Process each passenger with upsert logic to prevent duplicates
             for (const p of sheetPassengers) {
                 // Validate required fields
-                if (!p.nome || !p.documento) {
-                    failedCount++;
-                    continue;
-                }
 
-                try {
-                    // Check if passenger already exists by documento
-                    const { data: existing } = await supabase
-                        .from('passengers')
-                        .select('id')
-                        .eq('documento', p.documento)
-                        .maybeSingle();
+                // Refresh the passenger list
+                await get().fetchPassageiros();
+                set({ loading: false });
+                return { success: successCount, failed: failedCount };
 
-                    const passengerData = {
-                        nome: p.nome,
-                        documento: p.documento,
-                        telefone: p.telefone || '',
-                    };
-
-                    if (existing) {
-                        // Update existing passenger
-                        const { error } = await supabase
-                            .from('passengers')
-                            .update(passengerData)
-                            .eq('id', existing.id);
-
-                        if (error) throw error;
-                    } else {
-                        // Insert new passenger
-                        const { error } = await supabase
-                            .from('passengers')
-                            .insert([passengerData]);
-
-                        if (error) throw error;
-                    }
-
-                    successCount++;
-                } catch (error) {
-                    console.error('Error upserting passenger from sheet:', error);
-                    failedCount++;
-                }
+            } catch (error) {
+                console.error('Error syncing with Google Sheets:', error);
+                set({ loading: false });
+                throw error;
             }
-
-            // Refresh the passenger list
-            await get().fetchPassageiros();
-            set({ loading: false });
-            return { success: successCount, failed: failedCount };
-
-        } catch (error) {
-            console.error('Error syncing with Google Sheets:', error);
-            set({ loading: false });
-            throw error;
-        }
-    },
-}));
+        },
+    }));
