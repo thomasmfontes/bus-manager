@@ -90,35 +90,77 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     syncFromGoogleSheets: async (clientId: string, spreadsheetId: string) => {
         set({ loading: true });
         try {
-            // Dynamic import to avoid circular dependencies
             const { GoogleSheetsService } = await import('@/services/googleSheets');
 
-            // Initialize and Auth
             await GoogleSheetsService.initClient(clientId);
 
             if (!GoogleSheetsService.isSignedIn()) {
                 await GoogleSheetsService.signIn();
             }
 
-            // Fetch Data from Google Sheets
             const sheetPassengers = await GoogleSheetsService.fetchSheetData(spreadsheetId);
 
             let successCount = 0;
             let failedCount = 0;
 
-            // Process each passenger with upsert logic to prevent duplicates
             for (const p of sheetPassengers) {
-                // Validate required fields
+                if (!p.nome || !p.documento) {
+                    failedCount++;
+                    continue;
+                }
 
-                // Refresh the passenger list
-                await get().fetchPassageiros();
-                set({ loading: false });
-                return { success: successCount, failed: failedCount };
+                try {
+                    const cleanDocumento = p.documento.replace(/\D/g, '');
 
-            } catch (error) {
-                console.error('Error syncing with Google Sheets:', error);
-                set({ loading: false });
-                throw error;
+                    console.log(`🔍 Checking: ${p.nome} | Doc: ${p.documento} | Clean: ${cleanDocumento}`);
+
+                    const { data: existing, error: searchError } = await supabase
+                        .from('passengers')
+                        .select('id, documento')
+                        .or(`documento.eq.${p.documento},documento.eq.${cleanDocumento}`)
+                        .maybeSingle();
+
+                    if (searchError) console.error('Search error:', searchError);
+                    console.log(`📋 Existing:`, existing);
+
+                    const passengerData = {
+                        nome: p.nome,
+                        documento: p.documento,
+                        telefone: p.telefone || '',
+                    };
+
+                    if (existing) {
+                        console.log(`✏️ Updating ID: ${existing.id}`);
+                        const { error } = await supabase
+                            .from('passengers')
+                            .update(passengerData)
+                            .eq('id', existing.id);
+
+                        if (error) throw error;
+                    } else {
+                        console.log(`➕ Creating new`);
+                        const { error } = await supabase
+                            .from('passengers')
+                            .insert([passengerData]);
+
+                        if (error) throw error;
+                    }
+
+                    successCount++;
+                } catch (error) {
+                    console.error('Error upserting:', error);
+                    failedCount++;
+                }
             }
-        },
-    }));
+
+            await get().fetchPassageiros();
+            set({ loading: false });
+            return { success: successCount, failed: failedCount };
+
+        } catch (error) {
+            console.error('Error syncing with Google Sheets:', error);
+            set({ loading: false });
+            throw error;
+        }
+    },
+}));
