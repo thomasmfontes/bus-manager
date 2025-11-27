@@ -108,10 +108,10 @@ export const PassengerList: React.FC = () => {
                             size="sm"
                             variant="secondary"
                             onClick={() => setCsvUploaderOpen(true)}
-                            className="whitespace-nowrap hidden sm:inline-flex"
+                            className="whitespace-nowrap"
                         >
-                            <Upload size={18} className="mr-1.5" />
-                            <span>CSV</span>
+                            <Upload size={18} className="sm:mr-1.5" />
+                            <span className="hidden sm:inline">CSV</span>
                         </Button>
                     </ProtectedAction>
 
