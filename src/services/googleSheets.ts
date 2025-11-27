@@ -122,13 +122,13 @@ export const GoogleSheetsService = {
             const dataRows = rows.slice(1);
 
             // Find column indices by matching header names (SAME AS CSV PARSER)
-            const nomeIndex = headers.findIndex(h =>
+            const nomeIndex = headers.findIndex((h: string) =>
                 h.includes('nome') && (h.includes('completo') || h === 'nome')
             );
-            const documentoIndex = headers.findIndex(h =>
+            const documentoIndex = headers.findIndex((h: string) =>
                 h.includes('cpf') || h.includes('rg') || h.includes('documento')
             );
-            const telefoneIndex = headers.findIndex(h =>
+            const telefoneIndex = headers.findIndex((h: string) =>
                 h.includes('telefone') || h.includes('celular') || h.includes('phone')
             );
 
