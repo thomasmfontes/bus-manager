@@ -111,41 +111,5 @@ export const GoogleSheetsService = {
 
             const data = await response.json();
             const rows = data.values;
-
-            if (!rows || rows.length === 0) {
-                return [];
-            }
-
-            // Assume first row is header
-            const headers = rows[0].map((h: string) => h.toLowerCase().trim());
-            const dataRows = rows.slice(1);
-
-            console.log('📊 Headers from Google Sheets:', headers);
-
-            return dataRows.map((row: any[]) => {
-                const passenger: any = {};
-                headers.forEach((header: string, index: number) => {
-                    if (index < row.length && row[index]) {
-                        const value = String(row[index]).trim();
-
-                        // Map common header names to our internal fields
-                        if (header.includes('nome') || header === 'name') {
-                            passenger.nome = value;
-                        } else if (header.includes('documento') || header.includes('cpf') || header.includes('rg') || header === 'document') {
-                            passenger.documento = value;
-                        } else if (header.includes('telefone') || header.includes('celular') || header.includes('phone') || header.includes('tel') || header.includes('whatsapp')) {
-                            passenger.telefone = value;
-                        } else if (header.includes('email') || header.includes('e-mail')) {
-                            passenger.email = value;
-                        }
-                    }
-                });
-                console.log('👤 Mapped passenger:', passenger);
-                return passenger;
-            });
-        } catch (error) {
-            console.error('Error fetching sheet data:', error);
-            throw error;
         }
-    }
 };
