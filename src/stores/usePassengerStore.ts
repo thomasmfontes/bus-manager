@@ -126,9 +126,8 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
 
                 const passengerData = {
                     nome: p.nome,
-                    documento: p.documento, // Keep original format or standardize? Let's keep input for now
+                    documento: p.documento,
                     telefone: p.telefone || '',
-                    email: p.email || '',
                 };
 
                 if (existing) {
