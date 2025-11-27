@@ -15,6 +15,7 @@ export default defineConfig({
                 short_name: 'Excursão',
                 description: 'Sistema de gerenciamento de assentos de ônibus',
                 theme_color: '#32A2E1',
+                background_color: '#32A2E1',
                 icons: [
                     {
                         src: 'pwa-192x192.png',
