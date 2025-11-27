@@ -79,14 +79,62 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     },
     deleteAllPassageiros: async () => {
         try {
-            const { error } = await supabase.from('passengers').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+            const { error } = await supabase.from('passengers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (error) throw error;
             set({ passengers: [] });
         } catch (error) {
             console.error('Error deleting all passengers:', error);
             throw error;
         }
-        throw error;
-    }
-},
+    },
+    syncFromGoogleSheets: async (clientId: string, spreadsheetId: string) => {
+        set({ loading: true });
+        try {
+            // Dynamic import to avoid circular dependencies
+            const { GoogleSheetsService } = await import('@/services/googleSheets');
+
+            // Initialize and Auth
+            await GoogleSheetsService.initClient(clientId);
+
+            if (!GoogleSheetsService.isSignedIn()) {
+                await GoogleSheetsService.signIn();
+            }
+
+            // Fetch Data from Google Sheets
+            const sheetPassengers = await GoogleSheetsService.fetchSheetData(spreadsheetId);
+
+            let successCount = 0;
+            let failedCount = 0;
+
+            // Process each passenger - use createPassageiro just like CSV import
+            for (const p of sheetPassengers) {
+                // Validate required fields
+                if (!p.nome || !p.documento) {
+                    failedCount++;
+                    continue;
+                }
+
+                try {
+                    // Use createPassageiro (same as CSV import)
+                    await get().createPassageiro({
+                        nome: p.nome,
+                        documento: p.documento,
+                        telefone: p.telefone || '',
+                    });
+                    successCount++;
+                } catch (error) {
+                    console.error('Error creating passenger from sheet:', error);
+                    failedCount++;
+                }
+            }
+
+            set({ loading: false });
+            return { success: successCount, failed: failedCount };
+
+        } catch (error) {
+            console.error('Error syncing with Google Sheets:', error);
+            set({ loading: false });
+            throw error;
+        }
+    },
 }));
