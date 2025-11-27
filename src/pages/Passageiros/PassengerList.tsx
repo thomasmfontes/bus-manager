@@ -91,37 +91,53 @@ export const PassengerList: React.FC = () => {
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Passageiros</h1>
                     <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os passageiros cadastrados</p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2.5">
+
+                {/* Action Buttons - Horizontal Layout */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     <ProtectedAction requiredPermission="create">
-                        <Link to="/passageiros/novo" className="w-full sm:w-auto">
-                            <Button className="w-full sm:w-auto justify-center">
-                                <Plus size={20} className="sm:mr-2" />
-                                <span className="hidden sm:inline">Novo Passageiro</span>
+                        <Link to="/passageiros/novo">
+                            <Button size="sm" className="whitespace-nowrap">
+                                <Plus size={18} className="mr-1.5" />
+                                <span>Novo</span>
                             </Button>
                         </Link>
                     </ProtectedAction>
-                    <ProtectedAction requiredPermission="create">
-                        <Button variant="secondary" onClick={() => setCsvUploaderOpen(true)} className="w-full sm:w-auto justify-center">
-                            <Upload size={20} className="sm:mr-2" />
-                            <span className="hidden sm:inline">Importar CSV</span>
-                        </Button>
-                    </ProtectedAction>
+
                     <ProtectedAction requiredPermission="create">
                         <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setCsvUploaderOpen(true)}
+                            className="whitespace-nowrap"
+                        >
+                            <Upload size={18} className="mr-1.5" />
+                            <span>CSV</span>
+                        </Button>
+                    </ProtectedAction>
+
+                    <ProtectedAction requiredPermission="create">
+                        <Button
+                            size="sm"
                             variant="secondary"
                             onClick={handleGoogleSync}
                             disabled={isSyncing}
-                            className="w-full sm:w-auto justify-center"
+                            className="whitespace-nowrap"
                         >
-                            <RefreshCw size={20} className={`sm:mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-                            <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Google Sheets'}</span>
+                            <RefreshCw size={18} className={`mr-1.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                            <span>{isSyncing ? 'Sync...' : 'Sheets'}</span>
                         </Button>
                     </ProtectedAction>
+
                     {passengers.length > 0 && (
                         <ProtectedAction requiredPermission="delete">
-                            <Button variant="danger" onClick={() => setShowDeleteAllModal(true)} className="w-full sm:w-auto justify-center">
-                                <Trash size={20} className="sm:mr-2" />
-                                <span className="hidden sm:inline">Excluir Todos</span>
+                            <Button
+                                size="sm"
+                                variant="danger"
+                                onClick={() => setShowDeleteAllModal(true)}
+                                className="whitespace-nowrap ml-auto"
+                            >
+                                <Trash size={18} className="mr-1.5" />
+                                <span>Limpar</span>
                             </Button>
                         </ProtectedAction>
                     )}
