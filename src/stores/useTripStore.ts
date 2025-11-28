@@ -48,11 +48,21 @@ export const useTripStore = create<TripState>((set, get) => ({
     createViagem: async (trip) => {
         set({ loading: true });
         try {
+            // Converte a string datetime-local para incluir o timezone
+            // datetime-local retorna "YYYY-MM-DDTHH:mm"
+            // Precisamos adicionar o offset do timezone local (ex: "-03:00" para Brasília)
+            const localDate = new Date(trip.data);
+            const offset = -localDate.getTimezoneOffset();
+            const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+            const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, '0');
+            const offsetSign = offset >= 0 ? '+' : '-';
+            const dateWithTimezone = `${trip.data}:00${offsetSign}${offsetHours}:${offsetMinutes}`;
+
             // 1. Create the trip
             const dbTrip = {
                 origem: trip.origem,
                 destino: trip.destino,
-                data_hora: trip.data,
+                data_hora: dateWithTimezone,
                 descricao: trip.descricao,
             };
 

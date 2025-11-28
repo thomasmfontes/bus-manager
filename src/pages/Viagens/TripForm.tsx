@@ -34,6 +34,8 @@ export const TripForm: React.FC = () => {
         }
 
         try {
+            // Envia a data diretamente no formato datetime-local
+            // O Supabase vai interpretar como timestamp local
             await createViagem(formData);
             showToast('Viagem cadastrada com sucesso!', 'success');
             navigate('/viagens');

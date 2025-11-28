@@ -54,19 +54,29 @@ export const TripList: React.FC = () => {
     };
 
     const formatDate = (dateString: string) => {
-        // Garante que a string seja tratada como horário local, não UTC
-        // datetime-local retorna formato: "YYYY-MM-DDTHH:mm"
-        const date = new Date(dateString + ':00'); // Adiciona segundos se necessário
+        if (!dateString) return 'Data inválida';
 
-        // Formata usando o timezone local
-        return date.toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'America/Sao_Paulo', // Força timezone de Brasília
-        });
+        try {
+            // Cria o objeto Date a partir do ISO string (UTC) do Supabase
+            const date = new Date(dateString);
+
+            // Verifica se a data é válida
+            if (isNaN(date.getTime())) {
+                return 'Data inválida';
+            }
+
+            // Formata usando o timezone local do navegador (automático)
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch (error) {
+            console.error('Error formatting date:', dateString, error);
+            return 'Data inválida';
+        }
     };
 
     return (
