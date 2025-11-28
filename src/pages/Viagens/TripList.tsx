@@ -54,13 +54,18 @@ export const TripList: React.FC = () => {
     };
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('pt-BR', {
+        // Garante que a string seja tratada como horário local, não UTC
+        // datetime-local retorna formato: "YYYY-MM-DDTHH:mm"
+        const date = new Date(dateString + ':00'); // Adiciona segundos se necessário
+
+        // Formata usando o timezone local
+        return date.toLocaleString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: 'America/Sao_Paulo', // Força timezone de Brasília
         });
     };
 
