@@ -4,10 +4,10 @@ import { useBusStore } from '@/stores/useBusStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { useSeatAssignmentStore } from '@/stores/useSeatAssignmentStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
+import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
-import { Bus, MapPin, Users, Calendar, TrendingUp, ArrowRight, Eye } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, ArrowRight, Eye } from 'lucide-react';
 import { SeatStatus, UserRole } from '@/types';
-import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 export const Dashboard: React.FC = () => {
@@ -115,26 +115,18 @@ export const Dashboard: React.FC = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                {stats.map((stat) => {
-                    const Icon = stat.icon;
-                    return (
-                        <Card key={stat.label} hover className="group">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
-                                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                                </div>
-                                <div className={cn('p-3 rounded-xl', stat.iconBg)}>
-                                    <Icon className={stat.iconColor} size={24} />
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                <TrendingUp size={14} className={stat.iconColor} />
-                                <span>{stat.trend}</span>
-                            </div>
-                        </Card>
-                    );
-                })}
+                {stats.map((stat, index) => (
+                    <StatCard
+                        key={stat.label}
+                        label={stat.label}
+                        value={stat.value}
+                        icon={stat.icon}
+                        iconBg={stat.iconBg}
+                        iconColor={stat.iconColor}
+                        trend={stat.trend}
+                        delay={index * 100}
+                    />
+                ))}
             </div>
 
             {/* Upcoming Trips */}
