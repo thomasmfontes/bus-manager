@@ -26,6 +26,11 @@ export default defineConfig({
                         src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png'
+                    },
+                    {
+                        src: 'favicon.png',
+                        sizes: '512x512',
+                        type: 'image/png'
                     }
                 ]
             }
