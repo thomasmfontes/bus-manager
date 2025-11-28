@@ -26,16 +26,12 @@ export default defineConfig({
                         src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png'
-                    },
-                    {
-                        src: 'favicon.png',
-                        sizes: '512x512',
-                        type: 'image/png'
                     }
                 ]
             }
         })
     ],
+    publicDir: 'public',
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),

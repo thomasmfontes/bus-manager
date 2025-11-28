@@ -6,6 +6,7 @@ interface SeatAssignmentState {
     assignments: SeatAssignment[];
     loading: boolean;
     getAssentosPorViagem: (viagemId: string) => SeatAssignment[];
+    fetchTodosAssentos: () => Promise<void>;
     fetchAssentosPorViagem: (viagemId: string) => Promise<void>;
     atribuirAssento: (
         viagemId: string,
@@ -22,6 +23,29 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set, get) => 
     loading: false,
     getAssentosPorViagem: (viagemId) => {
         return get().assignments.filter((a) => a.viagemId === viagemId);
+    },
+    fetchTodosAssentos: async () => {
+        set({ loading: true });
+        try {
+            const { data, error } = await supabase
+                .from('seat_assignments')
+                .select('*');
+
+            if (error) throw error;
+
+            const mappedAssignments: SeatAssignment[] = data.map((a: any) => ({
+                viagemId: a.viagem_id,
+                onibusId: a.onibus_id,
+                assentoCodigo: a.assento_codigo,
+                passageiroId: a.passageiro_id,
+                status: a.status as SeatStatus,
+            }));
+
+            set({ assignments: mappedAssignments, loading: false });
+        } catch (error) {
+            console.error('Error fetching all seat assignments:', error);
+            set({ loading: false });
+        }
     },
     fetchAssentosPorViagem: async (viagemId) => {
         set({ loading: true });

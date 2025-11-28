@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 export const Dashboard: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
     const { trips, fetchViagens } = useTripStore();
-    const { assignments } = useSeatAssignmentStore();
+    const { assignments, fetchTodosAssentos } = useSeatAssignmentStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
 
@@ -21,7 +21,8 @@ export const Dashboard: React.FC = () => {
         fetchOnibus();
         fetchViagens();
         fetchPassageiros();
-    }, [fetchOnibus, fetchViagens, fetchPassageiros]);
+        fetchTodosAssentos();
+    }, [fetchOnibus, fetchViagens, fetchPassageiros, fetchTodosAssentos]);
 
     // Calculate stats
     const totalBuses = buses.length;
