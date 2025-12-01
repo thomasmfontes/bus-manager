@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Input } from '@/components/ui/Input';
 import { DocumentInput } from '@/components/ui/DocumentInput';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -9,7 +8,6 @@ import { Bus, ArrowLeft, ExternalLink } from 'lucide-react';
 
 export const UserLogin: React.FC = () => {
     const [documento, setDocumento] = useState('');
-    const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuthStore();
     const navigate = useNavigate();
@@ -18,20 +16,23 @@ export const UserLogin: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!documento || !senha) {
-            showToast('Por favor, preencha todos os campos', 'error');
+        if (!documento) {
+            showToast('Por favor, informe seu CPF ou RG', 'error');
             return;
         }
 
         setLoading(true);
-        const success = await login('', senha, documento);
+        const success = await login('', '', documento);
         setLoading(false);
 
         if (success) {
             showToast('Login realizado com sucesso!', 'success');
             navigate('/dashboard');
         } else {
-            showToast('Credenciais inválidas', 'error');
+            showToast('Cadastro não encontrado. Redirecionando para o formulário...', 'error');
+            setTimeout(() => {
+                navigate('/excursao');
+            }, 2000);
         }
     };
 
@@ -50,8 +51,8 @@ export const UserLogin: React.FC = () => {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl mb-4 shadow-lg">
                         <Bus className="text-white" size={32} strokeWidth={2} />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Acesso de Usuário</h1>
-                    <p className="text-gray-600">Login com CPF ou RG</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Acesso de Passageiro</h1>
+                    <p className="text-gray-600">Informe seu CPF ou RG para acessar</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -62,30 +63,18 @@ export const UserLogin: React.FC = () => {
                         required
                     />
 
-                    <Input
-                        type="password"
-                        label="Senha"
-                        value={senha}
-                        onChange={(e) => setSenha(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                    />
-
                     <Button
                         type="submit"
                         className="w-full"
                         disabled={loading}
                     >
-                        {loading ? 'Entrando...' : 'Entrar'}
+                        {loading ? 'Verificando...' : 'Acessar'}
                     </Button>
                 </form>
 
                 <div className="mt-6 text-center space-y-2">
                     <p className="text-sm text-gray-500 bg-green-50 rounded-lg px-4 py-2.5 border border-green-200">
-                        <strong>Passageiro:</strong> Use seu CPF/RG cadastrado
-                    </p>
-                    <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        <strong>Visualizador:</strong> Qualquer CPF/RG não cadastrado
+                        <strong>Passageiro:</strong> Use seu CPF ou RG cadastrado
                     </p>
                 </div>
 

@@ -19,9 +19,6 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             user: null,
             login: async (email: string, senha: string, documento?: string) => {
-                // Simple validation
-                if (!senha) return false;
-
                 try {
                     let role: UserRole = UserRole.VISUALIZADOR;
                     let passageiroId: string | undefined;
@@ -30,27 +27,31 @@ export const useAuthStore = create<AuthState>()(
 
                     // Check if admin (only admin can login with email)
                     if (email === 'thomas@fontes.ca') {
+                        // Admin requires password
+                        if (!senha) return false;
                         role = UserRole.ADMIN;
                         userName = 'Administrador';
                     }
                     // All other users MUST provide documento
                     else if (documento) {
+                        // Clean the document (remove non-digits)
+                        const cleanDoc = documento.replace(/\D/g, '');
+
+                        // Try to find in excursao_passengers
                         const { data: passenger } = await supabase
-                            .from('passengers')
-                            .select('id, documento, nome')
-                            .eq('documento', documento)
-                            .single();
+                            .from('excursao_passengers')
+                            .select('id, cpf, rg, full_name')
+                            .or(`cpf.eq.${documento},rg.eq.${documento},cpf.eq.${cleanDoc},rg.eq.${cleanDoc}`)
+                            .maybeSingle();
 
                         if (passenger) {
                             role = UserRole.PASSAGEIRO;
                             passageiroId = passenger.id;
-                            userDocumento = passenger.documento;
-                            userName = passenger.nome;
+                            userDocumento = passenger.cpf || passenger.rg || documento;
+                            userName = passenger.full_name;
                         } else {
-                            // Documento not found in passengers = visualizador
-                            role = UserRole.VISUALIZADOR;
-                            userDocumento = documento;
-                            userName = 'Visitante';
+                            // Not found -> Return false to trigger redirect to form
+                            return false;
                         }
                     } else {
                         // No documento provided and not admin = reject login

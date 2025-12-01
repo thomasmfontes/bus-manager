@@ -14,9 +14,19 @@ import { TripSeatMap } from '@/pages/Viagens/TripSeatMap';
 import { PassengerList } from '@/pages/Passageiros/PassengerList';
 import { PassengerForm } from '@/pages/Passageiros/PassengerForm';
 import { Settings } from '@/pages/Settings/Settings';
+import ExcursaoForm from '@/pages/ExcursaoForm';
+import Success from '@/pages/Success';
 import { UserRole } from '@/types';
 
 export const router = createBrowserRouter([
+    {
+        path: '/excursao',
+        element: <ExcursaoForm />,
+    },
+    {
+        path: '/success',
+        element: <Success />,
+    },
     {
         path: '/login',
         element: <Login />,
