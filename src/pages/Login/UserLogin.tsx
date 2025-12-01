@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { DocumentInput } from '@/components/ui/DocumentInput';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { Bus, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Bus, ArrowLeft } from 'lucide-react';
 
 export const UserLogin: React.FC = () => {
     const [documento, setDocumento] = useState('');
@@ -80,15 +80,12 @@ export const UserLogin: React.FC = () => {
 
                 <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                     <p className="text-gray-600 mb-3">Ainda não tem cadastro?</p>
-                    <a
-                        href="https://excursao-agua-rasa.vercel.app/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
+                    <button
+                        onClick={() => navigate('/excursao')}
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline bg-transparent border-none p-0 cursor-pointer"
                     >
                         Preencher formulário de passageiro
-                        <ExternalLink size={16} />
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>

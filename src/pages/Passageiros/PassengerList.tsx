@@ -6,17 +6,16 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
-import { Plus, Edit, Trash2, Search, Upload, Trash, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Upload, Trash } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const PassengerList: React.FC = () => {
-    const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, syncFromGoogleSheets, loading } = usePassengerStore();
+    const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [csvUploaderOpen, setCsvUploaderOpen] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         fetchPassageiros();
@@ -44,7 +43,17 @@ export const PassengerList: React.FC = () => {
         }
     };
 
-    const handleCsvImport = async (importedPassengers: { nome: string; documento: string; telefone: string }[]) => {
+    const handleCsvImport = async (importedPassengers: {
+        nome: string;
+        documento: string;
+        telefone: string;
+        congregacao?: string;
+        idade?: string;
+        estadoCivil?: string;
+        instrumento?: string;
+        auxiliar?: string;
+        statusPagamento?: string;
+    }[]) => {
         try {
             for (const passenger of importedPassengers) {
                 await createPassageiro(passenger);
@@ -56,35 +65,16 @@ export const PassengerList: React.FC = () => {
         }
     };
 
-    const handleGoogleSync = async () => {
-        const clientId = localStorage.getItem('google_client_id');
-        const spreadsheetId = localStorage.getItem('google_spreadsheet_id');
-
-        if (!clientId || !spreadsheetId) {
-            showToast('Configure a integração nas Configurações primeiro!', 'error');
-            return;
-        }
-
-        setIsSyncing(true);
-        try {
-            const result = await syncFromGoogleSheets(clientId, spreadsheetId);
-            showToast(`Sincronização concluída! ${result.success} processados.`, 'success');
-        } catch (error) {
-            showToast('Erro na sincronização. Verifique o console.', 'error');
-        } finally {
-            setIsSyncing(false);
-        }
-    };
-
     const filteredPassengers = passengers.filter(
         (p) =>
-            p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.documento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.telefone.toLowerCase().includes(searchTerm.toLowerCase())
+            p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.documento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.telefone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.congregacao?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-5 w-full">
             {/* Header */}
             <div className="flex flex-col gap-4">
                 <div>
@@ -115,18 +105,7 @@ export const PassengerList: React.FC = () => {
                         </Button>
                     </ProtectedAction>
 
-                    <ProtectedAction requiredPermission="create">
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={handleGoogleSync}
-                            disabled={isSyncing}
-                            className="whitespace-nowrap"
-                        >
-                            <RefreshCw size={18} className={`sm:mr-1.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                            <span className="hidden sm:inline">{isSyncing ? 'Sync...' : 'Sheets'}</span>
-                        </Button>
-                    </ProtectedAction>
+
 
                     {passengers.length > 0 && (
                         <ProtectedAction requiredPermission="delete">
@@ -144,10 +123,10 @@ export const PassengerList: React.FC = () => {
                 </div>
             </div>
 
-            <Card>
+            <Card className="w-full overflow-hidden">
                 {/* Search Bar */}
                 {passengers.length > 0 && (
-                    <div className="mb-6">
+                    <div className="mb-6 px-6 pt-6">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                             <input
@@ -162,12 +141,12 @@ export const PassengerList: React.FC = () => {
                 )}
 
                 {loading ? (
-                    <div className="text-center py-12">
+                    <div className="text-center py-12 px-6">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600"></div>
                         <p className="text-gray-500 mt-3">Carregando...</p>
                     </div>
                 ) : filteredPassengers.length === 0 ? (
-                    <div className="text-center py-12">
+                    <div className="text-center py-12 px-6">
                         <p className="text-gray-500 mb-4">
                             {searchTerm ? 'Nenhum passageiro encontrado' : 'Nenhum passageiro cadastrado'}
                         </p>
@@ -187,21 +166,45 @@ export const PassengerList: React.FC = () => {
                     <>
                         {/* Desktop Table View */}
                         <div className="hidden md:block overflow-x-auto">
-                            <table className="table-base">
+                            <table className="table-base w-full">
                                 <thead>
                                     <tr>
                                         <th>Nome</th>
                                         <th>Documento</th>
                                         <th>Telefone</th>
+                                        <th>Congregação</th>
+                                        <th>Idade</th>
+                                        <th>Status</th>
                                         <th className="text-right">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredPassengers.map((passenger) => (
                                         <tr key={passenger.id}>
-                                            <td className="font-medium text-gray-900">{passenger.nome}</td>
+                                            <td className="font-medium text-gray-900">
+                                                <div>{passenger.nome}</div>
+                                                {(passenger.instrumento || passenger.auxiliar) && (
+                                                    <div className="text-xs text-gray-500">
+                                                        {passenger.instrumento && `🎵 ${passenger.instrumento}`}
+                                                        {passenger.instrumento && passenger.auxiliar && ' • '}
+                                                        {passenger.auxiliar && `🤝 ${passenger.auxiliar}`}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="text-gray-600">{passenger.documento}</td>
                                             <td className="text-gray-600">{passenger.telefone}</td>
+                                            <td className="text-gray-600">{passenger.congregacao || '-'}</td>
+                                            <td className="text-gray-600">{passenger.idade || '-'}</td>
+                                            <td>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${passenger.statusPagamento === 'paid' ? 'bg-green-100 text-green-800' :
+                                                    passenger.statusPagamento === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {passenger.statusPagamento === 'paid' ? 'Pago' :
+                                                        passenger.statusPagamento === 'pending' ? 'Pendente' :
+                                                            passenger.statusPagamento || '-'}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <div className="flex justify-end gap-2">
                                                     <Link to={`/passageiros/editar/${passenger.id}`}>

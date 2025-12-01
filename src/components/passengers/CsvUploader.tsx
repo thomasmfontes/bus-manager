@@ -7,7 +7,17 @@ import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 interface CsvUploaderProps {
     isOpen: boolean;
     onClose: () => void;
-    onImport: (passengers: { nome: string; documento: string; telefone: string }[]) => void;
+    onImport: (passengers: {
+        nome: string;
+        documento: string;
+        telefone: string;
+        congregacao?: string;
+        idade?: string;
+        estadoCivil?: string;
+        instrumento?: string;
+        auxiliar?: string;
+        statusPagamento?: string;
+    }[]) => void;
 }
 
 export const CsvUploader: React.FC<CsvUploaderProps> = ({ isOpen, onClose, onImport }) => {
@@ -76,7 +86,10 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ isOpen, onClose, onImp
                                 />
                             </label>
                             <p className="text-sm text-gray-500 mt-2">
-                                Formato esperado: Nome, Documento, Telefone
+                                Colunas aceitas (em português ou inglês):
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                                Nome/Documento/Telefone (obrigatórios) • Congregação • Idade • Estado Civil • Instrumento • Auxiliar • Pagamento
                             </p>
                         </div>
 

@@ -30,6 +30,12 @@ export interface Passenger {
     nome: string;
     documento: string;
     telefone: string;
+    congregacao?: string;
+    idade?: string;
+    estadoCivil?: string;
+    instrumento?: string;
+    auxiliar?: string;
+    statusPagamento?: string;
 }
 
 // Seat types

@@ -20,13 +20,31 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
         set({ loading: true });
         try {
             const { data, error } = await supabase
-                .from('passengers')
+                .from('excursao_passengers')
                 .select('*')
-                .order('nome', { ascending: true });
+                .order('full_name', { ascending: true });
 
             if (error) throw error;
 
-            set({ passengers: data as Passenger[], loading: false });
+            console.log('Raw data from Supabase:', data);
+
+            // Map excursao_passengers to Passenger interface
+            const mappedPassengers: Passenger[] = (data || []).map((p: any) => ({
+                id: p.id,
+                nome: p.full_name,
+                documento: p.cpf || p.rg || '',
+                telefone: p.phone || '',
+                congregacao: p.congregation,
+                idade: p.age,
+                estadoCivil: p.marital_status,
+                instrumento: p.instrument,
+                auxiliar: p.auxiliar,
+                statusPagamento: p.payment_status,
+            }));
+
+            console.log('Mapped passengers:', mappedPassengers);
+
+            set({ passengers: mappedPassengers, loading: false });
         } catch (error) {
             console.error('Error fetching passengers:', error);
             set({ loading: false });
@@ -34,15 +52,44 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     },
     createPassageiro: async (passenger) => {
         try {
+            // Map Passenger to excursao_passengers
+            const dbPassenger: any = {
+                full_name: passenger.nome,
+                cpf: passenger.documento.length > 9 ? passenger.documento : null,
+                rg: passenger.documento.length <= 9 ? passenger.documento : null,
+                phone: passenger.telefone,
+            };
+
+            // Add optional fields if they exist
+            if (passenger.congregacao) dbPassenger.congregation = passenger.congregacao;
+            if (passenger.idade) dbPassenger.age = passenger.idade;
+            if (passenger.estadoCivil) dbPassenger.marital_status = passenger.estadoCivil;
+            if (passenger.instrumento) dbPassenger.instrument = passenger.instrumento;
+            if (passenger.auxiliar) dbPassenger.auxiliar = passenger.auxiliar;
+            if (passenger.statusPagamento) dbPassenger.payment_status = passenger.statusPagamento;
+
             const { data, error } = await supabase
-                .from('passengers')
-                .insert([passenger])
+                .from('excursao_passengers')
+                .insert([dbPassenger])
                 .select()
                 .single();
 
             if (error) throw error;
 
-            set({ passengers: [...get().passengers, data as Passenger] });
+            const newPassenger: Passenger = {
+                id: data.id,
+                nome: data.full_name,
+                documento: data.cpf || data.rg || '',
+                telefone: data.phone || '',
+                congregacao: data.congregation,
+                idade: data.age,
+                estadoCivil: data.marital_status,
+                instrumento: data.instrument,
+                auxiliar: data.auxiliar,
+                statusPagamento: data.payment_status,
+            };
+
+            set({ passengers: [...get().passengers, newPassenger] });
         } catch (error) {
             console.error('Error creating passenger:', error);
             throw error;
@@ -50,17 +97,35 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     },
     updatePassageiro: async (id, passenger) => {
         try {
+            const updates: any = {};
+            if (passenger.nome) updates.full_name = passenger.nome;
+            if (passenger.documento) {
+                if (passenger.documento.length > 9) {
+                    updates.cpf = passenger.documento;
+                } else {
+                    updates.rg = passenger.documento;
+                }
+            }
+            if (passenger.telefone) updates.phone = passenger.telefone;
+
             const { data, error } = await supabase
-                .from('passengers')
-                .update(passenger)
+                .from('excursao_passengers')
+                .update(updates)
                 .eq('id', id)
                 .select()
                 .single();
 
             if (error) throw error;
 
+            const updatedPassenger: Passenger = {
+                id: data.id,
+                nome: data.full_name,
+                documento: data.cpf || data.rg || '',
+                telefone: data.phone || '',
+            };
+
             set({
-                passengers: get().passengers.map((p) => (p.id === id ? (data as Passenger) : p)),
+                passengers: get().passengers.map((p) => (p.id === id ? updatedPassenger : p)),
             });
         } catch (error) {
             console.error('Error updating passenger:', error);
@@ -69,7 +134,7 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     },
     deletePassageiro: async (id) => {
         try {
-            const { error } = await supabase.from('passengers').delete().eq('id', id);
+            const { error } = await supabase.from('excursao_passengers').delete().eq('id', id);
             if (error) throw error;
             set({ passengers: get().passengers.filter((p) => p.id !== id) });
         } catch (error) {
@@ -79,7 +144,7 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     },
     deleteAllPassageiros: async () => {
         try {
-            const { error } = await supabase.from('passengers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const { error } = await supabase.from('excursao_passengers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (error) throw error;
             set({ passengers: [] });
         } catch (error) {
@@ -87,80 +152,8 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
             throw error;
         }
     },
-    syncFromGoogleSheets: async (clientId: string, spreadsheetId: string) => {
-        set({ loading: true });
-        try {
-            const { GoogleSheetsService } = await import('@/services/googleSheets');
-
-            await GoogleSheetsService.initClient(clientId);
-
-            if (!GoogleSheetsService.isSignedIn()) {
-                await GoogleSheetsService.signIn();
-            }
-
-            const sheetPassengers = await GoogleSheetsService.fetchSheetData(spreadsheetId);
-
-            let successCount = 0;
-            let failedCount = 0;
-
-            for (const p of sheetPassengers) {
-                if (!p.nome || !p.documento) {
-                    failedCount++;
-                    continue;
-                }
-
-                try {
-                    const cleanDocumento = p.documento.replace(/\D/g, '');
-
-                    console.log(`🔍 Checking: ${p.nome} | Doc: ${p.documento} | Clean: ${cleanDocumento}`);
-
-                    const { data: existing, error: searchError } = await supabase
-                        .from('passengers')
-                        .select('id, documento')
-                        .or(`documento.eq.${p.documento},documento.eq.${cleanDocumento}`)
-                        .maybeSingle();
-
-                    if (searchError) console.error('Search error:', searchError);
-                    console.log(`📋 Existing:`, existing);
-
-                    const passengerData = {
-                        nome: p.nome,
-                        documento: p.documento,
-                        telefone: p.telefone || '',
-                    };
-
-                    if (existing) {
-                        console.log(`✏️ Updating ID: ${existing.id}`);
-                        const { error } = await supabase
-                            .from('passengers')
-                            .update(passengerData)
-                            .eq('id', existing.id);
-
-                        if (error) throw error;
-                    } else {
-                        console.log(`➕ Creating new`);
-                        const { error } = await supabase
-                            .from('passengers')
-                            .insert([passengerData]);
-
-                        if (error) throw error;
-                    }
-
-                    successCount++;
-                } catch (error) {
-                    console.error('Error upserting:', error);
-                    failedCount++;
-                }
-            }
-
-            await get().fetchPassageiros();
-            set({ loading: false });
-            return { success: successCount, failed: failedCount };
-
-        } catch (error) {
-            console.error('Error syncing with Google Sheets:', error);
-            set({ loading: false });
-            throw error;
-        }
+    syncFromGoogleSheets: async () => {
+        console.warn('Google Sheets sync is deprecated');
+        return { success: 0, failed: 0 };
     },
 }));

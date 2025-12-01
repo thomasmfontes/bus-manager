@@ -35,7 +35,7 @@ export const BusList: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-gray-dark">Ônibus</h1>
                 <ProtectedAction requiredPermission="create">

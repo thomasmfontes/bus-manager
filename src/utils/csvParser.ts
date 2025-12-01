@@ -2,6 +2,12 @@ export interface CsvRow {
     nome: string;
     documento: string;
     telefone: string;
+    congregacao?: string;
+    idade?: string;
+    estadoCivil?: string;
+    instrumento?: string;
+    auxiliar?: string;
+    statusPagamento?: string;
 }
 
 export interface ParsedCsvRow {
@@ -31,15 +37,33 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
     const headerLine = lines[0];
     const headers = parseCsvLine(headerLine).map(h => h.trim().toLowerCase());
 
-    // Find column indices by matching header names (flexible matching)
+    // Find column indices by matching header names (flexible matching for Portuguese and English)
     const nomeIndex = headers.findIndex(h =>
-        h.includes('nome') && (h.includes('completo') || h === 'nome')
+        h.includes('nome') && (h.includes('completo') || h === 'nome') || h.includes('full_name')
     );
     const documentoIndex = headers.findIndex(h =>
         h.includes('cpf') || h.includes('rg') || h.includes('documento')
     );
     const telefoneIndex = headers.findIndex(h =>
         h.includes('telefone') || h.includes('celular') || h.includes('phone')
+    );
+    const congregacaoIndex = headers.findIndex(h =>
+        h.includes('congregação') || h.includes('congregacao') || h.includes('congregation')
+    );
+    const idadeIndex = headers.findIndex(h =>
+        h.includes('idade') || h.includes('age')
+    );
+    const estadoCivilIndex = headers.findIndex(h =>
+        h.includes('estado') && h.includes('civil') || h.includes('marital')
+    );
+    const instrumentoIndex = headers.findIndex(h =>
+        h.includes('instrumento') || h.includes('instrument')
+    );
+    const auxiliarIndex = headers.findIndex(h =>
+        h.includes('auxiliar')
+    );
+    const statusPagamentoIndex = headers.findIndex(h =>
+        h.includes('pagamento') || h.includes('payment')
     );
 
     // Skip header row (first line)
@@ -56,6 +80,12 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
         const nome = nomeIndex >= 0 ? (columns[nomeIndex]?.trim() || '') : '';
         const documento = documentoIndex >= 0 ? (columns[documentoIndex]?.trim() || '') : '';
         const telefone = telefoneIndex >= 0 ? (columns[telefoneIndex]?.trim() || '') : '';
+        const congregacao = congregacaoIndex >= 0 ? (columns[congregacaoIndex]?.trim() || undefined) : undefined;
+        const idade = idadeIndex >= 0 ? (columns[idadeIndex]?.trim() || undefined) : undefined;
+        const estadoCivil = estadoCivilIndex >= 0 ? (columns[estadoCivilIndex]?.trim() || undefined) : undefined;
+        const instrumento = instrumentoIndex >= 0 ? (columns[instrumentoIndex]?.trim() || undefined) : undefined;
+        const auxiliar = auxiliarIndex >= 0 ? (columns[auxiliarIndex]?.trim() || undefined) : undefined;
+        const statusPagamento = statusPagamentoIndex >= 0 ? (columns[statusPagamentoIndex]?.trim() || undefined) : undefined;
 
         const errors: string[] = [];
 
@@ -76,7 +106,17 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
         }
 
         rows.push({
-            data: { nome, documento, telefone },
+            data: {
+                nome,
+                documento,
+                telefone,
+                congregacao,
+                idade,
+                estadoCivil,
+                instrumento,
+                auxiliar,
+                statusPagamento
+            },
             isValid,
             errors,
             lineNumber,

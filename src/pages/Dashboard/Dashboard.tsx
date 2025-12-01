@@ -83,7 +83,7 @@ export const Dashboard: React.FC = () => {
     ];
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in w-full">
             {/* Registration Banner for Visualizadores */}
             {user?.role === UserRole.VISUALIZADOR && (
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">

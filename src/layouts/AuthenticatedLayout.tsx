@@ -175,9 +175,7 @@ export const AuthenticatedLayout: React.FC = () => {
                     'pt-20 px-4 pb-8 lg:px-8'
                 )}
             >
-                <div className="max-w-7xl mx-auto">
-                    <Outlet />
-                </div>
+                <Outlet />
             </main>
 
             <RegistrationModal
