@@ -94,14 +94,12 @@ export const Dashboard: React.FC = () => {
                             é necessário completar seu cadastro de passageiro.
                         </p>
                     </div>
-                    <a
-                        href="https://excursao-agua-rasa.vercel.app/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <Link
+                        to="/excursao"
                         className="whitespace-nowrap px-6 py-3 bg-white text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-sm"
                     >
                         Cadastrar Agora
-                    </a>
+                    </Link>
                 </div>
             )}
 

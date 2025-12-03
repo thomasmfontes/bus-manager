@@ -10,7 +10,6 @@ interface PassengerState {
     updatePassageiro: (id: string, passenger: Partial<Passenger>) => Promise<void>;
     deletePassageiro: (id: string) => Promise<void>;
     deleteAllPassageiros: () => Promise<void>;
-    syncFromGoogleSheets: (clientId: string, spreadsheetId: string) => Promise<{ success: number; failed: number }>;
 }
 
 export const usePassengerStore = create<PassengerState>((set, get) => ({
@@ -151,9 +150,5 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
             console.error('Error deleting all passengers:', error);
             throw error;
         }
-    },
-    syncFromGoogleSheets: async () => {
-        console.warn('Google Sheets sync is deprecated');
-        return { success: 0, failed: 0 };
     },
 }));

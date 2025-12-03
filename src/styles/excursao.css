@@ -151,7 +151,7 @@
 
 .card {
     width: 100%;
-    max-width: 48rem;
+    /* max-width: 48rem; */
     background-color: var(--cardBg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);

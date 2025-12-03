@@ -41,11 +41,15 @@ export const useBusStore = create<BusState>((set, get) => ({
     },
     createOnibus: async (bus) => {
         try {
+            // Get default seats from localStorage if not provided
+            const defaultSeats = localStorage.getItem('default_bus_seats');
+            const totalAssentos = bus.totalAssentos || (defaultSeats ? parseInt(defaultSeats) : 46);
+
             const dbBus = {
                 nome: bus.nome,
                 placa: bus.placa,
                 configuracao_assentos: bus.configuracaoAssentos,
-                total_assentos: bus.totalAssentos,
+                total_assentos: totalAssentos,
             };
 
             const { data, error } = await supabase

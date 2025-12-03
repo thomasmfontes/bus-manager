@@ -27,8 +27,20 @@ export const useAuthStore = create<AuthState>()(
 
                     // Check if admin (only admin can login with email)
                     if (email === 'thomas@fontes.ca') {
-                        // Admin requires password
+                        // Admin requires password and real Supabase authentication
                         if (!senha) return false;
+
+                        // Authenticate with Supabase
+                        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                            email,
+                            password: senha,
+                        });
+
+                        if (authError || !authData.user) {
+                            console.error('Admin authentication failed:', authError);
+                            return false;
+                        }
+
                         role = UserRole.ADMIN;
                         userName = 'Administrador';
                     }
@@ -75,6 +87,8 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
             logout: () => {
+                // Sign out from Supabase
+                supabase.auth.signOut();
                 set({ isAuthenticated: false, user: null });
             },
             hasPermission: (_action: 'create' | 'edit' | 'delete') => {

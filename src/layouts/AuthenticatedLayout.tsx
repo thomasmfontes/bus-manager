@@ -172,7 +172,7 @@ export const AuthenticatedLayout: React.FC = () => {
                 className={cn(
                     'transition-all duration-300 ease-out min-h-screen',
                     'lg:ml-72',
-                    'pt-20 px-4 pb-8 lg:px-8'
+                    'pt-20 px-2 pb-8 lg:px-4'
                 )}
             >
                 <Outlet />

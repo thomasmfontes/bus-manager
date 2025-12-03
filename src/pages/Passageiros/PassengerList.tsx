@@ -123,10 +123,10 @@ export const PassengerList: React.FC = () => {
                 </div>
             </div>
 
-            <Card className="w-full overflow-hidden">
+            <Card className="w-full">
                 {/* Search Bar */}
                 {passengers.length > 0 && (
-                    <div className="mb-6 px-6 pt-6">
+                    <div className="mb-6">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                             <input
@@ -141,12 +141,12 @@ export const PassengerList: React.FC = () => {
                 )}
 
                 {loading ? (
-                    <div className="text-center py-12 px-6">
+                    <div className="text-center py-12">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600"></div>
                         <p className="text-gray-500 mt-3">Carregando...</p>
                     </div>
                 ) : filteredPassengers.length === 0 ? (
-                    <div className="text-center py-12 px-6">
+                    <div className="text-center py-12">
                         <p className="text-gray-500 mb-4">
                             {searchTerm ? 'Nenhum passageiro encontrado' : 'Nenhum passageiro cadastrado'}
                         </p>

@@ -18,6 +18,12 @@ export const PassengerForm: React.FC = () => {
         nome: '',
         documento: '',
         telefone: '',
+        congregacao: '',
+        idade: '',
+        estadoCivil: '',
+        instrumento: '',
+        auxiliar: '',
+        statusPagamento: 'pending',
     });
 
     useEffect(() => {
@@ -34,6 +40,12 @@ export const PassengerForm: React.FC = () => {
                     nome: passenger.nome,
                     documento: passenger.documento,
                     telefone: passenger.telefone,
+                    congregacao: passenger.congregacao || '',
+                    idade: passenger.idade || '',
+                    estadoCivil: passenger.estadoCivil || '',
+                    instrumento: passenger.instrumento || '',
+                    auxiliar: passenger.auxiliar || '',
+                    statusPagamento: passenger.statusPagamento || 'pending',
                 });
             }
         }
@@ -57,7 +69,7 @@ export const PassengerForm: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button
@@ -77,31 +89,101 @@ export const PassengerForm: React.FC = () => {
                 </div>
             </div>
 
-            <Card>
+            <Card className="w-full">
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    <Input
-                        label="Nome Completo"
-                        value={formData.nome}
-                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                        placeholder="Ex: João Silva"
-                        required
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <Input
+                            label="Nome Completo"
+                            value={formData.nome}
+                            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                            placeholder="Ex: João Silva"
+                            required
+                        />
 
-                    <Input
-                        label="CPF"
-                        value={formData.documento}
-                        onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
-                        placeholder="Ex: 123.456.789-00"
-                        required
-                    />
+                        <Input
+                            label="CPF ou RG"
+                            value={formData.documento}
+                            onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+                            placeholder="Ex: 123.456.789-00"
+                            required
+                        />
 
-                    <Input
-                        label="Telefone"
-                        value={formData.telefone}
-                        onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                        placeholder="Ex: (11) 98765-4321"
-                        required
-                    />
+                        <Input
+                            label="Telefone"
+                            value={formData.telefone}
+                            onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                            placeholder="Ex: (11) 98765-4321"
+                            required
+                        />
+
+                        <Input
+                            label="Congregação"
+                            value={formData.congregacao}
+                            onChange={(e) => setFormData({ ...formData, congregacao: e.target.value })}
+                            placeholder="Ex: Água Rasa"
+                        />
+
+                        <Input
+                            label="Idade"
+                            value={formData.idade}
+                            onChange={(e) => setFormData({ ...formData, idade: e.target.value })}
+                            placeholder="Ex: 25"
+                        />
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Estado Civil
+                            </label>
+                            <select
+                                value={formData.estadoCivil}
+                                onChange={(e) => setFormData({ ...formData, estadoCivil: e.target.value })}
+                                className="input-base"
+                            >
+                                <option value="">Selecione...</option>
+                                <option value="Solteiro(a)">Solteiro(a)</option>
+                                <option value="Casado(a)">Casado(a)</option>
+                                <option value="Divorciado(a)">Divorciado(a)</option>
+                                <option value="Viúvo(a)">Viúvo(a)</option>
+                            </select>
+                        </div>
+
+                        <Input
+                            label="Instrumento"
+                            value={formData.instrumento}
+                            onChange={(e) => setFormData({ ...formData, instrumento: e.target.value })}
+                            placeholder="Ex: Violino, Piano..."
+                        />
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Auxiliar
+                            </label>
+                            <select
+                                value={formData.auxiliar}
+                                onChange={(e) => setFormData({ ...formData, auxiliar: e.target.value })}
+                                className="input-base"
+                            >
+                                <option value="">Selecione...</option>
+                                <option value="Sim">Sim</option>
+                                <option value="Não">Não</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Status de Pagamento
+                            </label>
+                            <select
+                                value={formData.statusPagamento}
+                                onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value })}
+                                className="input-base"
+                            >
+                                <option value="pending">Pendente</option>
+                                <option value="paid">Pago</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <div className="flex gap-3 pt-4 border-t border-gray-100">
                         <Button type="submit">{isEditing ? 'Atualizar' : 'Salvar'}</Button>
