@@ -126,24 +126,24 @@ export const AdminList: React.FC = () => {
     };
 
     return (
-        <div className="space-y-8">
-            <Card>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                        <Shield className="text-blue-600" size={24} />
+        <div className="space-y-4 sm:space-y-6">
+            <Card className="hover:shadow-soft-lg transition-all">
+                <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                    <div className="p-2.5 sm:p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-sm shrink-0">
+                        <Shield className="text-white" size={20} />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Gerenciar Administradores</h2>
-                        <p className="text-gray-500 text-sm">Adicione ou remova acesso administrativo ao sistema</p>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Gerenciar Administradores</h2>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Adicione ou remova acesso administrativo ao sistema</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleCreateAdmin} className="space-y-4 mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                        <UserPlus size={18} />
+                <form onSubmit={handleCreateAdmin} className="space-y-4 mb-6 p-4 sm:p-5 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-xl border border-blue-100">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <UserPlus size={20} className="text-blue-600" />
                         Novo Administrador
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <Input
                             placeholder="Nome Completo"
                             value={newAdminName}
@@ -159,42 +159,48 @@ export const AdminList: React.FC = () => {
                         />
                         <Input
                             type="password"
-                            placeholder="Senha"
+                            placeholder="Senha (mín. 6 caracteres)"
                             value={newAdminPassword}
                             onChange={(e) => setNewAdminPassword(e.target.value)}
                             required
                             minLength={6}
                         />
                     </div>
-                    <div className="flex justify-end">
-                        <Button type="submit" disabled={isCreating}>
+                    <div className="flex justify-end pt-2">
+                        <Button type="submit" disabled={isCreating} className="w-full sm:w-auto">
+                            <UserPlus size={18} />
                             {isCreating ? 'Criando...' : 'Adicionar Administrador'}
                         </Button>
                     </div>
                 </form>
 
                 <div className="space-y-4">
-                    <h3 className="font-medium text-gray-900">Administradores Ativos</h3>
+                    <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Administradores Ativos</h3>
                     {loading ? (
-                        <p className="text-gray-500 text-center py-4">Carregando...</p>
+                        <div className="text-center py-8">
+                            <p className="text-gray-500">Carregando...</p>
+                        </div>
                     ) : admins.length === 0 ? (
-                        <p className="text-gray-500 text-center py-4">Nenhum administrador encontrado.</p>
+                        <div className="text-center py-8 px-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <Shield className="mx-auto text-gray-300 mb-2" size={32} />
+                            <p className="text-gray-500">Nenhum administrador encontrado.</p>
+                        </div>
                     ) : (
-                        <div className="divide-y divide-gray-100">
+                        <div className="space-y-2">
                             {admins.map((admin) => (
-                                <div key={admin.id} className="flex items-center justify-between py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                <div key={admin.id} className="flex items-center justify-between p-3 sm:p-4 bg-white hover:bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-all group">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base shrink-0 shadow-sm">
                                             {admin.full_name?.charAt(0) || admin.email.charAt(0).toUpperCase()}
                                         </div>
-                                        <div>
-                                            <p className="font-medium text-gray-900">{admin.full_name || 'Sem nome'}</p>
-                                            <p className="text-sm text-gray-500">{admin.email}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-semibold text-gray-900 truncate">{admin.full_name || 'Sem nome'}</p>
+                                            <p className="text-xs sm:text-sm text-gray-500 truncate">{admin.email}</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleDeleteAdmin(admin.id, admin.email)}
-                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 sm:p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                                         title="Remover acesso"
                                     >
                                         <Trash2 size={18} />

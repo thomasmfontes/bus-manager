@@ -23,41 +23,42 @@ export const SystemPreferences: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                        <Settings className="text-gray-600" size={24} />
+        <div className="space-y-4 sm:space-y-6">
+            <Card className="hover:shadow-soft-lg transition-all">
+                <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                    <div className="p-2.5 sm:p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-sm shrink-0">
+                        <Settings className="text-white" size={20} />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Preferências do Sistema</h2>
-                        <p className="text-gray-500 text-sm">Personalize o comportamento padrão do sistema</p>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Preferências do Sistema</h2>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Personalize o comportamento padrão do sistema</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSave} className="space-y-4 max-w-md">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                <form onSubmit={handleSave} className="space-y-4">
+                    <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                             Capacidade Padrão dos Ônibus
                         </label>
-                        <p className="text-xs text-gray-500 mb-2">
+                        <p className="text-xs text-gray-500 mb-3">
                             Este valor será preenchido automaticamente ao criar um novo ônibus.
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <Input
                                 type="number"
                                 value={defaultSeats}
                                 onChange={(e) => setDefaultSeats(e.target.value)}
                                 placeholder="Ex: 46"
                                 min="1"
+                                className="flex-1"
                             />
-                            <span className="text-sm text-gray-500">lugares</span>
+                            <span className="text-sm font-medium text-gray-600 whitespace-nowrap">lugares</span>
                         </div>
                     </div>
 
                     <div className="flex justify-end pt-2">
-                        <Button type="submit">
-                            <Save size={18} className="mr-2" />
+                        <Button type="submit" className="w-full sm:w-auto">
+                            <Save size={18} />
                             Salvar Preferências
                         </Button>
                     </div>

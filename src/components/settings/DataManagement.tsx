@@ -54,37 +54,38 @@ export const DataManagement: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                        <Database className="text-green-600" size={24} />
+        <div className="space-y-4 sm:space-y-6">
+            <Card className="hover:shadow-soft-lg transition-all">
+                <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                    <div className="p-2.5 sm:p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-sm shrink-0">
+                        <Database className="text-white" size={20} />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Gerenciamento de Dados</h2>
-                        <p className="text-gray-500 text-sm">Exportação de dados</p>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Gerenciamento de Dados</h2>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Exportação de dados</p>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                                    <FileSpreadsheet size={18} className="text-green-600" />
-                                    Lista de Passageiros (Excel)
+                    <div className="p-4 sm:p-5 bg-gradient-to-br from-green-50 to-emerald-50/50 rounded-xl border border-green-100 hover:border-green-200 transition-all">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-1">
+                                    <FileSpreadsheet size={20} className="text-green-600 shrink-0" />
+                                    <span>Lista de Passageiros</span>
                                 </h3>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Baixe a lista completa de passageiros em formato Excel (.xlsx).
+                                <p className="text-sm text-gray-600">
+                                    Baixe a lista completa de passageiros em formato Excel (.xlsx)
                                 </p>
                             </div>
                             <button
                                 onClick={handleExportData}
                                 disabled={exporting}
                                 title="Baixar Lista"
-                                className="h-12 w-12 shrink-0 flex items-center justify-center rounded-lg bg-green-600 hover:bg-green-700 text-white shadow-md transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
+                                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             >
-                                <Download size={24} className={exporting ? 'animate-bounce' : ''} />
+                                <Download size={20} className={exporting ? 'animate-bounce' : ''} />
+                                <span className="text-sm">{exporting ? 'Baixando...' : 'Baixar Excel'}</span>
                             </button>
                         </div>
                     </div>

@@ -14,65 +14,67 @@ export const Settings: React.FC = () => {
     const isAdmin = user?.role === UserRole.ADMIN;
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6">
             {/* Header */}
-            <div>
+            <div className="animate-in">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Configurações</h1>
                 <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie as configurações do sistema</p>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-gray-200 overflow-x-auto pb-1">
-                <button
-                    onClick={() => setActiveTab('profile')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'profile'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
-                    title="Perfil"
-                >
-                    <User size={16} />
-                    <span className="hidden sm:inline">Perfil</span>
-                </button>
-                <button
-                    onClick={() => setActiveTab('preferences')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'preferences'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
-                    title="Preferências"
-                >
-                    <SettingsIcon size={16} />
-                    <span className="hidden sm:inline">Preferências</span>
-                </button>
-                <button
-                    onClick={() => setActiveTab('data')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'data'
-                            ? 'border-blue-600 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
-                    title="Dados"
-                >
-                    <Database size={16} />
-                    <span className="hidden sm:inline">Dados</span>
-                </button>
-                {isAdmin && (
+            <div className="relative -mx-4 sm:mx-0">
+                <div className="flex gap-1 sm:gap-2 border-b border-gray-200 overflow-x-auto scrollbar-thin px-4 sm:px-0 snap-x snap-mandatory">
                     <button
-                        onClick={() => setActiveTab('admins')}
-                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'admins'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                        onClick={() => setActiveTab('profile')}
+                        className={`px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 whitespace-nowrap snap-start ${activeTab === 'profile'
+                            ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                             }`}
-                        title="Administradores"
+                        title="Perfil"
                     >
-                        <Shield size={16} />
-                        <span className="hidden sm:inline">Administradores</span>
+                        <User size={18} className="shrink-0" />
+                        <span className="hidden sm:inline">Perfil</span>
                     </button>
-                )}
+                    <button
+                        onClick={() => setActiveTab('preferences')}
+                        className={`px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 whitespace-nowrap snap-start ${activeTab === 'preferences'
+                            ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                        title="Preferências"
+                    >
+                        <SettingsIcon size={18} className="shrink-0" />
+                        <span className="hidden sm:inline">Preferências</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('data')}
+                        className={`px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 whitespace-nowrap snap-start ${activeTab === 'data'
+                            ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                        title="Dados"
+                    >
+                        <Database size={18} className="shrink-0" />
+                        <span className="hidden sm:inline">Dados</span>
+                    </button>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('admins')}
+                            className={`px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 whitespace-nowrap snap-start ${activeTab === 'admins'
+                                ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                }`}
+                            title="Administradores"
+                        >
+                            <Shield size={18} className="shrink-0" />
+                            <span className="hidden sm:inline">Administradores</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Content */}
-            <div className="mt-6">
+            <div className="animate-scale-in">
                 {activeTab === 'profile' && <ProfileSettings />}
                 {activeTab === 'preferences' && <SystemPreferences />}
                 {activeTab === 'data' && <DataManagement />}

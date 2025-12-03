@@ -108,72 +108,73 @@ export const ProfileSettings: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                        <User className="text-blue-600" size={24} />
+        <div className="space-y-4 sm:space-y-6">
+            <Card className="hover:shadow-soft-lg transition-all">
+                <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                    <div className="p-2.5 sm:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm shrink-0">
+                        <User className="text-white" size={20} />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Meu Perfil</h2>
-                        <p className="text-gray-500 text-sm">Gerencie suas informações pessoais</p>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Meu Perfil</h2>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Gerencie suas informações pessoais</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                         <Input value={user?.email || ''} disabled className="bg-gray-50 text-gray-500" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo</label>
                         <Input
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            placeholder="Seu nome"
+                            placeholder="Seu nome completo"
                         />
                     </div>
-                    <div className="flex justify-end">
-                        <Button type="submit" disabled={loadingProfile}>
-                            <Save size={18} className="mr-2" />
+                    <div className="flex justify-end pt-2">
+                        <Button type="submit" disabled={loadingProfile} className="w-full sm:w-auto">
+                            <Save size={18} />
                             {loadingProfile ? 'Salvando...' : 'Salvar Alterações'}
                         </Button>
                     </div>
                 </form>
             </Card>
 
-            <Card>
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                        <Lock className="text-yellow-600" size={24} />
+            <Card className="hover:shadow-soft-lg transition-all">
+                <div className="flex items-start gap-3 sm:gap-4 mb-6">
+                    <div className="p-2.5 sm:p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-sm shrink-0">
+                        <Lock className="text-white" size={20} />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Segurança</h2>
-                        <p className="text-gray-500 text-sm">Atualize sua senha de acesso</p>
+                    <div className="min-w-0 flex-1">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Segurança</h2>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Atualize sua senha de acesso</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
+                <form onSubmit={handleUpdatePassword} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nova Senha</label>
                         <Input
                             type="password"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="••••••••"
+                            placeholder="Mínimo 6 caracteres"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Senha</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Confirmar Nova Senha</label>
                         <Input
                             type="password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="••••••••"
+                            placeholder="Digite a senha novamente"
                         />
                     </div>
-                    <div className="flex justify-end">
-                        <Button type="submit" variant="secondary" disabled={loadingPassword}>
+                    <div className="flex justify-end pt-2">
+                        <Button type="submit" variant="secondary" disabled={loadingPassword} className="w-full sm:w-auto">
+                            <Lock size={18} />
                             {loadingPassword ? 'Atualizando...' : 'Atualizar Senha'}
                         </Button>
                     </div>
