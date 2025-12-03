@@ -44,6 +44,7 @@ export interface Passenger {
     telefone?: string;
     pagamento?: string;
     viagem_id?: string;
+    onibus_id?: string;
     assento?: string;
     valor_pago?: number;
     created_at?: string;
@@ -75,6 +76,8 @@ export interface Profile {
 export enum UserRole {
     ADMIN = 'admin',
     USER = 'user',
+    PASSAGEIRO = 'passageiro',
+    VISUALIZADOR = 'visualizador',
 }
 
 export interface User {

@@ -1,13 +1,13 @@
 export interface CsvRow {
-    nome: string;
-    documento: string;
+    nome_completo: string;
+    cpf_rg: string;
     telefone: string;
-    congregacao?: string;
+    comum_congregacao?: string;
     idade?: string;
-    estadoCivil?: string;
+    estado_civil?: string;
     instrumento?: string;
     auxiliar?: string;
-    statusPagamento?: string;
+    pagamento?: string;
 }
 
 export interface ParsedCsvRow {
@@ -107,15 +107,15 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
 
         rows.push({
             data: {
-                nome,
-                documento,
+                nome_completo: nome,
+                cpf_rg: documento,
                 telefone,
-                congregacao,
+                comum_congregacao: congregacao,
                 idade,
-                estadoCivil,
+                estado_civil: estadoCivil,
                 instrumento,
                 auxiliar,
-                statusPagamento
+                pagamento: statusPagamento
             },
             isValid,
             errors,

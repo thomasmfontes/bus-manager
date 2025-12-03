@@ -15,15 +15,15 @@ export const PassengerForm: React.FC = () => {
     const isEditing = Boolean(id);
 
     const [formData, setFormData] = useState({
-        nome: '',
-        documento: '',
+        nome_completo: '',
+        cpf_rg: '',
         telefone: '',
-        congregacao: '',
+        comum_congregacao: '',
         idade: '',
-        estadoCivil: '',
+        estado_civil: '',
         instrumento: '',
         auxiliar: '',
-        statusPagamento: 'pending',
+        pagamento: 'pending',
     });
 
     useEffect(() => {
@@ -37,15 +37,15 @@ export const PassengerForm: React.FC = () => {
             const passenger = passengers.find((p) => p.id === id);
             if (passenger) {
                 setFormData({
-                    nome: passenger.nome,
-                    documento: passenger.documento,
-                    telefone: passenger.telefone,
-                    congregacao: passenger.congregacao || '',
-                    idade: passenger.idade || '',
-                    estadoCivil: passenger.estadoCivil || '',
+                    nome_completo: passenger.nome_completo,
+                    cpf_rg: passenger.cpf_rg,
+                    telefone: passenger.telefone || '',
+                    comum_congregacao: passenger.comum_congregacao || '',
+                    idade: passenger.idade ? passenger.idade.toString() : '',
+                    estado_civil: passenger.estado_civil || '',
                     instrumento: passenger.instrumento || '',
                     auxiliar: passenger.auxiliar || '',
-                    statusPagamento: passenger.statusPagamento || 'pending',
+                    pagamento: passenger.pagamento || 'pending',
                 });
             }
         }
@@ -55,11 +55,16 @@ export const PassengerForm: React.FC = () => {
         e.preventDefault();
 
         try {
+            const passengerData = {
+                ...formData,
+                idade: formData.idade ? parseInt(formData.idade) : undefined,
+            };
+
             if (isEditing && id) {
-                await updatePassageiro(id, formData);
+                await updatePassageiro(id, passengerData);
                 showToast('Passageiro atualizado com sucesso!', 'success');
             } else {
-                await createPassageiro(formData);
+                await createPassageiro(passengerData);
                 showToast('Passageiro cadastrado com sucesso!', 'success');
             }
             navigate('/passageiros');
@@ -94,16 +99,16 @@ export const PassengerForm: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <Input
                             label="Nome Completo"
-                            value={formData.nome}
-                            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                            value={formData.nome_completo}
+                            onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
                             placeholder="Ex: João Silva"
                             required
                         />
 
                         <Input
                             label="CPF ou RG"
-                            value={formData.documento}
-                            onChange={(e) => setFormData({ ...formData, documento: e.target.value })}
+                            value={formData.cpf_rg}
+                            onChange={(e) => setFormData({ ...formData, cpf_rg: e.target.value })}
                             placeholder="Ex: 123.456.789-00"
                             required
                         />
@@ -118,8 +123,8 @@ export const PassengerForm: React.FC = () => {
 
                         <Input
                             label="Congregação"
-                            value={formData.congregacao}
-                            onChange={(e) => setFormData({ ...formData, congregacao: e.target.value })}
+                            value={formData.comum_congregacao}
+                            onChange={(e) => setFormData({ ...formData, comum_congregacao: e.target.value })}
                             placeholder="Ex: Água Rasa"
                         />
 
@@ -135,8 +140,8 @@ export const PassengerForm: React.FC = () => {
                                 Estado Civil
                             </label>
                             <select
-                                value={formData.estadoCivil}
-                                onChange={(e) => setFormData({ ...formData, estadoCivil: e.target.value })}
+                                value={formData.estado_civil}
+                                onChange={(e) => setFormData({ ...formData, estado_civil: e.target.value })}
                                 className="input-base"
                             >
                                 <option value="">Selecione...</option>
@@ -174,8 +179,8 @@ export const PassengerForm: React.FC = () => {
                                 Status de Pagamento
                             </label>
                             <select
-                                value={formData.statusPagamento}
-                                onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value })}
+                                value={formData.pagamento}
+                                onChange={(e) => setFormData({ ...formData, pagamento: e.target.value })}
                                 className="input-base"
                             >
                                 <option value="pending">Pendente</option>

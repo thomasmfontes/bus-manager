@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Lock, Unlock, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, AlertCircle, ExternalLink } from 'lucide-react';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -32,7 +32,7 @@ export const TripSeatMap: React.FC = () => {
     const [selectedPassengerId, setSelectedPassengerId] = useState('');
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
     const [tripPassengers, setTripPassengers] = useState<any[]>([]);
-    const [loadingAssignments, setLoadingAssignments] = useState(false);
+    const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchViagens();
@@ -42,15 +42,12 @@ export const TripSeatMap: React.FC = () => {
 
     const loadAssignments = async () => {
         if (id) {
-            setLoadingAssignments(true);
             try {
                 const data = await getAssentosPorViagem(id);
                 setTripPassengers(data);
             } catch (error) {
                 console.error('Error loading assignments:', error);
                 showToast('Erro ao carregar assentos', 'error');
-            } finally {
-                setLoadingAssignments(false);
             }
         }
     };
@@ -60,16 +57,34 @@ export const TripSeatMap: React.FC = () => {
     }, [id, getAssentosPorViagem]);
 
     const trip = trips.find((t) => t.id === id);
-    const currentBus = trip && trip.onibus_id ? buses.find(b => b.id === trip.onibus_id) : null;
+
+    // Get all buses associated with the trip
+    const tripBuses = trip?.onibus_ids
+        ? buses.filter(b => trip.onibus_ids?.includes(b.id))
+        : trip?.onibus_id
+            ? buses.filter(b => b.id === trip.onibus_id)
+            : [];
+
+    // Set initial selected bus
+    useEffect(() => {
+        if (tripBuses.length > 0 && !selectedBusId) {
+            setSelectedBusId(tripBuses[0].id);
+        }
+    }, [tripBuses, selectedBusId]);
+
+    const currentBus = tripBuses.find(b => b.id === selectedBusId) || tripBuses[0] || null;
 
     // Map passengers to SeatAssignments for the SeatMap component
-    const assignments = tripPassengers.map(p => ({
-        viagemId: p.viagem_id,
-        onibusId: trip?.onibus_id || '',
-        assentoCodigo: p.assento,
-        passageiroId: p.id,
-        status: SeatStatus.OCUPADO
-    }));
+    // Only show assignments for the currently selected bus
+    const assignments = tripPassengers
+        .filter(p => !p.onibus_id || p.onibus_id === currentBus?.id) // Filter by bus if passenger has bus assignment
+        .map(p => ({
+            viagemId: p.viagem_id,
+            onibusId: p.onibus_id || trip?.onibus_id || currentBus?.id || '',
+            assentoCodigo: p.assento,
+            passageiroId: p.id,
+            status: SeatStatus.OCUPADO
+        }));
 
     const handleSeatClick = (seatCode: string) => {
         setSelectedSeat(seatCode);
@@ -87,13 +102,14 @@ export const TripSeatMap: React.FC = () => {
     };
 
     const handleAssignSeat = async () => {
-        if (!id || !selectedSeat || !selectedPassengerId) {
-            showToast('Selecione um passageiro', 'error');
+        if (!id || !selectedSeat || !selectedPassengerId || !currentBus) {
+            showToast('Selecione um passageiro e um ônibus', 'error');
             return;
         }
 
         try {
-            await atribuirAssento(selectedPassengerId, selectedSeat);
+            await atribuirAssento(selectedPassengerId, selectedSeat, currentBus.id);
+
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
@@ -108,7 +124,7 @@ export const TripSeatMap: React.FC = () => {
         if (!selectedSeat) return;
 
         // Find passenger for this seat
-        const passenger = tripPassengers.find(p => p.assento === selectedSeat);
+        const passenger = tripPassengers.find(p => p.assento === selectedSeat && (!p.onibus_id || p.onibus_id === currentBus?.id));
         if (!passenger) return;
 
         try {
@@ -122,10 +138,7 @@ export const TripSeatMap: React.FC = () => {
         }
     };
 
-    const handleBlockSeat = async () => {
-        // Not implemented yet
-        showToast('Funcionalidade de bloqueio não disponível', 'info');
-    };
+
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -204,12 +217,35 @@ export const TripSeatMap: React.FC = () => {
                         <div>
                             <p className="text-sm text-gray-600">Ônibus</p>
                             <p className="font-semibold">
-                                {currentBus ? currentBus.nome : 'Nenhum ônibus'}
+                                {tripBuses.length > 0
+                                    ? `${tripBuses.length} ônibus vinculado(s)`
+                                    : 'Nenhum ônibus'}
                             </p>
                         </div>
                     </div>
                 </div>
             </Card>
+
+            {/* Bus Selector Tabs */}
+            {tripBuses.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                    {tripBuses.map((bus) => (
+                        <button
+                            key={bus.id}
+                            onClick={() => setSelectedBusId(bus.id)}
+                            className={`
+                                px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors
+                                ${selectedBusId === bus.id
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}
+                            `}
+                        >
+                            {bus.nome}
+                            <span className="ml-2 text-xs opacity-80">({bus.placa})</span>
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Seat map */}
             {currentBus ? (

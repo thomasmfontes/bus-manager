@@ -8,15 +8,15 @@ interface CsvUploaderProps {
     isOpen: boolean;
     onClose: () => void;
     onImport: (passengers: {
-        nome: string;
-        documento: string;
+        nome_completo: string;
+        cpf_rg: string;
         telefone: string;
-        congregacao?: string;
+        comum_congregacao?: string;
         idade?: string;
-        estadoCivil?: string;
+        estado_civil?: string;
         instrumento?: string;
         auxiliar?: string;
-        statusPagamento?: string;
+        pagamento?: string;
     }[]) => void;
 }
 
@@ -165,12 +165,12 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ isOpen, onClose, onImp
                                                     )}
                                                 </td>
                                                 <td className="py-3 px-4 text-sm">
-                                                    {row.data.nome || (
+                                                    {row.data.nome_completo || (
                                                         <span className="text-gray-400 italic">vazio</span>
                                                     )}
                                                 </td>
                                                 <td className="py-3 px-4 text-sm">
-                                                    {row.data.documento || (
+                                                    {row.data.cpf_rg || (
                                                         <span className="text-gray-400 italic">vazio</span>
                                                     )}
                                                 </td>

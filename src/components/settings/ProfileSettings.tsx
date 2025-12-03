@@ -18,8 +18,8 @@ export const ProfileSettings: React.FC = () => {
     const [loadingPassword, setLoadingPassword] = useState(false);
 
     useEffect(() => {
-        if (user?.nome) {
-            setFullName(user.nome);
+        if (user?.full_name) {
+            setFullName(user.full_name);
         }
         fetchProfile();
     }, [user]);

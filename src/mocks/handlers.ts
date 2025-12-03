@@ -103,8 +103,7 @@ export const handlers = [
         trips.push(trip);
 
         // Initialize seats for the new trip
-        const tripBuses = buses.filter((b) => trip.onibusIds.includes(b.id));
-        const newSeats = initializeSeatsForTrip(trip.id, tripBuses);
+        const newSeats = initializeSeatsForTrip(trip.id);
         seatAssignments = [...seatAssignments, ...newSeats];
 
         return HttpResponse.json(trip, { status: 201 });
@@ -136,7 +135,7 @@ export const handlers = [
             return HttpResponse.json({ error: 'Trip not found' }, { status: 404 });
         }
 
-        const tripBuses = buses.filter((b) => trip.onibusIds.includes(b.id));
+        const tripBuses = buses.filter((b) => trip.onibus_ids?.includes(b.id));
 
         // Ensure all seats are initialized
         // In a real app, this would be done at trip creation or on demand
@@ -145,7 +144,7 @@ export const handlers = [
         const existingSeats = seatAssignments.filter((s) => s.viagemId === id);
 
         if (existingSeats.length === 0 && tripBuses.length > 0) {
-            const newSeats = initializeSeatsForTrip(id as string, tripBuses);
+            const newSeats = initializeSeatsForTrip(id as string);
             seatAssignments = [...seatAssignments, ...newSeats];
             return HttpResponse.json(newSeats);
         }

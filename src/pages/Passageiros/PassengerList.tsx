@@ -44,19 +44,22 @@ export const PassengerList: React.FC = () => {
     };
 
     const handleCsvImport = async (importedPassengers: {
-        nome: string;
-        documento: string;
+        nome_completo: string;
+        cpf_rg: string;
         telefone: string;
-        congregacao?: string;
+        comum_congregacao?: string;
         idade?: string;
-        estadoCivil?: string;
+        estado_civil?: string;
         instrumento?: string;
         auxiliar?: string;
-        statusPagamento?: string;
+        pagamento?: string;
     }[]) => {
         try {
             for (const passenger of importedPassengers) {
-                await createPassageiro(passenger);
+                await createPassageiro({
+                    ...passenger,
+                    idade: passenger.idade ? parseInt(passenger.idade) : undefined,
+                });
             }
             showToast(`${importedPassengers.length} passageiro(s) importado(s) com sucesso!`, 'success');
             setCsvUploaderOpen(false);
@@ -67,10 +70,10 @@ export const PassengerList: React.FC = () => {
 
     const filteredPassengers = passengers.filter(
         (p) =>
-            p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.documento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.cpf_rg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.telefone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.congregacao?.toLowerCase().includes(searchTerm.toLowerCase())
+            p.comum_congregacao?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -182,7 +185,7 @@ export const PassengerList: React.FC = () => {
                                     {filteredPassengers.map((passenger) => (
                                         <tr key={passenger.id}>
                                             <td className="font-medium text-gray-900">
-                                                <div>{passenger.nome}</div>
+                                                <div>{passenger.nome_completo}</div>
                                                 {(passenger.instrumento || passenger.auxiliar) && (
                                                     <div className="text-xs text-gray-500">
                                                         {passenger.instrumento && `🎵 ${passenger.instrumento}`}
@@ -191,18 +194,18 @@ export const PassengerList: React.FC = () => {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="text-gray-600">{passenger.documento}</td>
+                                            <td className="text-gray-600">{passenger.cpf_rg}</td>
                                             <td className="text-gray-600">{passenger.telefone}</td>
-                                            <td className="text-gray-600">{passenger.congregacao || '-'}</td>
+                                            <td className="text-gray-600">{passenger.comum_congregacao || '-'}</td>
                                             <td className="text-gray-600">{passenger.idade || '-'}</td>
                                             <td>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${passenger.statusPagamento === 'paid' ? 'bg-green-100 text-green-800' :
-                                                    passenger.statusPagamento === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${passenger.pagamento === 'paid' ? 'bg-green-100 text-green-800' :
+                                                    passenger.pagamento === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                         'bg-gray-100 text-gray-800'
                                                     }`}>
-                                                    {passenger.statusPagamento === 'paid' ? 'Pago' :
-                                                        passenger.statusPagamento === 'pending' ? 'Pendente' :
-                                                            passenger.statusPagamento || '-'}
+                                                    {passenger.pagamento === 'paid' ? 'Pago' :
+                                                        passenger.pagamento === 'pending' ? 'Pendente' :
+                                                            passenger.pagamento || '-'}
                                                 </span>
                                             </td>
                                             <td>
@@ -236,8 +239,8 @@ export const PassengerList: React.FC = () => {
                                 <div key={passenger.id} className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="font-semibold text-gray-900">{passenger.nome}</h3>
-                                            <p className="text-sm text-gray-500 mt-0.5">{passenger.documento}</p>
+                                            <h3 className="font-semibold text-gray-900">{passenger.nome_completo}</h3>
+                                            <p className="text-sm text-gray-500 mt-0.5">{passenger.cpf_rg}</p>
                                         </div>
                                         <div className="flex gap-1">
                                             <Link to={`/passageiros/editar/${passenger.id}`}>

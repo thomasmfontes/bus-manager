@@ -139,7 +139,7 @@ export let mockSeatAssignments: SeatAssignment[] = [
 ];
 
 // Initialize all seats for a trip
-export const initializeSeatsForTrip = (tripId: string, buses: Bus[]): SeatAssignment[] => {
+export const initializeSeatsForTrip = (tripId: string): SeatAssignment[] => {
     // This function is less relevant now that we fetch from DB, but kept for mock compatibility
     return mockSeatAssignments.filter(a => a.viagemId === tripId);
 };

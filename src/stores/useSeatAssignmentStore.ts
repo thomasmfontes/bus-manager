@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 interface SeatAssignmentState {
     loading: boolean;
     getAssentosPorViagem: (viagemId: string) => Promise<Passenger[]>;
-    atribuirAssento: (passageiroId: string, assento: string) => Promise<void>;
+    atribuirAssento: (passageiroId: string, assento: string, onibusId?: string) => Promise<void>;
     liberarAssento: (passageiroId: string) => Promise<void>;
     bloquearAssento: (passageiroId: string) => Promise<void>;
 }
@@ -31,12 +31,17 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     },
 
     // Atribui um assento a um passageiro
-    atribuirAssento: async (passageiroId: string, assento: string) => {
+    atribuirAssento: async (passageiroId: string, assento: string, onibusId?: string) => {
         set({ loading: true });
         try {
+            const updateData: any = { assento };
+            if (onibusId) {
+                updateData.onibus_id = onibusId;
+            }
+
             const { error } = await supabase
                 .from('passageiros')
-                .update({ assento })
+                .update(updateData)
                 .eq('id', passageiroId);
 
             if (error) throw error;
@@ -54,13 +59,27 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
         try {
             const { error } = await supabase
                 .from('passageiros')
-                .update({ assento: null })
+                .update({ assento: null, onibus_id: null })
                 .eq('id', passageiroId);
 
             if (error) throw error;
             set({ loading: false });
         } catch (error) {
             console.error('Error releasing seat:', error);
+            set({ loading: false });
+            throw error;
+        }
+    },
+    // Bloqueia um assento (implementação básica)
+    bloquearAssento: async (passageiroId: string) => {
+        set({ loading: true });
+        try {
+            // TODO: Implementar lógica real de bloqueio se necessário
+            // Por enquanto, apenas atualiza o status ou similar
+            console.log('Bloqueando assento para passageiro:', passageiroId);
+            set({ loading: false });
+        } catch (error) {
+            console.error('Error blocking seat:', error);
             set({ loading: false });
             throw error;
         }
