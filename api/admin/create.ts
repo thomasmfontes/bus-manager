@@ -25,17 +25,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
         if (authError || !user) {
+            console.error('Auth error:', authError);
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
+        console.log('User authenticated:', user.id, user.email);
+
         // Check if user is admin
-        const { data: profile } = await supabase
+        const { data: profile, error: checkProfileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
+        console.log('Profile data:', profile);
+        console.log('Profile error:', checkProfileError);
+        console.log('Profile role:', profile?.role);
+
         if (profile?.role !== 'admin') {
+            console.error('User is not admin. Role:', profile?.role);
             return res.status(403).json({ error: 'Forbidden: Admin access required' });
         }
 
