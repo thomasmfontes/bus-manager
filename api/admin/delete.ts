@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Create Supabase client with anon key to verify user
         const supabaseUrl = process.env.SUPABASE_URL!;
-        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!;
+        const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         // Verify user is authenticated and is admin
