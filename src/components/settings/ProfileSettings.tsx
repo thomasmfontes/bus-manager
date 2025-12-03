@@ -39,6 +39,13 @@ export const ProfileSettings: React.FC = () => {
         e.preventDefault();
         setLoadingProfile(true);
         try {
+            // Check if user has an active session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('Sessão expirada. Por favor, faça login novamente.', 'error');
+                return;
+            }
+
             // Update Supabase Auth Metadata
             const { error: authError } = await supabase.auth.updateUser({
                 data: { full_name: fullName }
@@ -50,7 +57,7 @@ export const ProfileSettings: React.FC = () => {
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({ full_name: fullName })
-                .eq('id', (await supabase.auth.getUser()).data.user?.id);
+                .eq('id', session.user.id);
 
             if (profileError) throw profileError;
 
@@ -76,6 +83,13 @@ export const ProfileSettings: React.FC = () => {
 
         setLoadingPassword(true);
         try {
+            // Check if user has an active session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('Sessão expirada. Por favor, faça login novamente.', 'error');
+                return;
+            }
+
             const { error } = await supabase.auth.updateUser({
                 password: newPassword
             });
