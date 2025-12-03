@@ -20,11 +20,9 @@ export const TripSeatMap: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const {
-        assignments,
-        fetchAssentosPorViagem,
+        getAssentosPorViagem,
         atribuirAssento,
         liberarAssento,
-        bloquearAssento,
     } = useSeatAssignmentStore();
     const { showToast } = useToast();
     const { user } = useAuthStore();
@@ -33,99 +31,104 @@ export const TripSeatMap: React.FC = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedPassengerId, setSelectedPassengerId] = useState('');
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
-    const [selectedBusId, setSelectedBusId] = useState<string>('');
+    const [tripPassengers, setTripPassengers] = useState<any[]>([]);
+    const [loadingAssignments, setLoadingAssignments] = useState(false);
 
     useEffect(() => {
         fetchViagens();
         fetchOnibus();
         fetchPassageiros();
+    }, [fetchViagens, fetchOnibus, fetchPassageiros]);
+
+    const loadAssignments = async () => {
         if (id) {
-            fetchAssentosPorViagem(id);
+            setLoadingAssignments(true);
+            try {
+                const data = await getAssentosPorViagem(id);
+                setTripPassengers(data);
+            } catch (error) {
+                console.error('Error loading assignments:', error);
+                showToast('Erro ao carregar assentos', 'error');
+            } finally {
+                setLoadingAssignments(false);
+            }
         }
-    }, [id, fetchViagens, fetchOnibus, fetchPassageiros, fetchAssentosPorViagem]);
+    };
+
+    useEffect(() => {
+        loadAssignments();
+    }, [id, getAssentosPorViagem]);
 
     const trip = trips.find((t) => t.id === id);
+    const currentBus = trip && trip.onibus_id ? buses.find(b => b.id === trip.onibus_id) : null;
 
-    // Get all buses for this trip
-    const tripBuses = trip && trip.onibusIds
-        ? buses.filter(b => trip.onibusIds.includes(b.id))
-        : [];
-
-    // Initialize selected bus
-    useEffect(() => {
-        if (tripBuses.length > 0 && !selectedBusId) {
-            setSelectedBusId(tripBuses[0].id);
-        }
-    }, [tripBuses, selectedBusId]);
-
-    const currentBus = tripBuses.find(b => b.id === selectedBusId);
-
-    // Filter assignments for current trip AND current bus
-    const tripAssignments = id
-        ? assignments.filter((a) => a.viagemId === id && a.onibusId === selectedBusId)
-        : [];
+    // Map passengers to SeatAssignments for the SeatMap component
+    const assignments = tripPassengers.map(p => ({
+        viagemId: p.viagem_id,
+        onibusId: trip?.onibus_id || '',
+        assentoCodigo: p.assento,
+        passageiroId: p.id,
+        status: SeatStatus.OCUPADO
+    }));
 
     const handleSeatClick = (seatCode: string) => {
         setSelectedSeat(seatCode);
-        const assignment = tripAssignments.find((a) => a.assentoCodigo === seatCode);
+        const assignment = assignments.find((a) => a.assentoCodigo === seatCode);
 
-        if (!assignment || assignment.status === SeatStatus.LIVRE) {
+        if (!assignment) {
             setActionType('assign');
             setSelectedPassengerId('');
             setModalOpen(true);
-        } else if (assignment.status === SeatStatus.OCUPADO) {
-            setActionType('release');
-            setModalOpen(true);
-        } else if (assignment.status === SeatStatus.BLOQUEADO) {
+        } else {
+            // If assigned, we can release
             setActionType('release');
             setModalOpen(true);
         }
     };
 
     const handleAssignSeat = async () => {
-        if (!id || !selectedSeat || !selectedPassengerId || !selectedBusId) {
+        if (!id || !selectedSeat || !selectedPassengerId) {
             showToast('Selecione um passageiro', 'error');
             return;
         }
 
         try {
-            await atribuirAssento(id, selectedBusId, selectedSeat, selectedPassengerId);
+            await atribuirAssento(selectedPassengerId, selectedSeat);
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
             setSelectedPassengerId('');
+            loadAssignments(); // Reload assignments
         } catch (error) {
             showToast('Erro ao atribuir assento', 'error');
         }
     };
 
     const handleReleaseSeat = async () => {
-        if (!id || !selectedSeat || !selectedBusId) return;
+        if (!selectedSeat) return;
+
+        // Find passenger for this seat
+        const passenger = tripPassengers.find(p => p.assento === selectedSeat);
+        if (!passenger) return;
 
         try {
-            await liberarAssento(id, selectedBusId, selectedSeat);
+            await liberarAssento(passenger.id);
             showToast('Assento liberado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
+            loadAssignments(); // Reload assignments
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
         }
     };
 
     const handleBlockSeat = async () => {
-        if (!id || !selectedSeat || !selectedBusId) return;
-
-        try {
-            await bloquearAssento(id, selectedBusId, selectedSeat);
-            showToast('Assento bloqueado com sucesso!', 'success');
-            setModalOpen(false);
-            setSelectedSeat(null);
-        } catch (error) {
-            showToast('Erro ao bloquear assento', 'error');
-        }
+        // Not implemented yet
+        showToast('Funcionalidade de bloqueio não disponível', 'info');
     };
 
     const formatDate = (dateString: string) => {
+        if (!dateString) return '';
         const date = new Date(dateString);
         return date.toLocaleDateString('pt-BR', {
             day: '2-digit',
@@ -136,32 +139,25 @@ export const TripSeatMap: React.FC = () => {
         });
     };
 
-    // Get all assignments for the current trip (across all buses) to check for duplicates
-    const allTripAssignments = id
-        ? assignments.filter((a) => a.viagemId === id)
-        : [];
-
-    const assignedPassengerIds = allTripAssignments
-        .filter((a) => a.status === SeatStatus.OCUPADO && a.passageiroId)
-        .map((a) => a.passageiroId);
+    const assignedPassengerIds = tripPassengers.map((p) => p.id);
 
     const passengerOptions = [
         { value: '', label: '-- Selecione um passageiro --' },
         ...passengers
             .filter((p) => !assignedPassengerIds.includes(p.id)) // Filter out already assigned passengers
-            .sort((a, b) => a.nome.localeCompare(b.nome))
+            .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo))
             .map((p) => ({
                 value: p.id,
-                label: `${p.nome} (${p.documento})`,
+                label: `${p.nome_completo} (${p.cpf_rg || 'Sem documento'})`,
             })),
     ];
 
     const currentAssignment = selectedSeat
-        ? tripAssignments.find((a) => a.assentoCodigo === selectedSeat)
+        ? assignments.find((a) => a.assentoCodigo === selectedSeat)
         : null;
 
     const currentPassenger = currentAssignment?.passageiroId
-        ? passengers.find((p) => p.id === currentAssignment.passageiroId)
+        ? tripPassengers.find((p) => p.id === currentAssignment.passageiroId)
         : null;
 
     if (!trip) {
@@ -192,7 +188,7 @@ export const TripSeatMap: React.FC = () => {
                         <div>
                             <p className="text-sm text-gray-600">Rota</p>
                             <p className="font-semibold">
-                                {trip.origem} → {trip.destino}
+                                {trip.nome} → {trip.destino}
                             </p>
                         </div>
                     </div>
@@ -200,7 +196,7 @@ export const TripSeatMap: React.FC = () => {
                         <Calendar className="text-primary" size={24} />
                         <div>
                             <p className="text-sm text-gray-600">Data/Hora</p>
-                            <p className="font-semibold">{formatDate(trip.data)}</p>
+                            <p className="font-semibold">{formatDate(trip.data_ida)}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -208,55 +204,19 @@ export const TripSeatMap: React.FC = () => {
                         <div>
                             <p className="text-sm text-gray-600">Ônibus</p>
                             <p className="font-semibold">
-                                {tripBuses.length > 1
-                                    ? `${tripBuses.length} ônibus nesta viagem`
-                                    : tripBuses[0]?.nome || 'Nenhum ônibus'}
+                                {currentBus ? currentBus.nome : 'Nenhum ônibus'}
                             </p>
                         </div>
                     </div>
                 </div>
-                {trip.descricao && (
-                    <p className="mt-4 text-gray-600">{trip.descricao}</p>
-                )}
             </Card>
-
-            {/* Bus Tabs */}
-            {tripBuses.length > 1 && (
-                <div className="flex flex-col items-center space-y-3 mb-6">
-                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Selecione o Ônibus</p>
-                    <div className="bg-gray-100/80 p-1.5 rounded-xl inline-flex gap-2 shadow-inner border border-gray-200/50">
-                        {tripBuses.map(bus => {
-                            const isActive = selectedBusId === bus.id;
-                            return (
-                                <button
-                                    key={bus.id}
-                                    onClick={() => setSelectedBusId(bus.id)}
-                                    className={`
-                                        flex items-center gap-2.5 px-5 py-2.5 rounded-lg font-medium transition-all duration-200 ease-out
-                                        ${isActive
-                                            ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5 scale-100'
-                                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                                        }
-                                    `}
-                                >
-                                    <BusIcon size={18} className={isActive ? 'text-blue-500' : 'text-gray-400'} />
-                                    <div className="flex flex-col items-start leading-none gap-0.5">
-                                        <span className="text-sm">{bus.nome}</span>
-                                        <span className={`text-[10px] ${isActive ? 'text-blue-400' : 'text-gray-400'}`}>{bus.placa}</span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
             {/* Seat map */}
             {currentBus ? (
                 <div className="space-y-4">
                     <SeatMap
                         bus={currentBus}
-                        assignments={tripAssignments}
+                        assignments={assignments}
                         passengers={passengers}
                         selectedSeat={selectedSeat}
                         onSeatClick={handleSeatClick}
@@ -265,7 +225,7 @@ export const TripSeatMap: React.FC = () => {
                 </div>
             ) : (
                 <Card>
-                    <p className="text-gray-500 text-center py-8">Selecione um ônibus para ver o mapa de assentos.</p>
+                    <p className="text-gray-500 text-center py-8">Nenhum ônibus vinculado a esta viagem.</p>
                 </Card>
             )}
 
@@ -290,7 +250,7 @@ export const TripSeatMap: React.FC = () => {
                             <span className="hidden sm:inline">Cancelar</span>
                         </Button>
                         {/* Visualizador: registration link */}
-                        {user?.role === UserRole.VISUALIZADOR && (
+                        {user?.role === UserRole.USER && !user.id && (
                             <a
                                 href="https://excursao-agua-rasa.vercel.app/"
                                 target="_blank"
@@ -302,7 +262,7 @@ export const TripSeatMap: React.FC = () => {
                             </a>
                         )}
                         {/* Passageiro: only assign button */}
-                        {user?.role === UserRole.PASSAGEIRO && actionType === 'assign' && (
+                        {user?.role === UserRole.USER && user.id && actionType === 'assign' && (
                             <Button onClick={handleAssignSeat}>
                                 <Check size={20} className="sm:mr-2" />
                                 <span className="hidden sm:inline">Atribuir</span>
@@ -317,10 +277,7 @@ export const TripSeatMap: React.FC = () => {
                                             <Check size={20} className="sm:mr-2" />
                                             <span className="hidden sm:inline">Atribuir</span>
                                         </Button>
-                                        <Button variant="danger" onClick={handleBlockSeat}>
-                                            <Lock size={20} className="sm:mr-2" />
-                                            <span className="hidden sm:inline">Bloquear</span>
-                                        </Button>
+                                        {/* Block button removed for now */}
                                     </>
                                 )}
                                 {actionType === 'release' && (
@@ -336,7 +293,7 @@ export const TripSeatMap: React.FC = () => {
             >
                 {actionType === 'assign' ? (
                     <div className="space-y-4">
-                        {user?.role === UserRole.VISUALIZADOR ? (
+                        {user?.role === UserRole.USER && !user.id ? (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
                                 <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
                                 <p className="text-sm text-yellow-800">
@@ -365,16 +322,13 @@ export const TripSeatMap: React.FC = () => {
                         {currentPassenger && (
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <p className="text-sm text-gray-600 mb-2">Passageiro atual:</p>
-                                <p className="font-semibold">{currentPassenger.nome}</p>
-                                <p className="text-sm text-gray-600">{currentPassenger.documento}</p>
+                                <p className="font-semibold">{currentPassenger.nome_completo}</p>
+                                <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
                                 <p className="text-sm text-gray-600">{currentPassenger.telefone}</p>
                             </div>
                         )}
-                        {currentAssignment?.status === SeatStatus.BLOQUEADO && (
-                            <p className="text-gray-600">Este assento está bloqueado.</p>
-                        )}
 
-                        {user?.role === UserRole.VISUALIZADOR ? (
+                        {user?.role === UserRole.USER && !user.id ? (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
                                 <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
                                 <p className="text-sm text-yellow-800">

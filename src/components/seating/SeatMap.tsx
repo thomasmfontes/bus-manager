@@ -18,7 +18,23 @@ export const SeatMap: React.FC<SeatMapProps> = ({
     selectedSeat,
     onSeatClick,
 }) => {
-    const { rows, columns, corridorAfterColumn } = bus.configuracaoAssentos;
+    // Generate default configuration if not present
+    const getConfiguration = () => {
+        if ((bus as any).configuracaoAssentos) {
+            return (bus as any).configuracaoAssentos;
+        }
+        // Default configuration based on capacity
+        const columns = 4;
+        const rows = Math.ceil(bus.capacidade / columns);
+        return {
+            rows,
+            columns,
+            corridorAfterColumn: 2,
+            excludedSeats: [] as string[],
+        };
+    };
+
+    const { rows, columns, corridorAfterColumn, excludedSeats } = getConfiguration();
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     const getSeatAssignment = (seatCode: string): SeatAssignment | undefined => {
@@ -27,14 +43,14 @@ export const SeatMap: React.FC<SeatMapProps> = ({
 
     const getPassengerName = (passengerId?: string): string | undefined => {
         if (!passengerId) return undefined;
-        return passengers.find((p) => p.id === passengerId)?.nome;
+        return passengers.find((p) => p.id === passengerId)?.nome_completo;
     };
 
     const renderRow = (rowNumber: number) => {
         const seats = [];
         for (let col = 0; col < columns; col++) {
             const seatCode = `${rowNumber}${letters[col]}`;
-            const isExcluded = bus.configuracaoAssentos.excludedSeats?.includes(seatCode);
+            const isExcluded = excludedSeats?.includes(seatCode);
 
             if (isExcluded) {
                 // Bathroom indicator

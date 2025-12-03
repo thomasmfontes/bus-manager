@@ -18,24 +18,15 @@ export const useBusStore = create<BusState>((set, get) => ({
         set({ loading: true });
         try {
             const { data, error } = await supabase
-                .from('buses')
+                .from('onibus')
                 .select('*')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            // Map snake_case from DB to camelCase for frontend
-            const mappedBuses: Bus[] = data.map((bus: any) => ({
-                id: bus.id,
-                nome: bus.nome,
-                placa: bus.placa,
-                configuracaoAssentos: bus.configuracao_assentos,
-                totalAssentos: bus.total_assentos,
-            }));
-
-            set({ buses: mappedBuses, loading: false });
+            set({ buses: data || [], loading: false });
         } catch (error) {
-            console.error('Error fetching buses:', error);
+            console.error('Error fetching onibus:', error);
             set({ loading: false });
         }
     },
@@ -43,34 +34,23 @@ export const useBusStore = create<BusState>((set, get) => ({
         try {
             // Get default seats from localStorage if not provided
             const defaultSeats = localStorage.getItem('default_bus_seats');
-            const totalAssentos = bus.totalAssentos || (defaultSeats ? parseInt(defaultSeats) : 46);
-
-            const dbBus = {
-                nome: bus.nome,
-                placa: bus.placa,
-                configuracao_assentos: bus.configuracaoAssentos,
-                total_assentos: totalAssentos,
-            };
+            const capacidade = bus.capacidade || (defaultSeats ? parseInt(defaultSeats) : 46);
 
             const { data, error } = await supabase
-                .from('buses')
-                .insert([dbBus])
+                .from('onibus')
+                .insert([{
+                    nome: bus.nome,
+                    placa: bus.placa,
+                    capacidade
+                }])
                 .select()
                 .single();
 
             if (error) throw error;
 
-            const newBus: Bus = {
-                id: data.id,
-                nome: data.nome,
-                placa: data.placa,
-                configuracaoAssentos: data.configuracao_assentos,
-                totalAssentos: data.total_assentos,
-            };
-
-            set({ buses: [newBus, ...get().buses] });
+            set({ buses: [data, ...get().buses] });
         } catch (error) {
-            console.error('Error creating bus:', error);
+            console.error('Error creating onibus:', error);
             throw error;
         }
     },
@@ -78,12 +58,11 @@ export const useBusStore = create<BusState>((set, get) => ({
         try {
             const updates: any = {};
             if (bus.nome) updates.nome = bus.nome;
-            if (bus.placa) updates.placa = bus.placa;
-            if (bus.configuracaoAssentos) updates.configuracao_assentos = bus.configuracaoAssentos;
-            if (bus.totalAssentos) updates.total_assentos = bus.totalAssentos;
+            if (bus.placa !== undefined) updates.placa = bus.placa;
+            if (bus.capacidade) updates.capacidade = bus.capacidade;
 
             const { data, error } = await supabase
-                .from('buses')
+                .from('onibus')
                 .update(updates)
                 .eq('id', id)
                 .select()
@@ -91,29 +70,21 @@ export const useBusStore = create<BusState>((set, get) => ({
 
             if (error) throw error;
 
-            const updatedBus: Bus = {
-                id: data.id,
-                nome: data.nome,
-                placa: data.placa,
-                configuracaoAssentos: data.configuracao_assentos,
-                totalAssentos: data.total_assentos,
-            };
-
             set({
-                buses: get().buses.map((b) => (b.id === id ? updatedBus : b)),
+                buses: get().buses.map((b) => (b.id === id ? data : b)),
             });
         } catch (error) {
-            console.error('Error updating bus:', error);
+            console.error('Error updating onibus:', error);
             throw error;
         }
     },
     deleteOnibus: async (id) => {
         try {
-            const { error } = await supabase.from('buses').delete().eq('id', id);
+            const { error } = await supabase.from('onibus').delete().eq('id', id);
             if (error) throw error;
             set({ buses: get().buses.filter((b) => b.id !== id) });
         } catch (error) {
-            console.error('Error deleting bus:', error);
+            console.error('Error deleting onibus:', error);
             throw error;
         }
     },

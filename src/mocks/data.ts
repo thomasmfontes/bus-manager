@@ -21,25 +21,13 @@ export const mockBuses: Bus[] = [
         id: '1',
         nome: 'Ônibus 1 – Executivo',
         placa: 'ABC-1234',
-        configuracaoAssentos: {
-            rows: 12,
-            columns: 4,
-            corridorAfterColumn: 2,
-            excludedSeats: ['12C', '12D'], // Bathroom area
-        },
-        totalAssentos: 46, // 12x4 - 2 bathroom seats = 46
+        capacidade: 46,
     },
     {
         id: '2',
         nome: 'Ônibus 2 – Executivo',
         placa: 'DEF-5678',
-        configuracaoAssentos: {
-            rows: 12,
-            columns: 4,
-            corridorAfterColumn: 2,
-            excludedSeats: ['12C', '12D'], // Bathroom area
-        },
-        totalAssentos: 46, // 12x4 - 2 bathroom seats = 46
+        capacidade: 46,
     },
 ];
 
@@ -47,32 +35,32 @@ export const mockBuses: Bus[] = [
 export const mockPassengers: Passenger[] = [
     {
         id: '1',
-        nome: 'João Silva',
-        documento: '123.456.789-00',
+        nome_completo: 'João Silva',
+        cpf_rg: '123.456.789-00',
         telefone: '(11) 98765-4321',
     },
     {
         id: '2',
-        nome: 'Maria Santos',
-        documento: '987.654.321-00',
+        nome_completo: 'Maria Santos',
+        cpf_rg: '987.654.321-00',
         telefone: '(11) 91234-5678',
     },
     {
         id: '3',
-        nome: 'Pedro Oliveira',
-        documento: '456.789.123-00',
+        nome_completo: 'Pedro Oliveira',
+        cpf_rg: '456.789.123-00',
         telefone: '(11) 99876-5432',
     },
     {
         id: '4',
-        nome: 'Ana Costa',
-        documento: '321.654.987-00',
+        nome_completo: 'Ana Costa',
+        cpf_rg: '321.654.987-00',
         telefone: '(11) 97654-3210',
     },
     {
         id: '5',
-        nome: 'Carlos Ferreira',
-        documento: '789.123.456-00',
+        nome_completo: 'Carlos Ferreira',
+        cpf_rg: '789.123.456-00',
         telefone: '(11) 96543-2109',
     },
 ];
@@ -81,19 +69,19 @@ export const mockPassengers: Passenger[] = [
 export const mockTrips: Trip[] = [
     {
         id: '1',
-        origem: 'São Paulo',
-        destino: 'Rio de Janeiro',
-        data: '2025-11-26T08:00:00',
-        onibusIds: ['1'],
-        descricao: 'Viagem executiva com paradas',
+        nome: 'Excursão Aparecida',
+        destino: 'Aparecida do Norte',
+        data_ida: '2025-11-26T08:00:00',
+        preco: 150.00,
+        onibus_id: '1',
     },
     {
         id: '2',
-        origem: 'São Paulo',
-        destino: 'Belo Horizonte',
-        data: '2025-11-27T14:00:00',
-        onibusIds: ['2'],
-        descricao: 'Viagem direta',
+        nome: 'Excursão Campos do Jordão',
+        destino: 'Campos do Jordão',
+        data_ida: '2025-11-27T14:00:00',
+        preco: 200.00,
+        onibus_id: '2',
     },
 ];
 
@@ -152,31 +140,6 @@ export let mockSeatAssignments: SeatAssignment[] = [
 
 // Initialize all seats for a trip
 export const initializeSeatsForTrip = (tripId: string, buses: Bus[]): SeatAssignment[] => {
-    const existingAssignments = mockSeatAssignments.filter((a) => a.viagemId === tripId);
-
-    // If we already have assignments for this trip, return them
-    if (existingAssignments.length > 0) {
-        return existingAssignments;
-    }
-
-    const newSeats: SeatAssignment[] = [];
-
-    buses.forEach(bus => {
-        const seatCodes = generateSeatCodes(
-            bus.configuracaoAssentos.rows,
-            bus.configuracaoAssentos.columns,
-            bus.configuracaoAssentos.excludedSeats || []
-        );
-
-        seatCodes.forEach(code => {
-            newSeats.push({
-                viagemId: tripId,
-                onibusId: bus.id,
-                assentoCodigo: code,
-                status: SeatStatus.LIVRE,
-            });
-        });
-    });
-
-    return [...mockSeatAssignments, ...newSeats];
+    // This function is less relevant now that we fetch from DB, but kept for mock compatibility
+    return mockSeatAssignments.filter(a => a.viagemId === tripId);
 };

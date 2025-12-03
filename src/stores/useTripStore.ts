@@ -17,104 +17,98 @@ export const useTripStore = create<TripState>((set, get) => ({
     fetchViagens: async () => {
         set({ loading: true });
         try {
-            // Fetch trips and their associated buses
-            const { data, error } = await supabase
-                .from('trips')
-                .select(`
-                    *,
-                    trip_buses (
-                        onibus_id
-                    )
-                `)
-                .order('data_hora', { ascending: true });
+            // Fetch trips with their associated buses
+            const { data: viagens, error: viagensError } = await supabase
+                .from('viagens')
+                .select('*')
+                .order('data_ida', { ascending: true });
 
-            if (error) throw error;
+            if (viagensError) throw viagensError;
 
-            const mappedTrips: Trip[] = data.map((trip: any) => ({
-                id: trip.id,
-                origem: trip.origem,
-                destino: trip.destino,
-                data: trip.data_hora,
-                onibusIds: trip.trip_buses ? trip.trip_buses.map((tb: any) => tb.onibus_id) : [],
-                descricao: trip.descricao,
-            }));
+            // Fetch all trip-bus relationships
+            const { data: viagemOnibus, error: viagemOnibusError } = await supabase
+                .from('viagem_onibus')
+                .select('viagem_id, onibus_id');
 
-            set({ trips: mappedTrips, loading: false });
+            if (viagemOnibusError) throw viagemOnibusError;
+
+            // Map buses to trips
+            const tripsWithBuses = (viagens || []).map(viagem => {
+                const busIds = (viagemOnibus || [])
+                    .filter(vo => vo.viagem_id === viagem.id)
+                    .map(vo => vo.onibus_id);
+
+                return {
+                    ...viagem,
+                    onibus_ids: busIds.length > 0 ? busIds : undefined,
+                };
+            });
+
+            set({ trips: tripsWithBuses, loading: false });
         } catch (error) {
-            console.error('Error fetching trips:', error);
+            console.error('Error fetching viagens:', error);
             set({ loading: false });
         }
     },
     createViagem: async (trip) => {
         set({ loading: true });
         try {
-            // Converte a string datetime-local para incluir o timezone
-            // datetime-local retorna "YYYY-MM-DDTHH:mm"
-            // Precisamos adicionar o offset do timezone local (ex: "-03:00" para Brasília)
-            const localDate = new Date(trip.data);
-            const offset = -localDate.getTimezoneOffset();
-            const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-            const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, '0');
-            const offsetSign = offset >= 0 ? '+' : '-';
-            const dateWithTimezone = `${trip.data}:00${offsetSign}${offsetHours}:${offsetMinutes}`;
-
-            // 1. Create the trip
-            const dbTrip = {
-                origem: trip.origem,
-                destino: trip.destino,
-                data_hora: dateWithTimezone,
-                descricao: trip.descricao,
-            };
-
-            const { data: newTripData, error: tripError } = await supabase
-                .from('trips')
-                .insert([dbTrip])
+            // Create the trip
+            const { data: newTrip, error: tripError } = await supabase
+                .from('viagens')
+                .insert([{
+                    nome: trip.nome,
+                    destino: trip.destino,
+                    data_ida: trip.data_ida,
+                    data_volta: trip.data_volta,
+                    preco: trip.preco,
+                }])
                 .select()
                 .single();
 
             if (tripError) throw tripError;
 
-            // 2. Link buses to the trip
-            if (trip.onibusIds && trip.onibusIds.length > 0) {
-                const tripBuses = trip.onibusIds.map((busId) => ({
-                    viagem_id: newTripData.id,
-                    onibus_id: busId,
+            // Create trip-bus relationships
+            const busIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
+
+            if (busIds.length > 0) {
+                const viagemOnibusRecords = busIds.map(onibus_id => ({
+                    viagem_id: newTrip.id,
+                    onibus_id,
                 }));
 
-                const { error: busError } = await supabase
-                    .from('trip_buses')
-                    .insert(tripBuses);
+                const { error: relationError } = await supabase
+                    .from('viagem_onibus')
+                    .insert(viagemOnibusRecords);
 
-                if (busError) throw busError;
+                if (relationError) throw relationError;
             }
 
-            const newTrip: Trip = {
-                id: newTripData.id,
-                origem: newTripData.origem,
-                destino: newTripData.destino,
-                data: newTripData.data_hora,
-                onibusIds: trip.onibusIds || [],
-                descricao: newTripData.descricao,
+            // Add onibus_ids to the trip object
+            const tripWithBuses = {
+                ...newTrip,
+                onibus_ids: busIds.length > 0 ? busIds : undefined,
             };
 
-            set({ trips: [...get().trips, newTrip], loading: false });
+            set({ trips: [...get().trips, tripWithBuses], loading: false });
         } catch (error) {
-            console.error('Error creating trip:', error);
+            console.error('Error creating viagem:', error);
             set({ loading: false });
             throw error;
         }
     },
     updateViagem: async (id, trip) => {
         try {
-            // 1. Update trip details
+            // Update trip basic info
             const updates: any = {};
-            if (trip.origem) updates.origem = trip.origem;
+            if (trip.nome) updates.nome = trip.nome;
             if (trip.destino) updates.destino = trip.destino;
-            if (trip.data) updates.data_hora = trip.data;
-            if (trip.descricao) updates.descricao = trip.descricao;
+            if (trip.data_ida) updates.data_ida = trip.data_ida;
+            if (trip.data_volta !== undefined) updates.data_volta = trip.data_volta;
+            if (trip.preco) updates.preco = trip.preco;
 
-            const { data: updatedTripData, error: tripError } = await supabase
-                .from('trips')
+            const { data: updatedTrip, error: tripError } = await supabase
+                .from('viagens')
                 .update(updates)
                 .eq('id', id)
                 .select()
@@ -122,60 +116,51 @@ export const useTripStore = create<TripState>((set, get) => ({
 
             if (tripError) throw tripError;
 
-            // 2. Update bus associations if provided
-            if (trip.onibusIds) {
-                // First delete existing associations
+            // Update trip-bus relationships if onibus_ids is provided
+            if (trip.onibus_ids !== undefined) {
+                // Delete existing relationships
                 const { error: deleteError } = await supabase
-                    .from('trip_buses')
+                    .from('viagem_onibus')
                     .delete()
                     .eq('viagem_id', id);
 
                 if (deleteError) throw deleteError;
 
-                // Then insert new ones
-                if (trip.onibusIds.length > 0) {
-                    const tripBuses = trip.onibusIds.map((busId) => ({
+                // Create new relationships
+                const busIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
+
+                if (busIds.length > 0) {
+                    const viagemOnibusRecords = busIds.map(onibus_id => ({
                         viagem_id: id,
-                        onibus_id: busId,
+                        onibus_id,
                     }));
 
                     const { error: insertError } = await supabase
-                        .from('trip_buses')
-                        .insert(tripBuses);
+                        .from('viagem_onibus')
+                        .insert(viagemOnibusRecords);
 
                     if (insertError) throw insertError;
                 }
+
+                // Add onibus_ids to the updated trip
+                updatedTrip.onibus_ids = busIds.length > 0 ? busIds : undefined;
             }
-
-            // Construct the updated trip object
-            // We need to preserve existing onibusIds if not updated, or use new ones
-            const currentTrip = get().trips.find(t => t.id === id);
-            const finalOnibusIds = trip.onibusIds || currentTrip?.onibusIds || [];
-
-            const updatedTrip: Trip = {
-                id: updatedTripData.id,
-                origem: updatedTripData.origem,
-                destino: updatedTripData.destino,
-                data: updatedTripData.data_hora,
-                onibusIds: finalOnibusIds,
-                descricao: updatedTripData.descricao,
-            };
 
             set({
                 trips: get().trips.map((t) => (t.id === id ? updatedTrip : t)),
             });
         } catch (error) {
-            console.error('Error updating trip:', error);
+            console.error('Error updating viagem:', error);
             throw error;
         }
     },
     deleteViagem: async (id) => {
         try {
-            const { error } = await supabase.from('trips').delete().eq('id', id);
+            const { error } = await supabase.from('viagens').delete().eq('id', id);
             if (error) throw error;
             set({ trips: get().trips.filter((t) => t.id !== id) });
         } catch (error) {
-            console.error('Error deleting trip:', error);
+            console.error('Error deleting viagem:', error);
             throw error;
         }
     },

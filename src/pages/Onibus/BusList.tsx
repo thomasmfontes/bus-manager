@@ -30,6 +30,9 @@ export const BusList: React.FC = () => {
     };
 
     const getLayoutDescription = (bus: any) => {
+        if (!bus.configuracaoAssentos) {
+            return 'Padrão';
+        }
         const { rows, columns, corridorAfterColumn } = bus.configuracaoAssentos;
         return `${rows}x${columns}${corridorAfterColumn ? ' com corredor' : ''}`;
     };
@@ -78,7 +81,7 @@ export const BusList: React.FC = () => {
                                             <td className="py-3 px-4 font-medium">{bus.nome}</td>
                                             <td className="py-3 px-4">{bus.placa}</td>
                                             <td className="py-3 px-4">{getLayoutDescription(bus)}</td>
-                                            <td className="py-3 px-4">{bus.totalAssentos}</td>
+                                            <td className="py-3 px-4">{bus.capacidade}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex justify-end gap-2">
                                                     <Link to={`/onibus/editar/${bus.id}`}>
@@ -139,7 +142,7 @@ export const BusList: React.FC = () => {
                                         </div>
                                         <div>
                                             <p className="text-gray-500">Assentos</p>
-                                            <p className="font-medium">{bus.totalAssentos}</p>
+                                            <p className="font-medium">{bus.capacidade}</p>
                                         </div>
                                     </div>
                                 </div>

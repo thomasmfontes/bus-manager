@@ -2,18 +2,16 @@ import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useBusStore } from '@/stores/useBusStore';
 import { useTripStore } from '@/stores/useTripStore';
-import { useSeatAssignmentStore } from '@/stores/useSeatAssignmentStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Bus, MapPin, Users, Calendar, ArrowRight, Eye } from 'lucide-react';
-import { SeatStatus, UserRole } from '@/types';
+import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 export const Dashboard: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
     const { trips, fetchViagens } = useTripStore();
-    const { assignments, fetchTodosAssentos } = useSeatAssignmentStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
 
@@ -21,22 +19,23 @@ export const Dashboard: React.FC = () => {
         fetchOnibus();
         fetchViagens();
         fetchPassageiros();
-        fetchTodosAssentos();
-    }, [fetchOnibus, fetchViagens, fetchPassageiros, fetchTodosAssentos]);
+    }, [fetchOnibus, fetchViagens, fetchPassageiros]);
 
     // Calculate stats
     const totalBuses = buses.length;
     const totalTrips = trips.length;
     const totalPassengers = passengers.length;
-    const occupiedSeats = assignments.filter((a) => a.status === SeatStatus.OCUPADO).length;
+    // Count passengers with assigned seats
+    const occupiedSeats = passengers.filter((p) => p.assento !== null && p.assento !== undefined).length;
 
     const today = new Date().toISOString().split('T')[0];
     const upcomingTrips = trips
-        .filter((trip) => trip.data >= today)
-        .sort((a, b) => a.data.localeCompare(b.data))
+        .filter((trip) => trip.data_ida >= today)
+        .sort((a, b) => a.data_ida.localeCompare(b.data_ida))
         .slice(0, 5);
 
     const formatDate = (dateString: string) => {
+        if (!dateString) return '';
         const date = new Date(dateString);
         return date.toLocaleDateString('pt-BR', {
             day: '2-digit',
@@ -85,7 +84,7 @@ export const Dashboard: React.FC = () => {
     return (
         <div className="space-y-8 animate-fade-in w-full">
             {/* Registration Banner for Visualizadores */}
-            {user?.role === UserRole.VISUALIZADOR && (
+            {user?.role === UserRole.USER && !user.id && (
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">
                     <div className="space-y-2 text-center sm:text-left">
                         <h2 className="text-2xl font-bold">Complete seu Cadastro!</h2>
@@ -162,17 +161,17 @@ export const Dashboard: React.FC = () => {
                                     <div className="flex items-start gap-3 mb-3">
                                         <MapPin size={20} className="text-blue-600 shrink-0 mt-0.5" />
                                         <span className="font-semibold text-gray-900 leading-snug">
-                                            {trip.origem} → {trip.destino}
+                                            {trip.nome}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 ml-8">
                                         <span className="flex items-center gap-2">
                                             <Calendar size={16} className="shrink-0" />
-                                            {formatDate(trip.data)}
+                                            {formatDate(trip.data_ida)}
                                         </span>
                                         <span className="flex items-center gap-2">
                                             <Bus size={16} className="shrink-0" />
-                                            {trip.onibusIds.length} ônibus
+                                            {trip.onibus_id ? '1 ônibus' : 'Nenhum ônibus'}
                                         </span>
                                     </div>
                                 </div>

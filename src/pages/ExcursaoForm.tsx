@@ -287,18 +287,18 @@ export default function ExcursaoForm() {
         try {
             // Enviar para Supabase
             const { error } = await supabase
-                .from('excursao_passengers')
+                .from('passageiros')
                 .insert([
                     {
-                        full_name: form.fullName,
-                        cpf: form.cpf,
-                        rg: form.rg,
-                        congregation: form.congregation,
-                        marital_status: form.maritalStatus,
-                        age: form.age,
-                        phone: form.phone,
-                        instrument: form.instrument,
+                        nome_completo: form.fullName,
+                        cpf_rg: form.cpf || form.rg,
+                        comum_congregacao: form.congregation,
+                        estado_civil: form.maritalStatus,
+                        idade: form.age ? parseInt(form.age) : null,
+                        telefone: form.phone,
+                        instrumento: form.instrument,
                         auxiliar: form.auxiliar,
+                        pagamento: 'Pendente',
                     }
                 ]);
 

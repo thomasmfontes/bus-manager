@@ -19,96 +19,65 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
         set({ loading: true });
         try {
             const { data, error } = await supabase
-                .from('excursao_passengers')
+                .from('passageiros')
                 .select('*')
-                .order('full_name', { ascending: true });
+                .order('nome_completo', { ascending: true });
 
             if (error) throw error;
 
-            console.log('Raw data from Supabase:', data);
-
-            // Map excursao_passengers to Passenger interface
-            const mappedPassengers: Passenger[] = (data || []).map((p: any) => ({
-                id: p.id,
-                nome: p.full_name,
-                documento: p.cpf || p.rg || '',
-                telefone: p.phone || '',
-                congregacao: p.congregation,
-                idade: p.age,
-                estadoCivil: p.marital_status,
-                instrumento: p.instrument,
-                auxiliar: p.auxiliar,
-                statusPagamento: p.payment_status,
-            }));
-
-            console.log('Mapped passengers:', mappedPassengers);
-
-            set({ passengers: mappedPassengers, loading: false });
+            set({ passengers: data || [], loading: false });
         } catch (error) {
-            console.error('Error fetching passengers:', error);
+            console.error('Error fetching passageiros:', error);
             set({ loading: false });
         }
     },
     createPassageiro: async (passenger) => {
         try {
-            // Map Passenger to excursao_passengers
-            const dbPassenger: any = {
-                full_name: passenger.nome,
-                cpf: passenger.documento.length > 9 ? passenger.documento : null,
-                rg: passenger.documento.length <= 9 ? passenger.documento : null,
-                phone: passenger.telefone,
-            };
-
-            // Add optional fields if they exist
-            if (passenger.congregacao) dbPassenger.congregation = passenger.congregacao;
-            if (passenger.idade) dbPassenger.age = passenger.idade;
-            if (passenger.estadoCivil) dbPassenger.marital_status = passenger.estadoCivil;
-            if (passenger.instrumento) dbPassenger.instrument = passenger.instrumento;
-            if (passenger.auxiliar) dbPassenger.auxiliar = passenger.auxiliar;
-            if (passenger.statusPagamento) dbPassenger.payment_status = passenger.statusPagamento;
-
             const { data, error } = await supabase
-                .from('excursao_passengers')
-                .insert([dbPassenger])
+                .from('passageiros')
+                .insert([{
+                    nome_completo: passenger.nome_completo,
+                    cpf_rg: passenger.cpf_rg,
+                    instrumento: passenger.instrumento,
+                    comum_congregacao: passenger.comum_congregacao,
+                    estado_civil: passenger.estado_civil,
+                    auxiliar: passenger.auxiliar,
+                    idade: passenger.idade,
+                    telefone: passenger.telefone,
+                    pagamento: passenger.pagamento || 'Pendente',
+                    viagem_id: passenger.viagem_id,
+                    assento: passenger.assento,
+                    valor_pago: passenger.valor_pago || 0,
+                }])
                 .select()
                 .single();
 
             if (error) throw error;
 
-            const newPassenger: Passenger = {
-                id: data.id,
-                nome: data.full_name,
-                documento: data.cpf || data.rg || '',
-                telefone: data.phone || '',
-                congregacao: data.congregation,
-                idade: data.age,
-                estadoCivil: data.marital_status,
-                instrumento: data.instrument,
-                auxiliar: data.auxiliar,
-                statusPagamento: data.payment_status,
-            };
-
-            set({ passengers: [...get().passengers, newPassenger] });
+            set({ passengers: [...get().passengers, data] });
         } catch (error) {
-            console.error('Error creating passenger:', error);
+            console.error('Error creating passageiro:', error);
             throw error;
         }
     },
     updatePassageiro: async (id, passenger) => {
         try {
             const updates: any = {};
-            if (passenger.nome) updates.full_name = passenger.nome;
-            if (passenger.documento) {
-                if (passenger.documento.length > 9) {
-                    updates.cpf = passenger.documento;
-                } else {
-                    updates.rg = passenger.documento;
-                }
-            }
-            if (passenger.telefone) updates.phone = passenger.telefone;
+            if (passenger.nome_completo) updates.nome_completo = passenger.nome_completo;
+            if (passenger.cpf_rg) updates.cpf_rg = passenger.cpf_rg;
+            if (passenger.instrumento !== undefined) updates.instrumento = passenger.instrumento;
+            if (passenger.comum_congregacao !== undefined) updates.comum_congregacao = passenger.comum_congregacao;
+            if (passenger.estado_civil !== undefined) updates.estado_civil = passenger.estado_civil;
+            if (passenger.auxiliar !== undefined) updates.auxiliar = passenger.auxiliar;
+            if (passenger.idade !== undefined) updates.idade = passenger.idade;
+            if (passenger.telefone !== undefined) updates.telefone = passenger.telefone;
+            if (passenger.pagamento !== undefined) updates.pagamento = passenger.pagamento;
+            if (passenger.viagem_id !== undefined) updates.viagem_id = passenger.viagem_id;
+            if (passenger.assento !== undefined) updates.assento = passenger.assento;
+            if (passenger.valor_pago !== undefined) updates.valor_pago = passenger.valor_pago;
 
             const { data, error } = await supabase
-                .from('excursao_passengers')
+                .from('passageiros')
                 .update(updates)
                 .eq('id', id)
                 .select()
@@ -116,38 +85,31 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
 
             if (error) throw error;
 
-            const updatedPassenger: Passenger = {
-                id: data.id,
-                nome: data.full_name,
-                documento: data.cpf || data.rg || '',
-                telefone: data.phone || '',
-            };
-
             set({
-                passengers: get().passengers.map((p) => (p.id === id ? updatedPassenger : p)),
+                passengers: get().passengers.map((p) => (p.id === id ? data : p)),
             });
         } catch (error) {
-            console.error('Error updating passenger:', error);
+            console.error('Error updating passageiro:', error);
             throw error;
         }
     },
     deletePassageiro: async (id) => {
         try {
-            const { error } = await supabase.from('excursao_passengers').delete().eq('id', id);
+            const { error } = await supabase.from('passageiros').delete().eq('id', id);
             if (error) throw error;
             set({ passengers: get().passengers.filter((p) => p.id !== id) });
         } catch (error) {
-            console.error('Error deleting passenger:', error);
+            console.error('Error deleting passageiro:', error);
             throw error;
         }
     },
     deleteAllPassageiros: async () => {
         try {
-            const { error } = await supabase.from('excursao_passengers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const { error } = await supabase.from('passageiros').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             if (error) throw error;
             set({ passengers: [] });
         } catch (error) {
-            console.error('Error deleting all passengers:', error);
+            console.error('Error deleting all passageiros:', error);
             throw error;
         }
     },

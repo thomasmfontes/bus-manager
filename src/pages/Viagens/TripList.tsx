@@ -2,26 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBusStore } from '@/stores/useBusStore';
-import { useSeatAssignmentStore } from '@/stores/useSeatAssignmentStore';
+import { usePassengerStore } from '@/stores/usePassengerStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { Plus, Eye, Trash2 } from 'lucide-react';
-import { SeatStatus } from '@/types';
 import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const TripList: React.FC = () => {
     const { trips, fetchViagens, deleteViagem, loading } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
-    const { assignments } = useSeatAssignmentStore();
+    const { passengers, fetchPassageiros } = usePassengerStore();
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchViagens();
         fetchOnibus();
-    }, [fetchViagens, fetchOnibus]);
+        fetchPassageiros();
+    }, [fetchViagens, fetchOnibus, fetchPassageiros]);
 
     const handleDelete = async () => {
         if (!deleteId) return;
@@ -35,37 +35,36 @@ export const TripList: React.FC = () => {
         }
     };
 
-    const getBusNames = (busIds: string[]) => {
-        const tripBuses = buses.filter((b) => busIds.includes(b.id));
-        if (tripBuses.length === 0) return 'Nenhum ônibus';
-        if (tripBuses.length === 1) return tripBuses[0].nome;
-        return `${tripBuses.length} ônibus`;
+    const getBusNames = (busIds?: string[]): string[] => {
+        if (!busIds || busIds.length === 0) return [];
+        return busIds.map(id => {
+            const bus = buses.find((b) => b.id === id);
+            return bus ? bus.nome : 'Ônibus não encontrado';
+        });
     };
 
     const getOccupiedSeats = (tripId: string) => {
-        return assignments.filter(
-            (a) => a.viagemId === tripId && a.status === SeatStatus.OCUPADO
+        return passengers.filter(
+            (p) => p.viagem_id === tripId && p.assento !== null && p.assento !== undefined
         ).length;
     };
 
-    const getTotalSeats = (busIds: string[]) => {
-        const tripBuses = buses.filter((b) => busIds.includes(b.id));
-        return tripBuses.reduce((total, bus) => total + bus.totalAssentos, 0);
+    const getTotalSeats = (busIds?: string[]) => {
+        if (!busIds || busIds.length === 0) return 0;
+        return busIds.reduce((total, busId) => {
+            const bus = buses.find((b) => b.id === busId);
+            return total + (bus ? bus.capacidade : 0);
+        }, 0);
     };
 
     const formatDate = (dateString: string) => {
         if (!dateString) return 'Data inválida';
 
         try {
-            // Cria o objeto Date a partir do ISO string (UTC) do Supabase
             const date = new Date(dateString);
-
-            // Verifica se a data é válida
             if (isNaN(date.getTime())) {
                 return 'Data inválida';
             }
-
-            // Formata usando o timezone local do navegador (automático)
             return date.toLocaleString('pt-BR', {
                 day: '2-digit',
                 month: '2-digit',
@@ -110,7 +109,7 @@ export const TripList: React.FC = () => {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b">
-                                        <th className="text-left py-3 px-4">Origem</th>
+                                        <th className="text-left py-3 px-4">Nome</th>
                                         <th className="text-left py-3 px-4">Destino</th>
                                         <th className="text-left py-3 px-4">Data/Hora</th>
                                         <th className="text-left py-3 px-4">Ônibus</th>
@@ -121,13 +120,25 @@ export const TripList: React.FC = () => {
                                 <tbody>
                                     {trips.map((trip) => {
                                         const occupied = getOccupiedSeats(trip.id);
-                                        const total = getTotalSeats(trip.onibusIds || []);
+                                        const total = getTotalSeats(trip.onibus_ids);
                                         return (
                                             <tr key={trip.id} className="border-b hover:bg-gray-50">
-                                                <td className="py-3 px-4 font-medium">{trip.origem}</td>
+                                                <td className="py-3 px-4 font-medium">{trip.nome}</td>
                                                 <td className="py-3 px-4 font-medium">{trip.destino}</td>
-                                                <td className="py-3 px-4">{formatDate(trip.data)}</td>
-                                                <td className="py-3 px-4">{getBusNames(trip.onibusIds || [])}</td>
+                                                <td className="py-3 px-4">{formatDate(trip.data_ida)}</td>
+                                                <td className="py-3 px-4">
+                                                    {trip.onibus_ids && trip.onibus_ids.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {getBusNames(trip.onibus_ids).map((name, idx) => (
+                                                                <span key={idx} className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                                                                    {name}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-500">Nenhum ônibus</span>
+                                                    )}
+                                                </td>
                                                 <td className="py-3 px-4">
                                                     <span className="text-sm">
                                                         {occupied} / {total}
@@ -160,15 +171,15 @@ export const TripList: React.FC = () => {
                         <div className="md:hidden space-y-4">
                             {trips.map((trip) => {
                                 const occupied = getOccupiedSeats(trip.id);
-                                const total = getTotalSeats(trip.onibusIds || []);
+                                const total = getTotalSeats(trip.onibus_ids);
                                 return (
                                     <div key={trip.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="font-semibold text-lg text-gray-800">
-                                                    {trip.origem} → {trip.destino}
+                                                    {trip.nome} → {trip.destino}
                                                 </h3>
-                                                <p className="text-sm text-gray-500">{formatDate(trip.data)}</p>
+                                                <p className="text-sm text-gray-500">{formatDate(trip.data_ida)}</p>
                                             </div>
                                             <div className="flex gap-1">
                                                 <Link to={`/viagens/${trip.id}`}>
@@ -189,7 +200,17 @@ export const TripList: React.FC = () => {
                                         <div className="grid grid-cols-2 gap-2 text-sm">
                                             <div>
                                                 <p className="text-gray-500">Ônibus</p>
-                                                <p className="font-medium">{getBusNames(trip.onibusIds || [])}</p>
+                                                {trip.onibus_ids && trip.onibus_ids.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {getBusNames(trip.onibus_ids).map((name, idx) => (
+                                                            <span key={idx} className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                                                                {name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="font-medium text-gray-500">Nenhum ônibus</p>
+                                                )}
                                             </div>
                                             <div>
                                                 <p className="text-gray-500">Ocupação</p>

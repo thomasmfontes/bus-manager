@@ -5,6 +5,7 @@ import { useBusStore } from '@/stores/useBusStore';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
 
 export const TripForm: React.FC = () => {
@@ -14,11 +15,12 @@ export const TripForm: React.FC = () => {
     const { showToast } = useToast();
 
     const [formData, setFormData] = useState({
-        origem: '',
+        nome: '',
         destino: '',
-        data: '',
-        onibusIds: [] as string[],
-        descricao: '',
+        data_ida: '',
+        data_volta: '',
+        preco: '' as string | number,
+        onibus_ids: [] as string[],
     });
 
     useEffect(() => {
@@ -28,31 +30,37 @@ export const TripForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (formData.onibusIds.length === 0) {
+        if (!formData.onibus_ids || formData.onibus_ids.length === 0) {
             showToast('Selecione pelo menos um ônibus', 'error');
             return;
         }
 
+        if (!formData.data_ida) {
+            showToast('Informe a data de ida', 'error');
+            return;
+        }
+
+        const preco = typeof formData.preco === 'string' ? parseFloat(formData.preco) : formData.preco;
+
+        if (isNaN(preco) || preco <= 0) {
+            showToast('Informe um preço válido', 'error');
+            return;
+        }
+
         try {
-            // Envia a data diretamente no formato datetime-local
-            // O Supabase vai interpretar como timestamp local
-            await createViagem(formData);
+            await createViagem({
+                nome: formData.nome,
+                destino: formData.destino,
+                data_ida: formData.data_ida,
+                data_volta: formData.data_volta || undefined,
+                preco,
+                onibus_ids: formData.onibus_ids,
+            });
             showToast('Viagem cadastrada com sucesso!', 'success');
             navigate('/viagens');
         } catch (error) {
             showToast('Erro ao cadastrar viagem', 'error');
         }
-    };
-
-    const toggleBus = (busId: string) => {
-        setFormData(prev => {
-            const currentIds = prev.onibusIds;
-            if (currentIds.includes(busId)) {
-                return { ...prev, onibusIds: currentIds.filter(id => id !== busId) };
-            } else {
-                return { ...prev, onibusIds: [...currentIds, busId] };
-            }
-        });
     };
 
     return (
@@ -63,10 +71,10 @@ export const TripForm: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
-                            label="Origem"
-                            value={formData.origem}
-                            onChange={(e) => setFormData({ ...formData, origem: e.target.value })}
-                            placeholder="Ex: São Paulo"
+                            label="Nome da Viagem (Origem)"
+                            value={formData.nome}
+                            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                            placeholder="Ex: Excursão Aparecida"
                             required
                         />
 
@@ -74,49 +82,48 @@ export const TripForm: React.FC = () => {
                             label="Destino"
                             value={formData.destino}
                             onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
-                            placeholder="Ex: Rio de Janeiro"
+                            placeholder="Ex: Aparecida do Norte"
                             required
                         />
                     </div>
 
-                    <Input
-                        type="datetime-local"
-                        label="Data e Hora"
-                        value={formData.data}
-                        onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                        required
-                    />
-
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                            Ônibus (Selecione um ou mais)
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 border border-gray-300 rounded-lg p-3 max-h-60 overflow-y-auto">
-                            {buses.map((bus) => (
-                                <label key={bus.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.onibusIds.includes(bus.id)}
-                                        onChange={() => toggleBus(bus.id)}
-                                        className="rounded border-gray-300 text-primary focus:ring-primary"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        {bus.nome} - {bus.placa} ({bus.totalAssentos} lug.)
-                                    </span>
-                                </label>
-                            ))}
-                            {buses.length === 0 && (
-                                <p className="text-gray-500 text-sm p-2">Nenhum ônibus cadastrado.</p>
-                            )}
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            type="datetime-local"
+                            label="Data de Ida"
+                            value={formData.data_ida}
+                            onChange={(e) => setFormData({ ...formData, data_ida: e.target.value })}
+                            required
+                        />
+                        <Input
+                            type="datetime-local"
+                            label="Data de Volta (Opcional)"
+                            value={formData.data_volta}
+                            onChange={(e) => setFormData({ ...formData, data_volta: e.target.value })}
+                        />
                     </div>
 
                     <Input
-                        label="Descrição (opcional)"
-                        value={formData.descricao}
-                        onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                        placeholder="Ex: Viagem executiva com paradas"
+                        type="number"
+                        label="Preço"
+                        value={formData.preco}
+                        onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : '' })}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        required
                     />
+
+
+                    <BusMultiSelect
+                        buses={buses}
+                        selectedBusIds={formData.onibus_ids}
+                        onChange={(busIds) => setFormData({ ...formData, onibus_ids: busIds })}
+                        label="Ônibus"
+                        required
+                    />
+
+
 
                     <div className="flex gap-3">
                         <Button type="submit">Salvar</Button>

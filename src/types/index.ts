@@ -1,44 +1,90 @@
 // Bus types
-export interface BusConfig {
-    rows: number;
-    columns: number;
-    corridorAfterColumn?: number;
-    excludedSeats?: string[]; // Seats that don't exist (e.g., bathroom area)
-}
-
 export interface Bus {
     id: string;
     nome: string;
-    placa: string;
-    configuracaoAssentos: BusConfig;
-    totalAssentos: number;
+    placa?: string;
+    capacidade: number;
+    created_at?: string;
+    updated_at?: string;
 }
 
 // Trip types
 export interface Trip {
     id: string;
-    origem: string;
+    nome: string;
     destino: string;
-    data: string;
-    onibusIds: string[]; // Changed from onibusId to onibusIds
-    descricao?: string;
+    data_ida: string;
+    data_volta?: string;
+    preco: number;
+    onibus_id?: string; // Deprecated: kept for backward compatibility
+    onibus_ids?: string[]; // New: array of bus IDs
+    created_at?: string;
+    updated_at?: string;
+}
+
+// Trip-Bus relationship (junction table)
+export interface TripBus {
+    id: string;
+    viagem_id: string;
+    onibus_id: string;
+    created_at?: string;
 }
 
 // Passenger types
 export interface Passenger {
     id: string;
-    nome: string;
-    documento: string;
-    telefone: string;
-    congregacao?: string;
-    idade?: string;
-    estadoCivil?: string;
+    data?: string;
+    nome_completo: string;
+    cpf_rg: string;
     instrumento?: string;
+    comum_congregacao?: string;
+    estado_civil?: string;
     auxiliar?: string;
-    statusPagamento?: string;
+    idade?: number;
+    telefone?: string;
+    pagamento?: string;
+    viagem_id?: string;
+    assento?: string;
+    valor_pago?: number;
+    created_at?: string;
+    updated_at?: string;
 }
 
-// Seat types
+// Movimentação types
+export interface Movimentacao {
+    id: string;
+    passageiro_id: string;
+    tipo: 'entrada' | 'saida';
+    valor: number;
+    descricao?: string;
+    data_hora: string;
+    created_at?: string;
+}
+
+// Profile types
+export interface Profile {
+    id: string;
+    email: string;
+    full_name?: string;
+    role: 'admin' | 'user';
+    created_at?: string;
+    updated_at?: string;
+}
+
+// User types (for auth)
+export enum UserRole {
+    ADMIN = 'admin',
+    USER = 'user',
+}
+
+export interface User {
+    id: string;
+    email: string;
+    full_name?: string;
+    role: UserRole;
+}
+
+// Seat types (for backward compatibility with existing components)
 export enum SeatStatus {
     LIVRE = 'LIVRE',
     OCUPADO = 'OCUPADO',
@@ -47,23 +93,8 @@ export enum SeatStatus {
 
 export interface SeatAssignment {
     viagemId: string;
-    onibusId: string; // Added onibusId to distinguish seats across buses
+    onibusId: string;
     assentoCodigo: string;
     passageiroId?: string;
     status: SeatStatus;
-}
-
-// User types
-export enum UserRole {
-    ADMIN = 'admin',
-    PASSAGEIRO = 'passageiro',
-    VISUALIZADOR = 'visualizador',
-}
-
-export interface User {
-    email: string;
-    nome: string;
-    role: UserRole;
-    documento?: string;
-    passageiroId?: string;
 }

@@ -16,9 +16,7 @@ export const BusForm: React.FC = () => {
     const [formData, setFormData] = useState({
         nome: '',
         placa: '',
-        rows: 10,
-        columns: 4,
-        corridorAfterColumn: 2,
+        capacidade: 46,
     });
 
     useEffect(() => {
@@ -33,10 +31,8 @@ export const BusForm: React.FC = () => {
             if (bus) {
                 setFormData({
                     nome: bus.nome,
-                    placa: bus.placa,
-                    rows: bus.configuracaoAssentos.rows,
-                    columns: bus.configuracaoAssentos.columns,
-                    corridorAfterColumn: bus.configuracaoAssentos.corridorAfterColumn || 0,
+                    placa: bus.placa || '',
+                    capacidade: bus.capacidade || 46,
                 });
             }
         }
@@ -45,16 +41,10 @@ export const BusForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const totalAssentos = formData.rows * formData.columns;
         const busData = {
             nome: formData.nome,
             placa: formData.placa,
-            configuracaoAssentos: {
-                rows: formData.rows,
-                columns: formData.columns,
-                corridorAfterColumn: formData.corridorAfterColumn,
-            },
-            totalAssentos,
+            capacidade: formData.capacidade,
         };
 
         try {
@@ -95,48 +85,16 @@ export const BusForm: React.FC = () => {
                         required
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Input
-                            type="number"
-                            label="Número de Linhas"
-                            value={formData.rows}
-                            onChange={(e) =>
-                                setFormData({ ...formData, rows: parseInt(e.target.value) || 0 })
-                            }
-                            min="1"
-                            required
-                        />
-
-                        <Input
-                            type="number"
-                            label="Número de Colunas"
-                            value={formData.columns}
-                            onChange={(e) =>
-                                setFormData({ ...formData, columns: parseInt(e.target.value) || 0 })
-                            }
-                            min="1"
-                            required
-                        />
-
-                        <Input
-                            type="number"
-                            label="Corredor após Coluna"
-                            value={formData.corridorAfterColumn}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    corridorAfterColumn: parseInt(e.target.value) || 0,
-                                })
-                            }
-                            min="0"
-                        />
-                    </div>
-
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">
-                            Total de assentos: <span className="font-semibold">{formData.rows * formData.columns}</span>
-                        </p>
-                    </div>
+                    <Input
+                        type="number"
+                        label="Capacidade (Total de Assentos)"
+                        value={formData.capacidade}
+                        onChange={(e) =>
+                            setFormData({ ...formData, capacidade: parseInt(e.target.value) || 0 })
+                        }
+                        min="1"
+                        required
+                    />
 
                     <div className="flex gap-3">
                         <Button type="submit">{isEditing ? 'Atualizar' : 'Salvar'}</Button>

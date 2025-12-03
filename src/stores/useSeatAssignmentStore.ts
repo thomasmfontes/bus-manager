@@ -1,176 +1,67 @@
 import { create } from 'zustand';
-import { SeatAssignment, SeatStatus } from '@/types';
+import { Passenger } from '@/types';
 import { supabase } from '@/lib/supabase';
 
 interface SeatAssignmentState {
-    assignments: SeatAssignment[];
     loading: boolean;
-    getAssentosPorViagem: (viagemId: string) => SeatAssignment[];
-    fetchTodosAssentos: () => Promise<void>;
-    fetchAssentosPorViagem: (viagemId: string) => Promise<void>;
-    atribuirAssento: (
-        viagemId: string,
-        onibusId: string,
-        assentoCodigo: string,
-        passageiroId: string
-    ) => Promise<void>;
-    liberarAssento: (viagemId: string, onibusId: string, assentoCodigo: string) => Promise<void>;
-    bloquearAssento: (viagemId: string, onibusId: string, assentoCodigo: string) => Promise<void>;
+    getAssentosPorViagem: (viagemId: string) => Promise<Passenger[]>;
+    atribuirAssento: (passageiroId: string, assento: string) => Promise<void>;
+    liberarAssento: (passageiroId: string) => Promise<void>;
+    bloquearAssento: (passageiroId: string) => Promise<void>;
 }
 
-export const useSeatAssignmentStore = create<SeatAssignmentState>((set, get) => ({
-    assignments: [],
+export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     loading: false,
-    getAssentosPorViagem: (viagemId) => {
-        return get().assignments.filter((a) => a.viagemId === viagemId);
-    },
-    fetchTodosAssentos: async () => {
-        set({ loading: true });
+
+    // Busca todos os passageiros de uma viagem com seus assentos
+    getAssentosPorViagem: async (viagemId: string) => {
         try {
             const { data, error } = await supabase
-                .from('seat_assignments')
-                .select('*');
-
-            if (error) throw error;
-
-            const mappedAssignments: SeatAssignment[] = data.map((a: any) => ({
-                viagemId: a.viagem_id,
-                onibusId: a.onibus_id,
-                assentoCodigo: a.assento_codigo,
-                passageiroId: a.passageiro_id,
-                status: a.status as SeatStatus,
-            }));
-
-            set({ assignments: mappedAssignments, loading: false });
-        } catch (error) {
-            console.error('Error fetching all seat assignments:', error);
-            set({ loading: false });
-        }
-    },
-    fetchAssentosPorViagem: async (viagemId) => {
-        set({ loading: true });
-        try {
-            const { data, error } = await supabase
-                .from('seat_assignments')
+                .from('passageiros')
                 .select('*')
-                .eq('viagem_id', viagemId);
+                .eq('viagem_id', viagemId)
+                .not('assento', 'is', null);
 
             if (error) throw error;
-
-            const mappedAssignments: SeatAssignment[] = data.map((a: any) => ({
-                viagemId: a.viagem_id,
-                onibusId: a.onibus_id,
-                assentoCodigo: a.assento_codigo,
-                passageiroId: a.passageiro_id,
-                status: a.status as SeatStatus,
-            }));
-
-            // Filter out old assignments for this trip and add new ones
-            const currentAssignments = get().assignments.filter((a) => a.viagemId !== viagemId);
-            set({ assignments: [...currentAssignments, ...mappedAssignments], loading: false });
+            return data || [];
         } catch (error) {
-            console.error('Error fetching seat assignments:', error);
-            set({ loading: false });
+            console.error('Error fetching assentos:', error);
+            return [];
         }
     },
-    atribuirAssento: async (viagemId, onibusId, assentoCodigo, passageiroId) => {
+
+    // Atribui um assento a um passageiro
+    atribuirAssento: async (passageiroId: string, assento: string) => {
+        set({ loading: true });
         try {
-            // Upsert to handle re-assignment or new assignment
-            const { data, error } = await supabase
-                .from('seat_assignments')
-                .upsert(
-                    {
-                        viagem_id: viagemId,
-                        onibus_id: onibusId,
-                        assento_codigo: assentoCodigo,
-                        passageiro_id: passageiroId,
-                        status: SeatStatus.OCUPADO,
-                    },
-                    { onConflict: 'viagem_id,onibus_id,assento_codigo' }
-                )
-                .select()
-                .single();
+            const { error } = await supabase
+                .from('passageiros')
+                .update({ assento })
+                .eq('id', passageiroId);
 
             if (error) throw error;
-
-            const newAssignment: SeatAssignment = {
-                viagemId: data.viagem_id,
-                onibusId: data.onibus_id,
-                assentoCodigo: data.assento_codigo,
-                passageiroId: data.passageiro_id,
-                status: data.status as SeatStatus,
-            };
-
-            const currentAssignments = get().assignments.filter(
-                (a) => !(a.viagemId === viagemId && a.onibusId === onibusId && a.assentoCodigo === assentoCodigo)
-            );
-            set({ assignments: [...currentAssignments, newAssignment] });
+            set({ loading: false });
         } catch (error) {
             console.error('Error assigning seat:', error);
+            set({ loading: false });
             throw error;
         }
     },
-    liberarAssento: async (viagemId, onibusId, assentoCodigo) => {
-        try {
-            // Delete the assignment record to free the seat
-            // Alternatively, we could update status to LIVRE, but usually no record means free.
-            // However, the store expects assignments. If we delete, it's gone from the store.
-            // But wait, the previous mock implementation updated status to LIVRE.
-            // If I delete the row, I should remove it from the store.
 
+    // Libera o assento de um passageiro
+    liberarAssento: async (passageiroId: string) => {
+        set({ loading: true });
+        try {
             const { error } = await supabase
-                .from('seat_assignments')
-                .delete()
-                .match({
-                    viagem_id: viagemId,
-                    onibus_id: onibusId,
-                    assento_codigo: assentoCodigo,
-                });
+                .from('passageiros')
+                .update({ assento: null })
+                .eq('id', passageiroId);
 
             if (error) throw error;
-
-            const currentAssignments = get().assignments.filter(
-                (a) => !(a.viagemId === viagemId && a.onibusId === onibusId && a.assentoCodigo === assentoCodigo)
-            );
-            set({ assignments: currentAssignments });
+            set({ loading: false });
         } catch (error) {
             console.error('Error releasing seat:', error);
-            throw error;
-        }
-    },
-    bloquearAssento: async (viagemId, onibusId, assentoCodigo) => {
-        try {
-            const { data, error } = await supabase
-                .from('seat_assignments')
-                .upsert(
-                    {
-                        viagem_id: viagemId,
-                        onibus_id: onibusId,
-                        assento_codigo: assentoCodigo,
-                        passageiro_id: null, // No passenger for blocked seat
-                        status: SeatStatus.BLOQUEADO,
-                    },
-                    { onConflict: 'viagem_id,onibus_id,assento_codigo' }
-                )
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            const newAssignment: SeatAssignment = {
-                viagemId: data.viagem_id,
-                onibusId: data.onibus_id,
-                assentoCodigo: data.assento_codigo,
-                passageiroId: data.passageiro_id,
-                status: data.status as SeatStatus,
-            };
-
-            const currentAssignments = get().assignments.filter(
-                (a) => !(a.viagemId === viagemId && a.onibusId === onibusId && a.assentoCodigo === assentoCodigo)
-            );
-            set({ assignments: [...currentAssignments, newAssignment] });
-        } catch (error) {
-            console.error('Error blocking seat:', error);
+            set({ loading: false });
             throw error;
         }
     },

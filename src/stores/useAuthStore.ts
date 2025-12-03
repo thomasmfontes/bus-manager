@@ -20,9 +20,8 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             login: async (email: string, senha: string, documento?: string) => {
                 try {
-                    let role: UserRole = UserRole.VISUALIZADOR;
+                    let role: UserRole = UserRole.USER;
                     let passageiroId: string | undefined;
-                    let userDocumento: string | undefined;
                     let userName: string = '';
 
                     // Check if admin (only admin can login with email)
@@ -49,18 +48,17 @@ export const useAuthStore = create<AuthState>()(
                         // Clean the document (remove non-digits)
                         const cleanDoc = documento.replace(/\D/g, '');
 
-                        // Try to find in excursao_passengers
+                        // Try to find in passageiros
                         const { data: passenger } = await supabase
-                            .from('excursao_passengers')
-                            .select('id, cpf, rg, full_name')
-                            .or(`cpf.eq.${documento},rg.eq.${documento},cpf.eq.${cleanDoc},rg.eq.${cleanDoc}`)
+                            .from('passageiros')
+                            .select('id, cpf_rg, nome_completo')
+                            .or(`cpf_rg.eq.${documento},cpf_rg.eq.${cleanDoc}`)
                             .maybeSingle();
 
                         if (passenger) {
-                            role = UserRole.PASSAGEIRO;
+                            role = UserRole.USER;
                             passageiroId = passenger.id;
-                            userDocumento = passenger.cpf || passenger.rg || documento;
-                            userName = passenger.full_name;
+                            userName = passenger.nome_completo;
                         } else {
                             // Not found -> Return false to trigger redirect to form
                             return false;
@@ -73,11 +71,10 @@ export const useAuthStore = create<AuthState>()(
                     set({
                         isAuthenticated: true,
                         user: {
+                            id: passageiroId || '',
                             email: email || documento || '',
-                            nome: userName,
+                            full_name: userName,
                             role,
-                            documento: userDocumento,
-                            passageiroId,
                         },
                     });
                     return true;
@@ -101,7 +98,7 @@ export const useAuthStore = create<AuthState>()(
             },
             canSelectOwnSeat: () => {
                 const { user } = get();
-                return user?.role === UserRole.PASSAGEIRO || user?.role === UserRole.ADMIN;
+                return user?.role === UserRole.USER || user?.role === UserRole.ADMIN;
             },
         }),
         {
