@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { Database, Download, FileSpreadsheet } from 'lucide-react';
-import * as XLSX from 'xlsx';
 
 export const DataManagement: React.FC = () => {
     const { showToast } = useToast();
@@ -12,53 +11,40 @@ export const DataManagement: React.FC = () => {
     const handleExportData = async () => {
         setExporting(true);
         try {
-            // Fetch only passengers
-            const { data: passengers, error } = await supabase
-                .from('excursao_passengers')
-                .select('*')
-                .order('full_name');
-
-            if (error) throw error;
-
-            if (!passengers || passengers.length === 0) {
-                showToast('Nenhum passageiro encontrado para exportar.', 'error');
+            // Get current session token
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('Você precisa estar autenticado', 'error');
+                return;
             }
 
-            // Process data for export
-            const processedPassengers = passengers?.map(p => ({
-                Nome: p.full_name,
-                Documento: p.cpf || p.rg || '-',
-            })) || [];
+            // Call secure API endpoint
+            const response = await fetch('/api/data/export', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
 
-            // Create workbook
-            const wb = XLSX.utils.book_new();
-
-            // Define headers explicitly
-            const headers = ['Nome', 'Documento'];
-
-            // Create worksheet
-            let wsPassengers;
-            if (processedPassengers.length === 0) {
-                wsPassengers = XLSX.utils.aoa_to_sheet([headers]);
-            } else {
-                wsPassengers = XLSX.utils.json_to_sheet(processedPassengers, { header: headers });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao exportar dados');
             }
 
-            // Adjust column widths
-            const wscols = [
-                { wch: 40 }, // Nome
-                { wch: 25 }, // Documento
-            ];
-            wsPassengers['!cols'] = wscols;
+            // Get the file blob
+            const blob = await response.blob();
 
-            XLSX.utils.book_append_sheet(wb, wsPassengers, "Passageiros");
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lista-passageiros-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
 
-            // Generate file
-            XLSX.writeFile(wb, `lista-passageiros-${new Date().toISOString().split('T')[0]}.xlsx`);
-
-            if (processedPassengers.length > 0) {
-                showToast('Lista de passageiros baixada com sucesso!', 'success');
-            }
+            showToast('Lista de passageiros baixada com sucesso!', 'success');
         } catch (error: any) {
             console.error('Error exporting data:', error);
             showToast(`Erro ao exportar: ${error.message || 'Erro desconhecido'}`, 'error');

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { Trash2, UserPlus, Shield, AlertTriangle } from 'lucide-react';
+import { Trash2, UserPlus, Shield } from 'lucide-react';
 
 interface AdminProfile {
     id: string;
@@ -48,38 +48,42 @@ export const AdminList: React.FC = () => {
 
     const handleCreateAdmin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!supabaseAdmin) {
-            showToast('Chave de serviço não configurada. Não é possível criar admins.', 'error');
-            return;
-        }
 
         try {
             setIsCreating(true);
 
-            // 1. Create user in Supabase Auth
-            const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-                email: newAdminEmail,
-                password: newAdminPassword,
-                email_confirm: true,
-                user_metadata: {
-                    full_name: newAdminName,
-                    role: 'admin'
-                }
+            // Get current session token
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('Você precisa estar autenticado', 'error');
+                return;
+            }
+
+            // Call secure API endpoint
+            const response = await fetch('/api/admin/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                    email: newAdminEmail,
+                    password: newAdminPassword,
+                    name: newAdminName
+                })
             });
 
-            if (authError) throw authError;
+            const data = await response.json();
 
-            if (authData.user) {
-                // 2. Ensure profile exists (trigger should handle it, but we can double check or update)
-                // The trigger 'on_auth_user_created' should have created the profile with role 'admin'
-                // because we passed role: 'admin' in metadata.
-
-                showToast('Administrador criado com sucesso!', 'success');
-                setNewAdminEmail('');
-                setNewAdminPassword('');
-                setNewAdminName('');
-                fetchAdmins();
+            if (!response.ok) {
+                throw new Error(data.error || 'Erro ao criar administrador');
             }
+
+            showToast('Administrador criado com sucesso!', 'success');
+            setNewAdminEmail('');
+            setNewAdminPassword('');
+            setNewAdminName('');
+            fetchAdmins();
         } catch (error: any) {
             console.error('Error creating admin:', error);
             showToast(`Erro ao criar administrador: ${error.message}`, 'error');
@@ -91,14 +95,27 @@ export const AdminList: React.FC = () => {
     const handleDeleteAdmin = async (id: string, email: string) => {
         if (!confirm(`Tem certeza que deseja remover o administrador ${email}?`)) return;
 
-        if (!supabaseAdmin) {
-            showToast('Chave de serviço não configurada.', 'error');
-            return;
-        }
-
         try {
-            const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
-            if (error) throw error;
+            // Get current session token
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('Você precisa estar autenticado', 'error');
+                return;
+            }
+
+            // Call secure API endpoint
+            const response = await fetch(`/api/admin/delete?userId=${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Erro ao remover administrador');
+            }
 
             showToast('Administrador removido com sucesso!', 'success');
             fetchAdmins();
@@ -107,22 +124,6 @@ export const AdminList: React.FC = () => {
             showToast('Erro ao remover administrador', 'error');
         }
     };
-
-    if (!supabaseAdmin) {
-        return (
-            <Card className="bg-yellow-50 border-yellow-200">
-                <div className="flex items-start gap-3">
-                    <AlertTriangle className="text-yellow-600 shrink-0 mt-1" />
-                    <div>
-                        <h3 className="font-semibold text-yellow-800">Configuração Necessária</h3>
-                        <p className="text-yellow-700 text-sm mt-1">
-                            Para gerenciar administradores, você precisa configurar a chave de serviço (VITE_SUPABASE_SERVICE_ROLE_KEY) no arquivo .env local.
-                        </p>
-                    </div>
-                </div>
-            </Card>
-        );
-    }
 
     return (
         <div className="space-y-8">
