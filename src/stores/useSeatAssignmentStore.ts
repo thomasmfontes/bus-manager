@@ -7,7 +7,7 @@ interface SeatAssignmentState {
     getAssentosPorViagem: (viagemId: string) => Promise<Passenger[]>;
     atribuirAssento: (passageiroId: string, assento: string, onibusId?: string) => Promise<void>;
     liberarAssento: (passageiroId: string) => Promise<void>;
-    bloquearAssento: (passageiroId: string) => Promise<void>;
+    bloquearAssento: (assentoCodigo: string, viagemId: string, onibusId: string) => Promise<void>;
 }
 
 export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
@@ -19,8 +19,7 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
             const { data, error } = await supabase
                 .from('passageiros')
                 .select('*')
-                .eq('viagem_id', viagemId)
-                .not('assento', 'is', null);
+                .eq('viagem_id', viagemId);
 
             if (error) throw error;
             return data || [];
@@ -70,13 +69,24 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
             throw error;
         }
     },
-    // Bloqueia um assento (implementação básica)
-    bloquearAssento: async (passageiroId: string) => {
+    // Bloqueia um assento
+    bloquearAssento: async (assentoCodigo: string, viagemId: string, onibusId: string) => {
         set({ loading: true });
         try {
-            // TODO: Implementar lógica real de bloqueio se necessário
-            // Por enquanto, apenas atualiza o status ou similar
-            console.log('Bloqueando assento para passageiro:', passageiroId);
+            // Create a blocked seat entry by inserting a special passenger record
+            const { error } = await supabase
+                .from('passageiros')
+                .insert({
+                    viagem_id: viagemId,
+                    onibus_id: onibusId,
+                    assento: assentoCodigo,
+                    nome_completo: 'BLOQUEADO',
+                    cpf_rg: 'BLOCKED',
+                    telefone: '',
+                    status_bloqueado: true
+                });
+
+            if (error) throw error;
             set({ loading: false });
         } catch (error) {
             console.error('Error blocking seat:', error);

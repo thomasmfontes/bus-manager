@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink } from 'lucide-react';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -23,6 +23,7 @@ export const TripSeatMap: React.FC = () => {
         getAssentosPorViagem,
         atribuirAssento,
         liberarAssento,
+        bloquearAssento,
     } = useSeatAssignmentStore();
     const { showToast } = useToast();
     const { user } = useAuthStore();
@@ -91,11 +92,12 @@ export const TripSeatMap: React.FC = () => {
         const assignment = assignments.find((a) => a.assentoCodigo === seatCode);
 
         if (!assignment) {
+            // Empty seat - show assign or block options
             setActionType('assign');
             setSelectedPassengerId('');
             setModalOpen(true);
         } else {
-            // If assigned, we can release
+            // Assigned seat - show release option
             setActionType('release');
             setModalOpen(true);
         }
@@ -135,6 +137,23 @@ export const TripSeatMap: React.FC = () => {
             loadAssignments(); // Reload assignments
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
+        }
+    };
+
+    const handleBlockSeat = async () => {
+        if (!id || !selectedSeat || !currentBus) {
+            showToast('Selecione um assento e um ônibus', 'error');
+            return;
+        }
+
+        try {
+            await bloquearAssento(selectedSeat, id, currentBus.id);
+            showToast('Assento bloqueado com sucesso!', 'success');
+            setModalOpen(false);
+            setSelectedSeat(null);
+            loadAssignments(); // Reload assignments
+        } catch (error) {
+            showToast('Erro ao bloquear assento', 'error');
         }
     };
 
@@ -313,7 +332,10 @@ export const TripSeatMap: React.FC = () => {
                                             <Check size={20} className="sm:mr-2" />
                                             <span className="hidden sm:inline">Atribuir</span>
                                         </Button>
-                                        {/* Block button removed for now */}
+                                        <Button variant="secondary" onClick={handleBlockSeat}>
+                                            <Lock size={20} className="sm:mr-2" />
+                                            <span className="hidden sm:inline">Bloquear</span>
+                                        </Button>
                                     </>
                                 )}
                                 {actionType === 'release' && (
