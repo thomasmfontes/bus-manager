@@ -77,19 +77,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Create profile with admin role
-        const { error: profileError } = await adminClient
+        console.log('Attempting to create profile for user:', newUser.user.id);
+        console.log('Profile data:', { id: newUser.user.id, full_name: name, role: 'admin' });
+
+        const { data: profileData, error: profileError } = await adminClient
             .from('profiles')
             .insert({
                 id: newUser.user.id,
                 full_name: name,
                 role: 'admin'
-            });
+            })
+            .select();
+
+        console.log('Profile creation result:', { profileData, profileError });
 
         if (profileError) {
             console.error('Error creating profile:', profileError);
+            console.error('Full error details:', JSON.stringify(profileError, null, 2));
             // Try to delete the user if profile creation failed
             await adminClient.auth.admin.deleteUser(newUser.user.id);
-            return res.status(400).json({ error: 'Failed to create admin profile' });
+            return res.status(400).json({
+                error: 'Failed to create admin profile',
+                details: profileError.message
+            });
         }
 
         return res.status(200).json({
