@@ -76,8 +76,9 @@ export const TripSeatMap: React.FC = () => {
     const currentBus = tripBuses.find(b => b.id === selectedBusId) || tripBuses[0] || null;
 
     // Map passengers to SeatAssignments for the SeatMap component
-    // Only show assignments for the currently selected bus
+    // Only show assignments for the currently selected bus AND passengers with seats
     const assignments = tripPassengers
+        .filter(p => p.assento) // Only include passengers with assigned seats
         .filter(p => !p.onibus_id || p.onibus_id === currentBus?.id) // Filter by bus if passenger has bus assignment
         .map(p => ({
             viagemId: p.viagem_id,

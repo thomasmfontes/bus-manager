@@ -82,8 +82,7 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
                     assento: assentoCodigo,
                     nome_completo: 'BLOQUEADO',
                     cpf_rg: 'BLOCKED',
-                    telefone: '',
-                    status_bloqueado: true
+                    telefone: ''
                 });
 
             if (error) throw error;
