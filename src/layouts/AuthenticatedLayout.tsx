@@ -48,18 +48,18 @@ export const AuthenticatedLayout: React.FC = () => {
     const isActive = (path: string) => location.pathname.startsWith(path);
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Mobile Header */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-16 px-4 flex items-center justify-between shadow-sm">
+            <div className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-50 h-16 px-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 -ml-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         aria-label="Toggle menu"
                     >
                         {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
                     </button>
-                    <span className="font-bold text-gray-900 text-lg">Bus Manager</span>
+                    <span className="font-bold text-gray-900 dark:text-white text-lg">Bus Manager</span>
                 </div>
             </div>
 

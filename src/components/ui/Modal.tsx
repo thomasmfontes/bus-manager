@@ -52,17 +52,17 @@ export const Modal: React.FC<ModalProps> = ({
 
             {/* Modal */}
             <div className={cn(
-                'relative bg-white rounded-2xl shadow-2xl w-full mx-4 max-h-[90vh] overflow-hidden',
+                'relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full mx-4 max-h-[90vh] overflow-hidden',
                 'animate-in fade-in',
                 sizes[size],
                 className
             )}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         <X size={20} />
                     </button>
@@ -75,7 +75,7 @@ export const Modal: React.FC<ModalProps> = ({
 
                 {/* Footer */}
                 {footer && (
-                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                         {footer}
                     </div>
                 )}
@@ -116,7 +116,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 </>
             }
         >
-            <p className="text-gray-700 leading-relaxed">{message}</p>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{message}</p>
         </Modal>
     );
 };
