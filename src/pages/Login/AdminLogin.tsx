@@ -22,10 +22,7 @@ export const AdminLogin: React.FC = () => {
             return;
         }
 
-        if (email !== 'thomas@fontes.ca') {
-            showToast('Email de administrador inválido', 'error');
-            return;
-        }
+
 
         setLoading(true);
         const success = await login(email, senha);

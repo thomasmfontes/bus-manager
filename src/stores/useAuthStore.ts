@@ -24,11 +24,8 @@ export const useAuthStore = create<AuthState>()(
                     let passageiroId: string | undefined;
                     let userName: string = '';
 
-                    // Check if admin (only admin can login with email)
-                    if (email === 'thomas@fontes.ca') {
-                        // Admin requires password and real Supabase authentication
-                        if (!senha) return false;
-
+                    // Check if trying to login with email (Admin flow)
+                    if (email && senha) {
                         // Authenticate with Supabase
                         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
                             email,
@@ -36,12 +33,25 @@ export const useAuthStore = create<AuthState>()(
                         });
 
                         if (authError || !authData.user) {
-                            console.error('Admin authentication failed:', authError);
+                            console.error('Authentication failed:', authError);
+                            return false;
+                        }
+
+                        // Check if user has admin role in profiles
+                        const { data: profile, error: profileError } = await supabase
+                            .from('profiles')
+                            .select('role, full_name')
+                            .eq('id', authData.user.id)
+                            .single();
+
+                        if (profileError || !profile || profile.role !== 'admin') {
+                            console.error('User is not an admin:', profileError);
+                            await supabase.auth.signOut(); // Logout if not admin
                             return false;
                         }
 
                         role = UserRole.ADMIN;
-                        userName = 'Administrador';
+                        userName = profile.full_name || 'Administrador';
                     }
                     // All other users MUST provide documento
                     else if (documento) {
