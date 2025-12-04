@@ -78,15 +78,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Create profile with admin role
         console.log('Attempting to create profile for user:', newUser.user.id);
-        console.log('Profile data:', { id: newUser.user.id, email, full_name: name, role: 'admin' });
+        console.log('Profile data:', { id: newUser.user.id, full_name: name, role: 'admin' });
 
         const { data: profileData, error: profileError } = await adminClient
             .from('profiles')
-            .insert({
+            .upsert({
                 id: newUser.user.id,
                 email: email,
                 full_name: name,
                 role: 'admin'
+            }, {
+                onConflict: 'id'
             })
             .select();
 
