@@ -189,7 +189,8 @@ export const TripSeatMap: React.FC = () => {
 
     const passengerOptions = [
         { value: '', label: '-- Selecione um passageiro --' },
-        ...tripPassengers // Use tripPassengers instead of all passengers
+        ...passengers
+            .filter((p) => p.nome_completo !== 'BLOQUEADO') // Exclude blocked seat markers
             .filter((p) => !assignedPassengerIds.includes(p.id)) // Filter out already assigned passengers
             .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo))
             .map((p) => ({
