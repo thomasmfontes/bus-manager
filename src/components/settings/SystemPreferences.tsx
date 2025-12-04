@@ -1,26 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import React from 'react';
 import { Card } from '@/components/ui/Card';
-import { useToast } from '@/components/ui/Toast';
-import { Settings, Save } from 'lucide-react';
+import { Settings } from 'lucide-react';
+import { useThemeStore } from '@/stores/useThemeStore';
 
 export const SystemPreferences: React.FC = () => {
-    const { showToast } = useToast();
-    const [defaultSeats, setDefaultSeats] = useState('46');
-
-    useEffect(() => {
-        const savedSeats = localStorage.getItem('default_bus_seats');
-        if (savedSeats) {
-            setDefaultSeats(savedSeats);
-        }
-    }, []);
-
-    const handleSave = (e: React.FormEvent) => {
-        e.preventDefault();
-        localStorage.setItem('default_bus_seats', defaultSeats);
-        showToast('Preferências salvas com sucesso!', 'success');
-    };
+    const { theme, toggleTheme } = useThemeStore();
 
     return (
         <div className="space-y-4 sm:space-y-6">
@@ -30,39 +14,34 @@ export const SystemPreferences: React.FC = () => {
                         <Settings className="text-white" size={20} />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Preferências do Sistema</h2>
-                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Personalize o comportamento padrão do sistema</p>
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Aparência</h2>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Personalize a aparência do sistema</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSave} className="space-y-4">
-                    <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Capacidade Padrão dos Ônibus
-                        </label>
-                        <p className="text-xs text-gray-500 mb-3">
-                            Este valor será preenchido automaticamente ao criar um novo ônibus.
-                        </p>
-                        <div className="flex items-center gap-3">
-                            <Input
-                                type="number"
-                                value={defaultSeats}
-                                onChange={(e) => setDefaultSeats(e.target.value)}
-                                placeholder="Ex: 46"
-                                min="1"
-                                className="flex-1"
-                            />
-                            <span className="text-sm font-medium text-gray-600 whitespace-nowrap">lugares</span>
+                <div className="space-y-6">
+                    <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                Modo Escuro
+                            </label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Alterne entre tema claro e escuro para melhor conforto visual.
+                            </p>
                         </div>
-                    </div>
 
-                    <div className="flex justify-end pt-2">
-                        <Button type="submit" className="w-full sm:w-auto">
-                            <Save size={18} />
-                            Salvar Preferências
-                        </Button>
+                        <button
+                            onClick={toggleTheme}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span
+                                className={`${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                                    } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                            />
+                        </button>
                     </div>
-                </form>
+                </div>
             </Card>
         </div>
     );
