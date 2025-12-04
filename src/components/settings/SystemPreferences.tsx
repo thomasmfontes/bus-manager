@@ -8,7 +8,7 @@ export const SystemPreferences: React.FC = () => {
     return (
         <div className="space-y-4 sm:space-y-6">
             {/* Video */}
-            <div className="rounded-2xl overflow-hidden shadow-2xl">
+            <div className="rounded-2xl overflow-hidden shadow-2xl max-w-2xl mx-auto">
                 <video
                     autoPlay
                     loop
