@@ -38,15 +38,20 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
                 updateData.onibus_id = onibusId;
             }
 
-            const { error } = await supabase
+            console.log('🎯 Atribuindo assento:', { passageiroId, assento, onibusId, updateData });
+
+            const { data, error } = await supabase
                 .from('passageiros')
                 .update(updateData)
-                .eq('id', passageiroId);
+                .eq('id', passageiroId)
+                .select();
+
+            console.log('📊 Resultado da atribuição:', { data, error });
 
             if (error) throw error;
             set({ loading: false });
         } catch (error) {
-            console.error('Error assigning seat:', error);
+            console.error('❌ Error assigning seat:', error);
             set({ loading: false });
             throw error;
         }

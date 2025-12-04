@@ -110,6 +110,13 @@ export const TripSeatMap: React.FC = () => {
             return;
         }
 
+        console.log('🚀 Iniciando atribuição:', {
+            tripId: id,
+            seat: selectedSeat,
+            passengerId: selectedPassengerId,
+            busId: currentBus.id
+        });
+
         try {
             await atribuirAssento(selectedPassengerId, selectedSeat, currentBus.id);
 
@@ -117,8 +124,12 @@ export const TripSeatMap: React.FC = () => {
             setModalOpen(false);
             setSelectedSeat(null);
             setSelectedPassengerId('');
-            loadAssignments(); // Reload assignments
+
+            console.log('✅ Recarregando assentos...');
+            await loadAssignments(); // Reload assignments
+            console.log('✅ Assentos recarregados');
         } catch (error) {
+            console.error('❌ Erro ao atribuir:', error);
             showToast('Erro ao atribuir assento', 'error');
         }
     };
