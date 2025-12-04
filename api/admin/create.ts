@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .from('profiles')
             .insert({
                 id: newUser.user.id,
-                name,
+                full_name: name,
                 role: 'admin'
             });
 
