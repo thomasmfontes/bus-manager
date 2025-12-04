@@ -77,12 +77,6 @@ export const BusMultiSelect: React.FC<BusMultiSelectProps> = ({
                     })}
                 </div>
             )}
-
-            {selectedBusIds.length > 0 && (
-                <p className="text-sm text-gray-600">
-                    {selectedBusIds.length} ônibus selecionado{selectedBusIds.length !== 1 ? 's' : ''}
-                </p>
-            )}
         </div>
     );
 };

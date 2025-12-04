@@ -28,10 +28,16 @@ export const Dashboard: React.FC = () => {
     // Count passengers with assigned seats
     const occupiedSeats = passengers.filter((p) => p.assento !== null && p.assento !== undefined).length;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const upcomingTrips = trips
-        .filter((trip) => trip.data_ida >= today)
-        .sort((a, b) => a.data_ida.localeCompare(b.data_ida))
+        .filter((trip) => {
+            if (!trip.data_ida) return false;
+            const tripDate = new Date(trip.data_ida);
+            return tripDate >= today;
+        })
+        .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime())
         .slice(0, 5);
 
     const formatDate = (dateString: string) => {
@@ -171,7 +177,9 @@ export const Dashboard: React.FC = () => {
                                         </span>
                                         <span className="flex items-center gap-2">
                                             <Bus size={16} className="shrink-0" />
-                                            {trip.onibus_id ? '1 ônibus' : 'Nenhum ônibus'}
+                                            {trip.onibus_ids?.length
+                                                ? `${trip.onibus_ids.length} ônibus`
+                                                : (trip.onibus_id ? '1 ônibus' : 'Nenhum ônibus')}
                                         </span>
                                     </div>
                                 </div>
