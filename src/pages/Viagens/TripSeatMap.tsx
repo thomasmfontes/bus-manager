@@ -183,11 +183,13 @@ export const TripSeatMap: React.FC = () => {
         });
     };
 
-    const assignedPassengerIds = tripPassengers.map((p) => p.id);
+    const assignedPassengerIds = tripPassengers
+        .filter(p => p.assento) // Only passengers with seats
+        .map((p) => p.id);
 
     const passengerOptions = [
         { value: '', label: '-- Selecione um passageiro --' },
-        ...passengers
+        ...tripPassengers // Use tripPassengers instead of all passengers
             .filter((p) => !assignedPassengerIds.includes(p.id)) // Filter out already assigned passengers
             .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo))
             .map((p) => ({
