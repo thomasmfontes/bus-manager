@@ -77,7 +77,6 @@ export enum UserRole {
     ADMIN = 'admin',
     USER = 'user',
     PASSAGEIRO = 'passageiro',
-    VISUALIZADOR = 'visualizador',
 }
 
 export interface User {

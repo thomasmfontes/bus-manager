@@ -13,12 +13,7 @@ export const AuthenticatedLayout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
-    // Show registration modal on every page load/navigation for Visualizadores
-    useEffect(() => {
-        if (user?.role === UserRole.VISUALIZADOR) {
-            setShowRegistrationModal(true);
-        }
-    }, [location.pathname, user]);
+
 
     useEffect(() => {
         if (sidebarOpen) {
@@ -147,12 +142,10 @@ export const AuthenticatedLayout: React.FC = () => {
                                 <span className={cn(
                                     "text-xs px-2 py-0.5 rounded-full font-medium",
                                     user?.role === UserRole.ADMIN && "bg-blue-500/20 text-blue-300",
-                                    user?.role === UserRole.PASSAGEIRO && "bg-green-500/20 text-green-300",
-                                    user?.role === UserRole.VISUALIZADOR && "bg-gray-500/20 text-gray-300"
+                                    user?.role === UserRole.PASSAGEIRO && "bg-green-500/20 text-green-300"
                                 )}>
                                     {user?.role === UserRole.ADMIN && "Admin"}
                                     {user?.role === UserRole.PASSAGEIRO && "Passageiro"}
-                                    {user?.role === UserRole.VISUALIZADOR && "Visualizador"}
                                 </span>
                             </div>
                         </div>

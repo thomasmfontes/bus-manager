@@ -318,7 +318,7 @@ export const TripSeatMap: React.FC = () => {
                             <X size={20} className="sm:mr-2" />
                             <span className="hidden sm:inline">Cancelar</span>
                         </Button>
-                        {/* Visualizador: registration link */}
+                        {/* Registration link for non-registered users */}
                         {user?.role === UserRole.USER && !user.id && (
                             <a
                                 href="https://excursao-agua-rasa.vercel.app/"
