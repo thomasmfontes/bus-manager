@@ -85,7 +85,7 @@ export const TripSeatMap: React.FC = () => {
             onibusId: p.onibus_id || trip?.onibus_id || currentBus?.id || '',
             assentoCodigo: p.assento,
             passageiroId: p.id,
-            status: SeatStatus.OCUPADO
+            status: p.nome_completo === 'BLOQUEADO' ? SeatStatus.BLOQUEADO : SeatStatus.OCUPADO
         }));
 
     const handleSeatClick = (seatCode: string) => {
