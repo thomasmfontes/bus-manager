@@ -262,7 +262,7 @@ export const TripSeatMap: React.FC = () => {
 
             {/* Bus Selector Tabs */}
             {tripBuses.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
                     {tripBuses.map((bus) => (
                         <button
                             key={bus.id}
