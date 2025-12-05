@@ -1,15 +1,16 @@
 import { Bus, Passenger, Trip, SeatAssignment, SeatStatus } from '@/types';
 
-// Generate seat codes (e.g., 1A, 1B, 2A, 2B), excluding specified seats
+// Generate seat codes sequentially (1, 2, 3, 4...), excluding specified seats
 export const generateSeatCodes = (rows: number, columns: number, excludedSeats: string[] = []): string[] => {
     const codes: string[] = [];
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let seatNumber = 1;
     for (let row = 1; row <= rows; row++) {
         for (let col = 0; col < columns; col++) {
-            const code = `${row}${letters[col]}`;
+            const code = seatNumber.toString();
             if (!excludedSeats.includes(code)) {
                 codes.push(code);
             }
+            seatNumber++;
         }
     }
     return codes;

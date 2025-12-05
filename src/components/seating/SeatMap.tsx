@@ -49,7 +49,9 @@ export const SeatMap: React.FC<SeatMapProps> = ({
     const renderRow = (rowNumber: number) => {
         const seats = [];
         for (let col = 0; col < columns; col++) {
-            const seatCode = `${rowNumber}${letters[col]}`;
+            // Calculate sequential seat number: (row - 1) * columns + col + 1
+            const seatNumber = (rowNumber - 1) * columns + col + 1;
+            const seatCode = seatNumber.toString();
             const isExcluded = excludedSeats?.includes(seatCode);
 
             if (isExcluded) {
