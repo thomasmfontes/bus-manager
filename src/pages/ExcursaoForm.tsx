@@ -11,6 +11,8 @@ import { SubmitButton } from "../components/excursao/SubmitButton";
 import { maskCPF, maskRG, maskPhone, maskNumber, formatCurrency, onlyDigits } from "../utils/formatters";
 import { validateForm, PassengerForm } from "../utils/validators";
 import { supabase } from "../lib/supabase";
+import { useCongregacaoStore } from "../stores/useCongregacaoStore";
+import { useInstrumentoStore } from "../stores/useInstrumentoStore";
 
 export default function ExcursaoForm() {
     const navigate = useNavigate();
@@ -111,87 +113,25 @@ export default function ExcursaoForm() {
         }
     }, [searchParams]);
 
-    const congregations = [
-        "Água Rasa",
-        "Flor De Vila Formosa",
-        "Parque Sevilha",
-        "Vila Diva",
-        "Vila Ema",
-        "Vila Formosa",
-        "Vila Rio Branco",
-        "Baixada Do Glicério",
-        "Barra Funda",
-        "Belém",
-        "Bom Retiro",
-        "Canindé",
-        "Dianópolis",
-        "Ponte Pequena",
-        "Vila Bela",
-        "Vila Prudente",
-        "Americanópolis",
-        "Bosque Da Saúde",
-        "Ipiranga",
-        "Jabaquara",
-        "Jardim Da Glória",
-        "Vila Carioca",
-        "Vila Clara",
-        "Vila Guarani",
-        "Vila Mariana",
-        "Jardim Elba",
-        "Jardim Mimar",
-        "Jardim Panorama",
-        "Jardim Planalto",
-        "Jardim São Nicolau",
-        "Jardim São Roberto",
-        "Parque Santa Madalena",
-        "Sapopemba",
-        "Jardim Independência",
-        "Jardim Santo Eduardo",
-        "Jardim Yara",
-        "Parque São Lucas",
-        "Sítio Pinheirinho",
-        "Vila Alpina",
-        "Vila Califórnia",
-        "Caraguatá",
-        "Jardim Maria Estela",
-        "Jardim São Savério",
-        "Jardim Seckler",
-        "São João Clímaco",
-        "Vila Arapuá",
-        "Vila Independência",
-        "Vila Liviero",
-        "Vila Moraes",
-    ];
+    // Fetch data from database
+    const { congregacoes, fetchCongregacoes } = useCongregacaoStore();
+    const { instrumentos, categorias, fetchInstrumentos, fetchCategorias, getInstrumentosPorCategoria } = useInstrumentoStore();
 
-    const instruments = {
-        Cordas: ["Violino", "Viola", "Violoncelo"],
-        Madeiras: [
-            "Flauta Transversal",
-            "Oboé",
-            "Oboé D'Amore",
-            "Corne Inglês",
-            "Clarinete",
-            "Clarinete Alto",
-            "Clarinete Baixo",
-            "Fagote",
-            "Saxofone Soprano",
-            "Saxofone Alto",
-            "Saxofone Tenor",
-            "Saxofone Barítono",
-        ],
-        Metais: [
-            "Trompete",
-            "Cornet",
-            "Flugelhorn",
-            "Trompa",
-            "Trombone",
-            "Trombonito",
-            "Barítono",
-            "Eufônio",
-            "Tuba",
-        ],
-        Teclas: ["Órgão"],
-    };
+    // Load data on mount
+    useEffect(() => {
+        fetchCongregacoes();
+        fetchCategorias();
+        fetchInstrumentos();
+    }, [fetchCongregacoes, fetchCategorias, fetchInstrumentos]);
+
+    // Convert to format expected by form
+    const congregations = congregacoes.map(c => c.nome);
+
+    const instruments = categorias.reduce((acc, categoria) => {
+        const instrumentosCategoria = getInstrumentosPorCategoria(categoria.id);
+        acc[categoria.nome] = instrumentosCategoria.map(i => i.nome);
+        return acc;
+    }, {} as Record<string, string[]>);
 
     function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
         const { name, value } = e.target;

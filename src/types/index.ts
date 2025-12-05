@@ -100,3 +100,34 @@ export interface SeatAssignment {
     passageiroId?: string;
     status: SeatStatus;
 }
+
+// Congregation types
+export interface Congregacao {
+    id: string;
+    nome: string;
+    ativo: boolean;
+    ordem: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// Instrument category types
+export interface CategoriaInstrumento {
+    id: string;
+    nome: string;
+    ativo: boolean;
+    ordem: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// Instrument types
+export interface Instrumento {
+    id: string;
+    nome: string;
+    categoria_id: string;
+    ativo: boolean;
+    ordem: number;
+    created_at?: string;
+    updated_at?: string;
+}
