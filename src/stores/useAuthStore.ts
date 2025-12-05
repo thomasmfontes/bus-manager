@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthState>()(
                             .maybeSingle();
 
                         if (passenger) {
-                            role = UserRole.USER;
+                            role = UserRole.PASSAGEIRO;
                             passageiroId = passenger.id;
                             userName = passenger.nome_completo;
                         } else {
@@ -108,7 +108,7 @@ export const useAuthStore = create<AuthState>()(
             },
             canSelectOwnSeat: () => {
                 const { user } = get();
-                return user?.role === UserRole.USER || user?.role === UserRole.ADMIN;
+                return user?.role === UserRole.PASSAGEIRO || user?.role === UserRole.ADMIN;
             },
         }),
         {

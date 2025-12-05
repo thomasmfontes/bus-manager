@@ -95,7 +95,7 @@ export const AuthenticatedLayout: React.FC = () => {
                         .filter((item) => {
                             // Hide Passageiros and Ônibus for non-admin users
                             if (user?.role !== UserRole.ADMIN) {
-                                if (item.path === '/passageiros' || item.path === '/onibus' || item.path === '/settings') {
+                                if (item.path === '/passageiros' || item.path === '/onibus') {
                                     return false;
                                 }
                             }

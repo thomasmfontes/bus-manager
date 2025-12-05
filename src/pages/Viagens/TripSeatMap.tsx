@@ -319,7 +319,7 @@ export const TripSeatMap: React.FC = () => {
                             <span className="hidden sm:inline">Cancelar</span>
                         </Button>
                         {/* Registration link for non-registered users */}
-                        {user?.role === UserRole.USER && !user.id && (
+                        {user?.role === UserRole.PASSAGEIRO && !user.id && (
                             <a
                                 href="https://excursao-agua-rasa.vercel.app/"
                                 target="_blank"
@@ -331,7 +331,7 @@ export const TripSeatMap: React.FC = () => {
                             </a>
                         )}
                         {/* Passageiro: only assign button */}
-                        {user?.role === UserRole.USER && user.id && actionType === 'assign' && (
+                        {user?.role === UserRole.PASSAGEIRO && user.id && actionType === 'assign' && (
                             <Button onClick={handleAssignSeat}>
                                 <Check size={20} className="sm:mr-2" />
                                 <span className="hidden sm:inline">Atribuir</span>
@@ -365,7 +365,7 @@ export const TripSeatMap: React.FC = () => {
             >
                 {actionType === 'assign' ? (
                     <div className="space-y-4">
-                        {user?.role === UserRole.USER && !user.id ? (
+                        {user?.role === UserRole.PASSAGEIRO && !user.id ? (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
                                 <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
                                 <p className="text-sm text-yellow-800">
@@ -415,7 +415,7 @@ export const TripSeatMap: React.FC = () => {
                             </div>
                         )}
 
-                        {user?.role === UserRole.USER && !user.id ? (
+                        {user?.role === UserRole.PASSAGEIRO && !user.id ? (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
                                 <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
                                 <p className="text-sm text-yellow-800">

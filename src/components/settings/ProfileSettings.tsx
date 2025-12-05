@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { User, Lock, Save } from 'lucide-react';
+import { UserRole } from '@/types';
+import { cn } from '@/utils/cn';
 
 export const ProfileSettings: React.FC = () => {
     const { user } = useAuthStore();
@@ -124,6 +126,16 @@ export const ProfileSettings: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                         <Input value={user?.email || ''} disabled className="bg-gray-50 text-gray-500" />
+                        <div className="mt-2">
+                            <span className={cn(
+                                "inline-block text-xs px-3 py-1 rounded-full font-medium",
+                                user?.role === UserRole.ADMIN && "bg-blue-500/20 text-blue-700",
+                                user?.role === UserRole.PASSAGEIRO && "bg-green-500/20 text-green-700"
+                            )}>
+                                {user?.role === UserRole.ADMIN && "Admin"}
+                                {user?.role === UserRole.PASSAGEIRO && "Passageiro"}
+                            </span>
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo</label>
