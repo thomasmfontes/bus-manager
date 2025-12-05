@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 interface SeatAssignmentState {
     loading: boolean;
     getAssentosPorViagem: (viagemId: string) => Promise<Passenger[]>;
-    atribuirAssento: (passageiroId: string, assento: string, onibusId?: string) => Promise<void>;
+    atribuirAssento: (passageiroId: string, assento: string, viagemId: string, onibusId?: string) => Promise<void>;
     liberarAssento: (passageiroId: string) => Promise<void>;
     bloquearAssento: (assentoCodigo: string, viagemId: string, onibusId: string) => Promise<void>;
 }
@@ -30,15 +30,18 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     },
 
     // Atribui um assento a um passageiro
-    atribuirAssento: async (passageiroId: string, assento: string, onibusId?: string) => {
+    atribuirAssento: async (passageiroId: string, assento: string, viagemId: string, onibusId?: string) => {
         set({ loading: true });
         try {
-            const updateData: any = { assento };
+            const updateData: any = {
+                assento,
+                viagem_id: viagemId // Always set viagem_id to current trip
+            };
             if (onibusId) {
                 updateData.onibus_id = onibusId;
             }
 
-            console.log('🎯 Atribuindo assento:', { passageiroId, assento, onibusId, updateData });
+            console.log('🎯 Atribuindo assento:', { passageiroId, assento, viagemId, onibusId, updateData });
 
             const { data, error } = await supabase
                 .from('passageiros')

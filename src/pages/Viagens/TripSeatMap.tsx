@@ -118,7 +118,7 @@ export const TripSeatMap: React.FC = () => {
         });
 
         try {
-            await atribuirAssento(selectedPassengerId, selectedSeat, currentBus.id);
+            await atribuirAssento(selectedPassengerId, selectedSeat, id, currentBus.id);
 
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
