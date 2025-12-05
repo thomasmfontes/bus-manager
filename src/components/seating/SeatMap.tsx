@@ -35,7 +35,6 @@ export const SeatMap: React.FC<SeatMapProps> = ({
     };
 
     const { rows, columns, corridorAfterColumn, excludedSeats } = getConfiguration();
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     const getSeatAssignment = (seatCode: string): SeatAssignment | undefined => {
         return assignments.find((a) => a.assentoCodigo === seatCode);
