@@ -115,7 +115,7 @@ export default function ExcursaoForm() {
 
     // Fetch data from database
     const { congregacoes, fetchCongregacoes } = useCongregacaoStore();
-    const { instrumentos, categorias, fetchInstrumentos, fetchCategorias, getInstrumentosPorCategoria } = useInstrumentoStore();
+    const { categorias, fetchInstrumentos, fetchCategorias, getInstrumentosPorCategoria } = useInstrumentoStore();
 
     // Load data on mount
     useEffect(() => {
