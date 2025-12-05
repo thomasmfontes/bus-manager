@@ -394,10 +394,25 @@ export const TripSeatMap: React.FC = () => {
                     <div className="space-y-4">
                         {currentPassenger && (
                             <div className="bg-gray-50 p-4 rounded-lg">
-                                <p className="text-sm text-gray-600 mb-2">Passageiro atual:</p>
-                                <p className="font-semibold">{currentPassenger.nome_completo}</p>
-                                <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
-                                <p className="text-sm text-gray-600">{currentPassenger.telefone}</p>
+                                {currentPassenger.nome_completo === 'BLOQUEADO' ? (
+                                    <>
+                                        <p className="text-sm text-gray-600 mb-2">Status:</p>
+                                        <div className="flex items-center gap-2">
+                                            <Lock size={20} className="text-gray-600" />
+                                            <p className="font-semibold text-gray-900">Assento Bloqueado</p>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mt-2">
+                                            Este assento foi bloqueado administrativamente e não está disponível para atribuição.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-sm text-gray-600 mb-2">Passageiro atual:</p>
+                                        <p className="font-semibold">{currentPassenger.nome_completo}</p>
+                                        <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
+                                        <p className="text-sm text-gray-600">{currentPassenger.telefone}</p>
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -408,8 +423,10 @@ export const TripSeatMap: React.FC = () => {
                                     Você não tem permissão para modificar assentos.
                                 </p>
                             </div>
-                        ) : (
+                        ) : currentPassenger?.nome_completo !== 'BLOQUEADO' ? (
                             <p className="text-gray-600">Deseja liberar este assento?</p>
+                        ) : (
+                            <p className="text-gray-600">Deseja desbloquear este assento?</p>
                         )}
                     </div>
                 )}
