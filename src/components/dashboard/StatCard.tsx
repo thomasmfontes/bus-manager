@@ -11,7 +11,7 @@ interface StatCardProps {
     icon: LucideIcon;
     iconBg: string;
     iconColor: string;
-    trend: string;
+    trend?: string; // Made optional
     delay?: number;
 }
 
@@ -39,10 +39,12 @@ export const StatCard: React.FC<StatCardProps> = ({
                     <Icon className={iconColor} size={24} />
                 </div>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <TrendingUp size={14} className={iconColor} />
-                <span>{trend}</span>
-            </div>
+            {trend && (
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <TrendingUp size={14} className={iconColor} />
+                    <span>{trend}</span>
+                </div>
+            )}
         </Card>
     );
 };
