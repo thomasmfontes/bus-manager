@@ -52,6 +52,7 @@ export const Dashboard: React.FC = () => {
         });
     };
 
+
     const stats = [
         {
             label: 'Total de Ônibus',
@@ -59,7 +60,7 @@ export const Dashboard: React.FC = () => {
             icon: Bus,
             iconBg: 'bg-blue-100',
             iconColor: 'text-blue-600',
-            trend: '+2 este mês'
+            trend: totalBuses > 0 ? undefined : undefined // No trend for buses
         },
         {
             label: 'Total de Viagens',
@@ -67,7 +68,7 @@ export const Dashboard: React.FC = () => {
             icon: MapPin,
             iconBg: 'bg-green-100',
             iconColor: 'text-green-600',
-            trend: `${upcomingTrips.length} próximas`
+            trend: upcomingTrips.length > 0 ? `${upcomingTrips.length} próximas` : undefined
         },
         {
             label: 'Total de Passageiros',
@@ -75,7 +76,7 @@ export const Dashboard: React.FC = () => {
             icon: Users,
             iconBg: 'bg-purple-100',
             iconColor: 'text-purple-600',
-            trend: 'Cadastrados'
+            trend: undefined // No trend for passengers
         },
         {
             label: 'Assentos Ocupados',
@@ -83,7 +84,7 @@ export const Dashboard: React.FC = () => {
             icon: Calendar,
             iconBg: 'bg-orange-100',
             iconColor: 'text-orange-600',
-            trend: 'Reservados'
+            trend: totalPassengers > 0 ? `de ${totalPassengers} total` : undefined
         },
     ];
 
