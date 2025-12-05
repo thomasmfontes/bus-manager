@@ -262,20 +262,21 @@ export const TripSeatMap: React.FC = () => {
 
             {/* Bus Selector Tabs */}
             {tripBuses.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                     {tripBuses.map((bus) => (
                         <button
                             key={bus.id}
                             onClick={() => setSelectedBusId(bus.id)}
                             className={`
-                                px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors
+                                px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium whitespace-nowrap transition-colors
                                 ${selectedBusId === bus.id
                                     ? 'bg-blue-600 text-white shadow-md'
                                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}
                             `}
                         >
-                            {bus.nome}
-                            <span className="ml-2 text-xs opacity-80">({bus.placa})</span>
+                            <span className="hidden sm:inline">{bus.nome}</span>
+                            <span className="sm:hidden">{bus.nome.split(' ')[0]}</span>
+                            <span className="ml-1 sm:ml-2 text-xs opacity-80">({bus.placa})</span>
                         </button>
                     ))}
                 </div>
