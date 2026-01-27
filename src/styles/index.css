@@ -99,6 +99,16 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-gray-300 dark:bg-gray-600 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500;
   }
+
+  /* Form validation error states */
+  .input-error,
+  .select-error {
+    @apply border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500;
+  }
+
+  .field-error-text {
+    @apply text-red-600 dark:text-red-400 text-sm mt-1;
+  }
 }
 
 @layer utilities {

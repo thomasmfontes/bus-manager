@@ -247,6 +247,25 @@
     transform: translateY(-1px);
 }
 
+/* Error states */
+.input-error,
+.select-error {
+    border-color: var(--errBorder) !important;
+}
+
+.input-error:focus,
+.select-error:focus {
+    border-color: var(--errBorder) !important;
+    box-shadow: 0 0 0 4px var(--errBg) !important;
+}
+
+.field-error-text {
+    color: var(--errText);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
 /* Button System */
 .btn-base {
     display: inline-flex;
@@ -366,26 +385,35 @@
 /* Smooth tab transitions */
 .tab-panels {
     position: relative;
-    overflow: hidden;
-    min-height: 0;
-    transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
 }
 
 .tab-panel {
-    position: absolute;
-    inset: 0;
+    visibility: hidden;
     opacity: 0;
     transform: translateY(1rem);
-    pointer-events: none;
     transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
-        transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0ms 300ms;
     will-change: opacity, transform;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    overflow: hidden;
 }
 
 .tab-panel[data-active="true"] {
+    visibility: visible;
     opacity: 1;
     transform: translateY(0);
-    pointer-events: auto;
+    transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0ms 0ms;
+    position: relative;
+    height: auto;
+    overflow: visible;
 }
 
 /* Success animation */

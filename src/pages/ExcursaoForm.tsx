@@ -137,6 +137,15 @@ export default function ExcursaoForm() {
         const { name, value } = e.target;
         let v = value;
 
+        // Clear error for this field when user starts typing
+        if (errors[name]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+
         if (name === "congregationSelect") {
             setCongregationSelect(v);
             if (v === "__OTHER__") {
@@ -144,11 +153,27 @@ export default function ExcursaoForm() {
             } else {
                 setForm((f) => ({ ...f, congregation: v }));
             }
+            // Clear congregation error
+            if (errors.congregation) {
+                setErrors((prev) => {
+                    const newErrors = { ...prev };
+                    delete newErrors.congregation;
+                    return newErrors;
+                });
+            }
             return;
         }
 
         if (name === "congregationOther") {
             setForm((f) => ({ ...f, congregation: v }));
+            // Clear congregation error
+            if (errors.congregation) {
+                setErrors((prev) => {
+                    const newErrors = { ...prev };
+                    delete newErrors.congregation;
+                    return newErrors;
+                });
+            }
             return;
         }
 
@@ -159,11 +184,27 @@ export default function ExcursaoForm() {
             } else {
                 setForm((f) => ({ ...f, instrument: v }));
             }
+            // Clear instrument error
+            if (errors.instrument) {
+                setErrors((prev) => {
+                    const newErrors = { ...prev };
+                    delete newErrors.instrument;
+                    return newErrors;
+                });
+            }
             return;
         }
 
         if (name === "instrumentOther") {
             setForm((f) => ({ ...f, instrument: v }));
+            // Clear instrument error
+            if (errors.instrument) {
+                setErrors((prev) => {
+                    const newErrors = { ...prev };
+                    delete newErrors.instrument;
+                    return newErrors;
+                });
+            }
             return;
         }
 
@@ -172,6 +213,14 @@ export default function ExcursaoForm() {
             const isCPF = d.length > 9;
             v = isCPF ? maskCPF(value) : maskRG(value);
             setForm((f) => ({ ...f, cpf: isCPF ? v : "", rg: isCPF ? "" : v }));
+            // Clear doc error
+            if (errors.doc) {
+                setErrors((prev) => {
+                    const newErrors = { ...prev };
+                    delete newErrors.doc;
+                    return newErrors;
+                });
+            }
             return;
         }
 
@@ -211,10 +260,15 @@ export default function ExcursaoForm() {
     async function submit(e: React.FormEvent) {
         e.preventDefault();
 
+        console.log('🚀 Formulário submetido!', form);
+
         // Validação
         const validation = validateForm(form);
+        console.log('📋 Resultado da validação:', validation);
+
         if (!validation.isValid) {
             setErrors(validation.errors);
+            console.error('❌ Erros de validação:', validation.errors);
             const firstError = Object.values(validation.errors)[0];
             toast.error(firstError || "Preencha os campos obrigatórios");
             return;
@@ -225,6 +279,7 @@ export default function ExcursaoForm() {
         const toastId = toast.loading("Enviando…");
 
         try {
+            console.log('💾 Enviando para Supabase...');
             // Enviar para Supabase
             const { error } = await supabase
                 .from('passageiros')
@@ -242,8 +297,12 @@ export default function ExcursaoForm() {
                     }
                 ]);
 
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Erro do Supabase:', error);
+                throw error;
+            }
 
+            console.log('✅ Cadastro realizado com sucesso!');
             toast.success("Cadastro confirmado! 🎉", { id: toastId });
 
             // Salva dados da submissão

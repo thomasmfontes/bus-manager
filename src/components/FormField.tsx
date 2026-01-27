@@ -17,6 +17,7 @@ interface FormFieldProps {
     optgroups?: Record<string, string[]>; // Para select com grupos
     children?: React.ReactNode; // Para conteúdo customizado (ex: "Outra" option)
     className?: string;
+    showErrorText?: boolean; // Se false, mostra apenas borda vermelha sem mensagem
 }
 
 /**
@@ -39,9 +40,11 @@ export default function FormField({
     optgroups,
     children,
     className = '',
+    showErrorText = true,
 }: FormFieldProps) {
     const [touched, setTouched] = useState(false);
-    const showError = touched && error;
+    // Show error if provided (immediate feedback on submit) OR if field was touched
+    const showError = error && (touched || error);
 
     const handleBlur = () => {
         setTouched(true);
@@ -78,7 +81,7 @@ export default function FormField({
                     ))}
                     {children}
                 </select>
-                {showError && <span className="field-error-text">{error}</span>}
+                {showError && showErrorText && <span className="field-error-text">{error}</span>}
             </label>
         );
     }
@@ -107,7 +110,7 @@ export default function FormField({
                     ))}
                     {children}
                 </select>
-                {showError && <span className="field-error-text">{error}</span>}
+                {showError && showErrorText && <span className="field-error-text">{error}</span>}
             </label>
         );
     }
@@ -131,7 +134,7 @@ export default function FormField({
                     maxLength={maxLength}
                     rows={4}
                 />
-                {showError && <span className="field-error-text">{error}</span>}
+                {showError && showErrorText && <span className="field-error-text">{error}</span>}
             </label>
         );
     }
@@ -156,7 +159,7 @@ export default function FormField({
                 inputMode={inputMode}
                 maxLength={maxLength}
             />
-            {showError && <span className="field-error-text">{error}</span>}
+            {showError && showErrorText && <span className="field-error-text">{error}</span>}
         </label>
     );
 }

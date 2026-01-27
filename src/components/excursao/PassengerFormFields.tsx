@@ -55,6 +55,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                 required
                 optgroups={instruments}
                 error={errors.instrument}
+                showErrorText={false}
             >
                 <option value="Não toco">Não toco</option>
                 <option value="__OTHER__">Outra</option>
@@ -70,6 +71,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                     placeholder="Digite o nome do instrumento"
                     autoComplete="off"
                     error={errors.instrument}
+                    showErrorText={false}
                 />
             )}
 
@@ -82,6 +84,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                 required
                 options={congregations}
                 error={errors.congregation}
+                showErrorText={false}
             >
                 <option value="__OTHER__">Outra</option>
             </FormField>
@@ -96,6 +99,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                     placeholder="Digite o nome da sua comum"
                     autoComplete="off"
                     error={errors.congregation}
+                    showErrorText={false}
                 />
             )}
 
@@ -108,6 +112,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                 required
                 options={["Solteiro(a)", "Casado(a)"]}
                 error={errors.maritalStatus}
+                showErrorText={false}
             />
 
             <FormField
@@ -119,6 +124,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                 required
                 options={["Sim", "Não"]}
                 error={errors.auxiliar}
+                showErrorText={false}
             />
 
             <FormField
@@ -130,6 +136,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                 inputMode="numeric"
                 placeholder="Ex.: 17"
                 error={errors.age}
+                showErrorText={false}
             />
 
             <FormField
@@ -142,6 +149,7 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                 placeholder="(11) 90000-0000"
                 autoComplete="tel"
                 error={errors.phone}
+                showErrorText={false}
             />
         </div>
     );
