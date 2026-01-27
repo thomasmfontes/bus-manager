@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { Trash2, UserPlus, Shield } from 'lucide-react';
+import { Trash2, UserPlus, Shield, Loader2 } from 'lucide-react';
 
 interface AdminProfile {
     id: string;
@@ -21,6 +21,7 @@ export const AdminList: React.FC = () => {
     const [newAdminPassword, setNewAdminPassword] = useState('');
     const [newAdminName, setNewAdminName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const { showToast } = useToast();
 
     const fetchAdmins = async () => {
@@ -95,6 +96,7 @@ export const AdminList: React.FC = () => {
     const handleDeleteAdmin = async (id: string, email: string) => {
         if (!confirm(`Tem certeza que deseja remover o administrador ${email}?`)) return;
 
+        setDeletingId(id);
         try {
             // Get current session token
             const { data: { session } } = await supabase.auth.getSession();
@@ -122,6 +124,8 @@ export const AdminList: React.FC = () => {
         } catch (error: any) {
             console.error('Error deleting admin:', error);
             showToast('Erro ao remover administrador', 'error');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -168,7 +172,7 @@ export const AdminList: React.FC = () => {
                     </div>
                     <div className="flex justify-end pt-2">
                         <Button type="submit" disabled={isCreating} className="w-full sm:w-auto">
-                            <UserPlus size={18} />
+                            {isCreating ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
                             {isCreating ? 'Criando...' : 'Adicionar Administrador'}
                         </Button>
                     </div>
@@ -200,10 +204,15 @@ export const AdminList: React.FC = () => {
                                     </div>
                                     <button
                                         onClick={() => handleDeleteAdmin(admin.id, admin.email)}
-                                        className="p-2 sm:p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                        disabled={deletingId === admin.id}
+                                        className="p-2 sm:p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-100"
                                         title="Remover acesso"
                                     >
-                                        <Trash2 size={18} />
+                                        {deletingId === admin.id ? (
+                                            <Loader2 size={18} className="animate-spin text-red-600" />
+                                        ) : (
+                                            <Trash2 size={18} />
+                                        )}
                                     </button>
                                 </div>
                             ))}

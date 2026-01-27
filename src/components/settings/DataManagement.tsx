@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { Database, Download, FileSpreadsheet } from 'lucide-react';
+import { Database, Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
 
 export const DataManagement: React.FC = () => {
     const { showToast } = useToast();
     const [exporting, setExporting] = useState(false);
+    const [normalizing, setNormalizing] = useState(false);
 
     const handleExportData = async () => {
         setExporting(true);
@@ -53,6 +54,34 @@ export const DataManagement: React.FC = () => {
         }
     };
 
+    const handleNormalizeStatus = async () => {
+        if (!confirm('Isso irá converter todos os status "Realizado" para "Pendente". Deseja continuar?')) return;
+
+        setNormalizing(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('Você precisa estar autenticado', 'error');
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('passageiros')
+                .update({ pagamento: 'pending' })
+                .eq('pagamento', 'Realizado')
+                .select();
+
+            if (error) throw error;
+
+            showToast(`${data?.length || 0} registros atualizados com sucesso!`, 'success');
+        } catch (error: any) {
+            console.error('Error normalizing data:', error);
+            showToast(`Erro ao normalizar: ${error.message || 'Erro desconhecido'}`, 'error');
+        } finally {
+            setNormalizing(false);
+        }
+    };
+
     return (
         <div className="space-y-4 sm:space-y-6">
             <Card className="hover:shadow-soft-lg transition-all">
@@ -66,7 +95,7 @@ export const DataManagement: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="flex flex-col gap-6">
                     <div className="p-4 sm:p-5 bg-gradient-to-br from-green-50 to-emerald-50/50 rounded-xl border border-green-100 hover:border-green-200 transition-all">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -86,6 +115,29 @@ export const DataManagement: React.FC = () => {
                             >
                                 <Download size={20} className={exporting ? 'animate-bounce' : ''} />
                                 <span className="text-sm">{exporting ? 'Baixando...' : 'Baixar Excel'}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-4 sm:p-5 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-xl border border-blue-100 hover:border-blue-200 transition-all">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-1">
+                                    <RefreshCw size={20} className="text-blue-600 shrink-0" />
+                                    <span>Normalizar Status</span>
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                    Converte todos os status para "Pendente"
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleNormalizeStatus}
+                                disabled={normalizing}
+                                title="Normalizar"
+                                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            >
+                                <RefreshCw size={20} className={normalizing ? 'animate-spin' : ''} />
+                                <span className="text-sm">{normalizing ? 'Processando...' : 'Converter'}</span>
                             </button>
                         </div>
                     </div>

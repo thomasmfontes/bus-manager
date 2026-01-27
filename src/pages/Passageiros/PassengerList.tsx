@@ -199,12 +199,12 @@ export const PassengerList: React.FC = () => {
                                             <td className="text-gray-600">{passenger.comum_congregacao || '-'}</td>
                                             <td className="text-gray-600">{passenger.idade || '-'}</td>
                                             <td>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${passenger.pagamento === 'paid' ? 'bg-green-100 text-green-800' :
-                                                    passenger.pagamento === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-gray-100 text-gray-800'
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${passenger.pagamento === 'paid' || passenger.pagamento === 'Realizado' ? 'bg-green-100 text-green-800' :
+                                                        passenger.pagamento === 'pending' || passenger.pagamento === 'Pendente' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-gray-100 text-gray-800'
                                                     }`}>
-                                                    {passenger.pagamento === 'paid' ? 'Pago' :
-                                                        passenger.pagamento === 'pending' ? 'Pendente' :
+                                                    {passenger.pagamento === 'paid' || passenger.pagamento === 'Realizado' ? 'Pago' :
+                                                        passenger.pagamento === 'pending' || passenger.pagamento === 'Pendente' ? 'Pendente' :
                                                             passenger.pagamento || '-'}
                                                 </span>
                                             </td>

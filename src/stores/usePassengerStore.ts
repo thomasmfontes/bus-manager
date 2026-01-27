@@ -21,6 +21,7 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
             const { data, error } = await supabase
                 .from('passageiros')
                 .select('*')
+                .neq('nome_completo', 'BLOQUEADO')
                 .order('nome_completo', { ascending: true });
 
             if (error) throw error;
@@ -44,7 +45,7 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
                     auxiliar: passenger.auxiliar,
                     idade: passenger.idade,
                     telefone: passenger.telefone,
-                    pagamento: passenger.pagamento || 'Pendente',
+                    pagamento: passenger.pagamento || 'pending',
                     viagem_id: passenger.viagem_id,
                     assento: passenger.assento,
                     valor_pago: passenger.valor_pago || 0,

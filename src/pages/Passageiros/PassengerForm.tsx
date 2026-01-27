@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePassengerStore } from '@/stores/usePassengerStore';
+import { useCongregacaoStore } from '@/stores/useCongregacaoStore';
+import { useInstrumentoStore } from '@/stores/useInstrumentoStore';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +13,18 @@ export const PassengerForm: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const { passengers, createPassageiro, updatePassageiro, fetchPassageiros } = usePassengerStore();
+    const { congregacoes, fetchCongregacoes } = useCongregacaoStore();
+    const {
+        instruments: instrumentos,
+        categorias,
+        fetchInstrumentos,
+        fetchCategorias
+    } = useInstrumentoStore((state) => ({
+        instruments: state.instrumentos,
+        categorias: state.categorias,
+        fetchInstrumentos: state.fetchInstrumentos,
+        fetchCategorias: state.fetchCategorias
+    }));
     const { showToast } = useToast();
     const isEditing = Boolean(id);
 
@@ -27,10 +41,13 @@ export const PassengerForm: React.FC = () => {
     });
 
     useEffect(() => {
+        fetchCongregacoes();
+        fetchCategorias();
+        fetchInstrumentos();
         if (isEditing) {
             fetchPassageiros();
         }
-    }, [isEditing, fetchPassageiros]);
+    }, [isEditing, fetchPassageiros, fetchCongregacoes, fetchInstrumentos]);
 
     useEffect(() => {
         if (isEditing && id) {
@@ -45,7 +62,7 @@ export const PassengerForm: React.FC = () => {
                     estado_civil: passenger.estado_civil || '',
                     instrumento: passenger.instrumento || '',
                     auxiliar: passenger.auxiliar || '',
-                    pagamento: passenger.pagamento || 'pending',
+                    pagamento: passenger.pagamento === 'Realizado' ? 'paid' : (passenger.pagamento || 'pending'),
                 });
             }
         }
@@ -121,12 +138,23 @@ export const PassengerForm: React.FC = () => {
                             required
                         />
 
-                        <Input
-                            label="Congregação"
-                            value={formData.comum_congregacao}
-                            onChange={(e) => setFormData({ ...formData, comum_congregacao: e.target.value })}
-                            placeholder="Ex: Água Rasa"
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Congregação
+                            </label>
+                            <select
+                                value={formData.comum_congregacao}
+                                onChange={(e) => setFormData({ ...formData, comum_congregacao: e.target.value })}
+                                className="input-base"
+                            >
+                                <option value="">Selecione...</option>
+                                {congregacoes.map((cong) => (
+                                    <option key={cong.id} value={cong.nome}>
+                                        {cong.nome}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
                         <Input
                             label="Idade"
@@ -147,17 +175,36 @@ export const PassengerForm: React.FC = () => {
                                 <option value="">Selecione...</option>
                                 <option value="Solteiro(a)">Solteiro(a)</option>
                                 <option value="Casado(a)">Casado(a)</option>
-                                <option value="Divorciado(a)">Divorciado(a)</option>
-                                <option value="Viúvo(a)">Viúvo(a)</option>
                             </select>
                         </div>
 
-                        <Input
-                            label="Instrumento"
-                            value={formData.instrumento}
-                            onChange={(e) => setFormData({ ...formData, instrumento: e.target.value })}
-                            placeholder="Ex: Violino, Piano..."
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Instrumento
+                            </label>
+                            <select
+                                value={formData.instrumento}
+                                onChange={(e) => setFormData({ ...formData, instrumento: e.target.value })}
+                                className="input-base"
+                            >
+                                <option value="">Selecione...</option>
+                                <option value="Não toco">Não toco</option>
+                                {categorias.map((categoria) => {
+                                    const instrumentsInCategory = instrumentos.filter(i => i.categoria_id === categoria.id);
+                                    if (instrumentsInCategory.length === 0) return null;
+
+                                    return (
+                                        <optgroup key={categoria.id} label={categoria.nome}>
+                                            {instrumentsInCategory.map((inst) => (
+                                                <option key={inst.id} value={inst.nome}>
+                                                    {inst.nome}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    );
+                                })}
+                            </select>
+                        </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">

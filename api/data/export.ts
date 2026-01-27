@@ -31,9 +31,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Fetch passengers data (using anon key is fine since RLS allows authenticated reads)
         const { data: passengers, error: fetchError } = await supabase
-            .from('excursao_passengers')
+            .from('passageiros')
             .select('*')
-            .order('full_name');
+            .neq('nome_completo', 'BLOQUEADO')
+            .order('nome_completo');
 
         if (fetchError) {
             console.error('Error fetching passengers:', fetchError);
@@ -42,15 +43,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Process data for export
         const processedPassengers = passengers?.map(p => ({
-            Nome: p.full_name,
-            Documento: p.cpf || p.rg || '-',
+            Nome: p.nome_completo,
+            Documento: p.cpf_rg || '-',
+            Telefone: p.telefone || '-',
+            Congregação: p.comum_congregacao || '-',
+            Status: p.pagamento === 'paid' ? 'Pago' : p.pagamento === 'pending' ? 'Pendente' : p.pagamento || '-',
+            Assento: p.assento || '-',
         })) || [];
 
         // Create workbook
         const wb = XLSX.utils.book_new();
 
         // Define headers explicitly
-        const headers = ['Nome', 'Documento'];
+        const headers = ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
 
         // Create worksheet
         let wsPassengers;
@@ -63,7 +68,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Adjust column widths
         const wscols = [
             { wch: 40 }, // Nome
-            { wch: 25 }, // Documento
+            { wch: 20 }, // Documento
+            { wch: 15 }, // Telefone
+            { wch: 20 }, // Congregação
+            { wch: 10 }, // Status
+            { wch: 10 }, // Assento
         ];
         wsPassengers['!cols'] = wscols;
 
