@@ -10,9 +10,10 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil } from 'lucide-react';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { TripEditModal } from '@/components/viagens/TripEditModal';
 
 export const TripSeatMap: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -30,6 +31,7 @@ export const TripSeatMap: React.FC = () => {
 
     const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedPassengerId, setSelectedPassengerId] = useState('');
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
     const [tripPassengers, setTripPassengers] = useState<any[]>([]);
@@ -229,36 +231,60 @@ export const TripSeatMap: React.FC = () => {
 
             {/* Trip info */}
             <Card>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center gap-3">
-                        <MapPin className="text-primary" size={24} />
-                        <div>
-                            <p className="text-sm text-gray-600">Rota</p>
-                            <p className="font-semibold">
-                                {trip.nome} → {trip.destino}
-                            </p>
+                <div className="relative">
+                    {user?.role === UserRole.ADMIN && (
+                        <button
+                            onClick={() => setEditModalOpen(true)}
+                            className="absolute -top-1 -right-1 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                            title="Editar Viagem"
+                        >
+                            <Pencil size={18} />
+                        </button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+                                <MapPin size={24} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Rota</p>
+                                <p className="font-bold text-gray-900 truncate">
+                                    {trip.nome} → {trip.destino}
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Calendar className="text-primary" size={24} />
-                        <div>
-                            <p className="text-sm text-gray-600">Data/Hora</p>
-                            <p className="font-semibold">{formatDate(trip.data_ida)}</p>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-purple-50 rounded-xl text-purple-600">
+                                <Calendar size={24} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</p>
+                                <p className="font-bold text-gray-900">{formatDate(trip.data_ida)}</p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <BusIcon className="text-primary" size={24} />
-                        <div>
-                            <p className="text-sm text-gray-600">Ônibus</p>
-                            <p className="font-semibold">
-                                {tripBuses.length > 0
-                                    ? `${tripBuses.length} ônibus vinculado(s)`
-                                    : 'Nenhum ônibus'}
-                            </p>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-orange-50 rounded-xl text-orange-600">
+                                <BusIcon size={24} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Ônibus</p>
+                                <p className="font-bold text-gray-900">
+                                    {tripBuses.length > 0
+                                        ? `${tripBuses.length} ônibus vinculado(s)`
+                                        : 'Nenhum ônibus'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </Card>
+
+            <TripEditModal
+                isOpen={editModalOpen}
+                onClose={() => setEditModalOpen(false)}
+                trip={trip}
+                onSuccess={loadAssignments}
+            />
 
             {/* Bus Selector Tabs */}
             {tripBuses.length > 1 && (

@@ -31,6 +31,7 @@ export const useBusStore = create<BusState>((set, get) => ({
         }
     },
     createOnibus: async (bus) => {
+        set({ loading: true });
         try {
             // Get default seats from localStorage if not provided
             const defaultSeats = localStorage.getItem('default_bus_seats');
@@ -48,13 +49,15 @@ export const useBusStore = create<BusState>((set, get) => ({
 
             if (error) throw error;
 
-            set({ buses: [data, ...get().buses] });
+            set({ buses: [data, ...get().buses], loading: false });
         } catch (error) {
             console.error('Error creating onibus:', error);
+            set({ loading: false });
             throw error;
         }
     },
     updateOnibus: async (id, bus) => {
+        set({ loading: true });
         try {
             const updates: any = {};
             if (bus.nome) updates.nome = bus.nome;
@@ -72,19 +75,23 @@ export const useBusStore = create<BusState>((set, get) => ({
 
             set({
                 buses: get().buses.map((b) => (b.id === id ? data : b)),
+                loading: false,
             });
         } catch (error) {
             console.error('Error updating onibus:', error);
+            set({ loading: false });
             throw error;
         }
     },
     deleteOnibus: async (id) => {
+        set({ loading: true });
         try {
             const { error } = await supabase.from('onibus').delete().eq('id', id);
             if (error) throw error;
-            set({ buses: get().buses.filter((b) => b.id !== id) });
+            set({ buses: get().buses.filter((b) => b.id !== id), loading: false });
         } catch (error) {
             console.error('Error deleting onibus:', error);
+            set({ loading: false });
             throw error;
         }
     },

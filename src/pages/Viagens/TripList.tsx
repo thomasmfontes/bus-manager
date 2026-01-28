@@ -44,9 +44,16 @@ export const TripList: React.FC = () => {
     };
 
     const getOccupiedSeats = (tripId: string) => {
-        return passengers.filter(
-            (p) => p.viagem_id === tripId && p.assento !== null && p.assento !== undefined
-        ).length;
+        const trip = trips.find(t => t.id === tripId);
+        if (!trip) return 0;
+
+        const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
+
+        return passengers.filter((p) => {
+            if (p.viagem_id !== tripId) return false;
+            // Only count if the passenger has a seat AND the assigned bus is still in the trip
+            return p.assento && p.onibus_id && activeBusIds.includes(p.onibus_id);
+        }).length;
     };
 
     const getTotalSeats = (busIds?: string[]) => {

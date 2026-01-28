@@ -98,6 +98,7 @@ export const useTripStore = create<TripState>((set, get) => ({
         }
     },
     updateViagem: async (id, trip) => {
+        set({ loading: true });
         try {
             // Update trip basic info
             const updates: any = {};
@@ -129,6 +130,34 @@ export const useTripStore = create<TripState>((set, get) => ({
                 // Create new relationships
                 const busIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
 
+                // Identify removed buses to unlink passengers
+                const existingBusIds = (get().trips.find(t => t.id === id)?.onibus_ids) || [];
+                const removedBusIds = existingBusIds.filter(bid => !busIds.includes(bid));
+
+                if (removedBusIds.length > 0) {
+                    console.log('🧹 Unlinking passengers from removed buses:', removedBusIds);
+
+                    // 1. Clear seat assignments for real passengers on removed buses
+                    const { error: unlinkError } = await supabase
+                        .from('passageiros')
+                        .update({ assento: null, onibus_id: null })
+                        .eq('viagem_id', id)
+                        .in('onibus_id', removedBusIds)
+                        .neq('nome_completo', 'BLOQUEADO');
+
+                    if (unlinkError) console.error('Error unlinking passengers:', unlinkError);
+
+                    // 2. Delete blocked seat records for removed buses
+                    const { error: deleteBlocksError } = await supabase
+                        .from('passageiros')
+                        .delete()
+                        .eq('viagem_id', id)
+                        .in('onibus_id', removedBusIds)
+                        .eq('nome_completo', 'BLOQUEADO');
+
+                    if (deleteBlocksError) console.error('Error deleting blocked seats:', deleteBlocksError);
+                }
+
                 if (busIds.length > 0) {
                     const viagemOnibusRecords = busIds.map(onibus_id => ({
                         viagem_id: id,
@@ -148,19 +177,23 @@ export const useTripStore = create<TripState>((set, get) => ({
 
             set({
                 trips: get().trips.map((t) => (t.id === id ? updatedTrip : t)),
+                loading: false,
             });
         } catch (error) {
             console.error('Error updating viagem:', error);
+            set({ loading: false });
             throw error;
         }
     },
     deleteViagem: async (id) => {
+        set({ loading: true });
         try {
             const { error } = await supabase.from('viagens').delete().eq('id', id);
             if (error) throw error;
-            set({ trips: get().trips.filter((t) => t.id !== id) });
+            set({ trips: get().trips.filter((t) => t.id !== id), loading: false });
         } catch (error) {
             console.error('Error deleting viagem:', error);
+            set({ loading: false });
             throw error;
         }
     },

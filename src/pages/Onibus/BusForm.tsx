@@ -5,11 +5,12 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { Save, X, Bus as BusIcon, Plus } from 'lucide-react';
 
 export const BusForm: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const { buses, createOnibus, updateOnibus, fetchOnibus } = useBusStore();
+    const { buses, createOnibus, updateOnibus, fetchOnibus, loading } = useBusStore();
     const { showToast } = useToast();
     const isEditing = Boolean(id);
 
@@ -96,14 +97,23 @@ export const BusForm: React.FC = () => {
                         required
                     />
 
-                    <div className="flex gap-3">
-                        <Button type="submit">{isEditing ? 'Atualizar' : 'Salvar'}</Button>
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-100">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/onibus')}
+                            className="w-full sm:flex-1 py-3 text-base"
                         >
+                            <X size={20} className="mr-2" />
                             Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            isLoading={loading}
+                            className="w-full sm:flex-1 py-3 text-base shadow-lg shadow-blue-200"
+                        >
+                            {isEditing ? <BusIcon size={20} className="mr-2" /> : <Plus size={20} className="mr-2" />}
+                            {loading ? (isEditing ? 'Atualizando...' : 'Salvando...') : (isEditing ? 'Atualizar Ônibus' : 'Salvar Ônibus')}
                         </Button>
                     </div>
                 </form>

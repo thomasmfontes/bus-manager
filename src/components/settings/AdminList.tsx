@@ -171,8 +171,8 @@ export const AdminList: React.FC = () => {
                         />
                     </div>
                     <div className="flex justify-end pt-2">
-                        <Button type="submit" disabled={isCreating} className="w-full sm:w-auto">
-                            {isCreating ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                        <Button type="submit" isLoading={isCreating} className="w-full sm:w-auto">
+                            <UserPlus size={18} className="mr-2" />
                             {isCreating ? 'Criando...' : 'Adicionar Administrador'}
                         </Button>
                     </div>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { User, Lock, Save, Loader2 } from 'lucide-react';
+import { User, Lock, Save } from 'lucide-react';
 import { UserRole } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -146,8 +146,8 @@ export const ProfileSettings: React.FC = () => {
                         />
                     </div>
                     <div className="flex justify-end pt-2">
-                        <Button type="submit" disabled={loadingProfile} className="w-full sm:w-auto">
-                            {loadingProfile ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                        <Button type="submit" isLoading={loadingProfile} className="w-full sm:w-auto">
+                            <Save size={18} className="mr-2" />
                             {loadingProfile ? 'Salvando...' : 'Salvar Alterações'}
                         </Button>
                     </div>
@@ -185,8 +185,8 @@ export const ProfileSettings: React.FC = () => {
                         />
                     </div>
                     <div className="flex justify-end pt-2">
-                        <Button type="submit" variant="secondary" disabled={loadingPassword} className="w-full sm:w-auto">
-                            {loadingPassword ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
+                        <Button type="submit" variant="secondary" isLoading={loadingPassword} className="w-full sm:w-auto">
+                            <Lock size={18} className="mr-2" />
                             {loadingPassword ? 'Atualizando...' : 'Atualizar Senha'}
                         </Button>
                     </div>

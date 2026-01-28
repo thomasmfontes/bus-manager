@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
+import { Save, X, Plus, AlertCircle } from 'lucide-react';
 
 export const TripForm: React.FC = () => {
     const navigate = useNavigate();
-    const { createViagem } = useTripStore();
+    const { createViagem, trips, loading } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
     const { showToast } = useToast();
 
@@ -125,24 +126,62 @@ export const TripForm: React.FC = () => {
                     />
 
 
-                    <BusMultiSelect
-                        buses={buses}
-                        selectedBusIds={formData.onibus_ids}
-                        onChange={(busIds) => setFormData({ ...formData, onibus_ids: busIds })}
-                        label="Ônibus"
-                        required
-                    />
+                    {(() => {
+                        const busIdsUsedInTrips = new Set(
+                            trips.flatMap(t => t.onibus_ids || (t.onibus_id ? [t.onibus_id] : []))
+                        );
+                        const availableBuses = buses.filter(b => !busIdsUsedInTrips.has(b.id));
 
+                        return availableBuses.length === 0 ? (
+                            <div className="p-8 bg-orange-50/50 border-2 border-dashed border-orange-200 rounded-2xl text-center space-y-4">
+                                <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                                    <AlertCircle size={24} />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-semibold text-orange-900">Nenhum ônibus disponível</p>
+                                    <p className="text-xs text-orange-700 max-w-[200px] mx-auto">
+                                        Todos os ônibus cadastrados já estão ocupados em outras viagens.
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    type="button"
+                                    className="bg-white border-orange-200 text-orange-600 hover:bg-orange-50 w-full sm:w-auto mx-auto"
+                                    onClick={() => navigate('/onibus/novo')}
+                                >
+                                    <Plus size={16} className="mr-2" />
+                                    Criar Novo Ônibus
+                                </Button>
+                            </div>
+                        ) : (
+                            <BusMultiSelect
+                                buses={availableBuses}
+                                selectedBusIds={formData.onibus_ids}
+                                onChange={(busIds) => setFormData({ ...formData, onibus_ids: busIds })}
+                                label="Ônibus"
+                                required
+                            />
+                        );
+                    })()}
 
-
-                    <div className="flex gap-3">
-                        <Button type="submit">Salvar</Button>
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-100">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/viagens')}
+                            className="w-full sm:flex-1 py-3 text-base"
                         >
+                            <X size={20} className="mr-2" />
                             Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            isLoading={loading}
+                            className="w-full sm:flex-1 py-3 text-base shadow-lg shadow-blue-200"
+                        >
+                            <Save size={20} className="mr-2" />
+                            {loading ? 'Salvando...' : 'Salvar Viagem'}
                         </Button>
                     </div>
                 </form>

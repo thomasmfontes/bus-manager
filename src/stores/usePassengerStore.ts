@@ -33,6 +33,7 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
         }
     },
     createPassageiro: async (passenger) => {
+        set({ loading: true });
         try {
             const { data, error } = await supabase
                 .from('passageiros')
@@ -55,13 +56,15 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
 
             if (error) throw error;
 
-            set({ passengers: [...get().passengers, data] });
+            set({ passengers: [...get().passengers, data], loading: false });
         } catch (error) {
             console.error('Error creating passageiro:', error);
+            set({ loading: false });
             throw error;
         }
     },
     updatePassageiro: async (id, passenger) => {
+        set({ loading: true });
         try {
             const updates: any = {};
             if (passenger.nome_completo) updates.nome_completo = passenger.nome_completo;
@@ -88,19 +91,23 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
 
             set({
                 passengers: get().passengers.map((p) => (p.id === id ? data : p)),
+                loading: false,
             });
         } catch (error) {
             console.error('Error updating passageiro:', error);
+            set({ loading: false });
             throw error;
         }
     },
     deletePassageiro: async (id) => {
+        set({ loading: true });
         try {
             const { error } = await supabase.from('passageiros').delete().eq('id', id);
             if (error) throw error;
-            set({ passengers: get().passengers.filter((p) => p.id !== id) });
+            set({ passengers: get().passengers.filter((p) => p.id !== id), loading: false });
         } catch (error) {
             console.error('Error deleting passageiro:', error);
+            set({ loading: false });
             throw error;
         }
     },

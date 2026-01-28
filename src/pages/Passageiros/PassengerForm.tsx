@@ -7,12 +7,12 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft } from 'lucide-react';
+import { X, UserPlus, UserCircle, ArrowLeft } from 'lucide-react';
 
 export const PassengerForm: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const { passengers, createPassageiro, updatePassageiro, fetchPassageiros } = usePassengerStore();
+    const { passengers, createPassageiro, updatePassageiro, fetchPassageiros, loading } = usePassengerStore();
     const { congregacoes, fetchCongregacoes } = useCongregacaoStore();
     const {
         instruments: instrumentos,
@@ -237,14 +237,23 @@ export const PassengerForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-4 border-t border-gray-100">
-                        <Button type="submit">{isEditing ? 'Atualizar' : 'Salvar'}</Button>
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-100">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/passageiros')}
+                            className="w-full sm:flex-1 py-3 text-base"
                         >
+                            <X size={20} className="mr-2" />
                             Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            isLoading={loading}
+                            className="w-full sm:flex-1 py-3 text-base shadow-lg shadow-blue-200"
+                        >
+                            {isEditing ? <UserCircle size={20} className="mr-2" /> : <UserPlus size={20} className="mr-2" />}
+                            {loading ? (isEditing ? 'Atualizando...' : 'Salvando...') : (isEditing ? 'Atualizar Passageiro' : 'Salvar Passageiro')}
                         </Button>
                     </div>
                 </form>
