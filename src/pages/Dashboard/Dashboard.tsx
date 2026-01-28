@@ -6,7 +6,7 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon, ExternalLink } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon } from 'lucide-react';
 import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/Button';
