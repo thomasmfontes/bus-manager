@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const token = authHeader.replace('Bearer ', '');
 
-        // Create Supabase client with anon key to verify user
+        // Create Supabase client
         const supabaseUrl = process.env.SUPABASE_URL!;
         const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!;
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -29,65 +29,108 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        // Fetch passengers data (using anon key is fine since RLS allows authenticated reads)
-        const { data: passengers, error: fetchError } = await supabase
+        // Get query parameters
+        const { fields, viagem_id } = req.query;
+
+        // Default fields if none provided
+        const selectedFields = fields ? (fields as string).split(',') : ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
+
+        // Map export labels back to database columns
+        const columnMap: Record<string, string> = {
+            'Nome': 'nome_completo',
+            'Documento': 'cpf_rg',
+            'Telefone': 'telefone',
+            'Congregação': 'comum_congregacao',
+            'Status': 'pagamento',
+            'Assento': 'assento',
+            'Instrumento': 'instrumento',
+            'Idade': 'idade',
+            'Valor Pago': 'valor_pago',
+            'Estado Civil': 'estado_civil',
+            'Auxiliar': 'auxiliar'
+        };
+
+        // Start building query
+        let query = supabase
             .from('passageiros')
             .select('*')
-            .neq('nome_completo', 'BLOQUEADO')
-            .order('nome_completo');
+            .neq('nome_completo', 'BLOQUEADO');
+
+        // Filter by trip if provided
+        if (viagem_id) {
+            query = query.eq('viagem_id', viagem_id);
+        }
+
+        const { data: passengers, error: fetchError } = await query.order('nome_completo');
 
         if (fetchError) {
             console.error('Error fetching passengers:', fetchError);
             return res.status(500).json({ error: 'Failed to fetch passenger data' });
         }
 
-        // Process data for export
-        const processedPassengers = passengers?.map(p => ({
-            Nome: p.nome_completo,
-            Documento: p.cpf_rg || '-',
-            Telefone: p.telefone || '-',
-            Congregação: p.comum_congregacao || '-',
-            Status: p.pagamento === 'paid' ? 'Pago' : p.pagamento === 'pending' ? 'Pendente' : p.pagamento || '-',
-            Assento: p.assento || '-',
-        })) || [];
+        // Fetch trip name if filtered
+        let fileNamePrefix = 'lista-passageiros';
+        if (viagem_id) {
+            const { data: trip } = await supabase
+                .from('viagens')
+                .select('nome, destino')
+                .eq('id', viagem_id)
+                .single();
+            if (trip) {
+                fileNamePrefix = `lista-${trip.nome.replace(/\s+/g, '-').toLowerCase()}`;
+            }
+        }
+
+        // Process data for export using selected fields
+        const processedPassengers = passengers?.map(p => {
+            const row: any = {};
+            selectedFields.forEach(field => {
+                const dbColumn = columnMap[field];
+                const value = p[dbColumn];
+
+                if (field === 'Status') {
+                    row[field] = value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value || '-';
+                } else if (field === 'Valor Pago') {
+                    row[field] = value ? `R$ ${parseFloat(value).toFixed(2)}` : 'R$ 0,00';
+                } else {
+                    row[field] = value || '-';
+                }
+            });
+            return row;
+        }) || [];
 
         // Create workbook
         const wb = XLSX.utils.book_new();
 
-        // Define headers explicitly
-        const headers = ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
-
         // Create worksheet
         let wsPassengers;
         if (processedPassengers.length === 0) {
-            wsPassengers = XLSX.utils.aoa_to_sheet([headers]);
+            wsPassengers = XLSX.utils.aoa_to_sheet([selectedFields]);
         } else {
-            wsPassengers = XLSX.utils.json_to_sheet(processedPassengers, { header: headers });
+            wsPassengers = XLSX.utils.json_to_sheet(processedPassengers, { header: selectedFields });
         }
 
-        // Adjust column widths
-        const wscols = [
-            { wch: 40 }, // Nome
-            { wch: 20 }, // Documento
-            { wch: 15 }, // Telefone
-            { wch: 20 }, // Congregação
-            { wch: 10 }, // Status
-            { wch: 10 }, // Assento
-        ];
+        // Adjust column widths based on content/headers
+        const wscols = selectedFields.map(field => {
+            if (field === 'Nome') return { wch: 40 };
+            if (field === 'Documento') return { wch: 20 };
+            if (field === 'Congregação') return { wch: 25 };
+            return { wch: 15 };
+        });
         wsPassengers['!cols'] = wscols;
 
         XLSX.utils.book_append_sheet(wb, wsPassengers, "Passageiros");
 
-        // Generate Excel file as buffer
+        // Generate Excel file
         const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
         // Set headers for file download
-        const fileName = `lista-passageiros-${new Date().toISOString().split('T')[0]}.xlsx`;
+        const date = new Date().toISOString().split('T')[0];
+        const fileName = `${fileNamePrefix}-${date}.xlsx`;
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         res.setHeader('Content-Length', excelBuffer.length);
 
-        // Send file
         return res.status(200).send(excelBuffer);
 
     } catch (error: any) {

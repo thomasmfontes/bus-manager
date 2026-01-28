@@ -62,6 +62,8 @@ export const useTripStore = create<TripState>((set, get) => ({
                     data_ida: trip.data_ida,
                     data_volta: trip.data_volta,
                     preco: trip.preco,
+                    origem_endereco: trip.origem_endereco,
+                    destino_endereco: trip.destino_endereco,
                 }])
                 .select()
                 .single();
@@ -107,6 +109,8 @@ export const useTripStore = create<TripState>((set, get) => ({
             if (trip.data_ida) updates.data_ida = trip.data_ida;
             if (trip.data_volta !== undefined) updates.data_volta = trip.data_volta;
             if (trip.preco) updates.preco = trip.preco;
+            if (trip.origem_endereco !== undefined) updates.origem_endereco = trip.origem_endereco;
+            if (trip.destino_endereco !== undefined) updates.destino_endereco = trip.destino_endereco;
 
             const { data: updatedTrip, error: tripError } = await supabase
                 .from('viagens')

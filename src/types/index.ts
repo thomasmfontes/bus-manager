@@ -18,6 +18,8 @@ export interface Trip {
     preco: number;
     onibus_id?: string; // Deprecated: kept for backward compatibility
     onibus_ids?: string[]; // New: array of bus IDs
+    origem_endereco?: string;
+    destino_endereco?: string;
     created_at?: string;
     updated_at?: string;
 }

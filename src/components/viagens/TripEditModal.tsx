@@ -41,6 +41,8 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
         data_volta: formatForDateTimeLocal(trip.data_volta),
         preco: trip.preco,
         onibus_ids: [...(trip.onibus_ids || [])],
+        origem_endereco: trip.origem_endereco || '',
+        destino_endereco: trip.destino_endereco || '',
     });
 
     useEffect(() => {
@@ -53,6 +55,8 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                 data_volta: formatForDateTimeLocal(trip.data_volta),
                 preco: trip.preco,
                 onibus_ids: [...(trip.onibus_ids || [])],
+                origem_endereco: trip.origem_endereco || '',
+                destino_endereco: trip.destino_endereco || '',
             });
         }
     }, [isOpen, trip, fetchOnibus]);
@@ -83,6 +87,8 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                 data_volta: formatWithOffset(formData.data_volta) || undefined,
                 preco: typeof formData.preco === 'string' ? parseFloat(formData.preco) : formData.preco,
                 onibus_ids: formData.onibus_ids,
+                origem_endereco: formData.origem_endereco,
+                destino_endereco: formData.destino_endereco,
             });
             showToast('Viagem atualizada com sucesso!', 'success');
             if (onSuccess) onSuccess();
@@ -191,6 +197,20 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                                     label="Data de Volta"
                                     value={formData.data_volta}
                                     onChange={(e) => setFormData({ ...formData, data_volta: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Input
+                                    label="Endereço de Saída Precisão"
+                                    value={formData.origem_endereco}
+                                    onChange={(e) => setFormData({ ...formData, origem_endereco: e.target.value })}
+                                    placeholder="Ex: Rua X, 123, Bairro, Cidade, SP"
+                                />
+                                <Input
+                                    label="Endereço de Destino Precisão"
+                                    value={formData.destino_endereco}
+                                    onChange={(e) => setFormData({ ...formData, destino_endereco: e.target.value })}
+                                    placeholder="Ex: Av. Y, 456, Centro, Cidade, UF"
                                 />
                             </div>
                             <Input

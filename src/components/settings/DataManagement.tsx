@@ -2,14 +2,51 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { Database, Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { useTripStore } from '@/stores/useTripStore';
+import { Database, Download, FileSpreadsheet, RefreshCw, Circle } from 'lucide-react';
+
+const AVAILABLE_FIELDS = [
+    'Nome',
+    'Documento',
+    'Telefone',
+    'Congregação',
+    'Status',
+    'Assento',
+    'Instrumento',
+    'Idade',
+    'Valor Pago',
+    'Estado Civil',
+    'Auxiliar'
+];
 
 export const DataManagement: React.FC = () => {
     const { showToast } = useToast();
+    const { trips, fetchViagens } = useTripStore();
     const [exporting, setExporting] = useState(false);
     const [normalizing, setNormalizing] = useState(false);
+    const [selectedFields, setSelectedFields] = useState<string[]>(['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento']);
+    const [selectedTripId, setSelectedTripId] = useState<string>('all');
+
+    React.useEffect(() => {
+        if (trips.length === 0) {
+            fetchViagens();
+        }
+    }, [fetchViagens, trips.length]);
+
+    const toggleField = (field: string) => {
+        setSelectedFields(prev =>
+            prev.includes(field)
+                ? prev.filter(f => f !== field)
+                : [...prev, field]
+        );
+    };
 
     const handleExportData = async () => {
+        if (selectedFields.length === 0) {
+            showToast('Selecione pelo menos um campo para exportar', 'error');
+            return;
+        }
+
         setExporting(true);
         try {
             // Get current session token
@@ -20,7 +57,14 @@ export const DataManagement: React.FC = () => {
             }
 
             // Call secure API endpoint
-            const response = await fetch('/api/data/export', {
+            // Call secure API endpoint with selection
+            const queryParams = new URLSearchParams();
+            queryParams.append('fields', selectedFields.join(','));
+            if (selectedTripId !== 'all') {
+                queryParams.append('viagem_id', selectedTripId);
+            }
+
+            const response = await fetch(`/api/data/export?${queryParams.toString()}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
@@ -104,18 +148,78 @@ export const DataManagement: React.FC = () => {
                                     <span>Lista de Passageiros</span>
                                 </h3>
                                 <p className="text-sm text-gray-600">
-                                    Baixe a lista completa de passageiros em formato Excel (.xlsx)
                                 </p>
                             </div>
-                            <button
-                                onClick={handleExportData}
-                                disabled={exporting}
-                                title="Baixar Lista"
-                                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                            >
-                                <Download size={20} className={exporting ? 'animate-bounce' : ''} />
-                                <span className="text-sm">{exporting ? 'Baixando...' : 'Baixar Excel'}</span>
-                            </button>
+                        </div>
+
+                        {/* Customization Options */}
+                        <div className="mt-6 space-y-6 animate-in">
+                            {/* Trip Filter */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <Database size={16} className="text-gray-400" />
+                                    <span>Filtrar por Viagem</span>
+                                </label>
+                                <select
+                                    value={selectedTripId}
+                                    onChange={(e) => setSelectedTripId(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                                >
+                                    <option value="all">Todas as Viagens (Lista Completa)</option>
+                                    {trips.map(trip => (
+                                        <option key={trip.id} value={trip.id}>
+                                            {trip.nome} → {trip.destino}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Field Selection */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Escolha os Dados para Exportar
+                                </label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                    {AVAILABLE_FIELDS.map(field => {
+                                        const selectedIndex = selectedFields.indexOf(field);
+                                        const isSelected = selectedIndex !== -1;
+                                        return (
+                                            <button
+                                                key={field}
+                                                onClick={() => toggleField(field)}
+                                                className={`relative flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${isSelected
+                                                    ? 'bg-green-50 border-green-200 text-green-700 ring-1 ring-green-200'
+                                                    : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {isSelected ? (
+                                                    <div className="flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-[10px] font-bold shrink-0">
+                                                        {selectedIndex + 1}
+                                                    </div>
+                                                ) : (
+                                                    <Circle size={14} className="text-gray-300 shrink-0" />
+                                                )}
+                                                <span className="truncate">{field}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-2 italic">
+                                    * A ordem das colunas no Excel seguirá a numeração acima.
+                                </p>
+                            </div>
+
+                            {/* Export Button */}
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleExportData}
+                                    disabled={exporting}
+                                    className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                >
+                                    <Download size={20} className={exporting ? 'animate-bounce' : ''} />
+                                    <span>{exporting ? 'Baixando...' : 'Baixar Excel'}</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 

@@ -22,6 +22,8 @@ export const TripForm: React.FC = () => {
         data_volta: '',
         preco: '' as string | number,
         onibus_ids: [] as string[],
+        origem_endereco: '',
+        destino_endereco: '',
     });
 
     useEffect(() => {
@@ -66,6 +68,8 @@ export const TripForm: React.FC = () => {
                 data_volta: formatWithOffset(formData.data_volta) || undefined,
                 preco,
                 onibus_ids: formData.onibus_ids,
+                origem_endereco: formData.origem_endereco,
+                destino_endereco: formData.destino_endereco,
             });
             showToast('Viagem cadastrada com sucesso!', 'success');
             navigate('/viagens');
@@ -111,6 +115,21 @@ export const TripForm: React.FC = () => {
                             label="Data de Volta (Opcional)"
                             value={formData.data_volta}
                             onChange={(e) => setFormData({ ...formData, data_volta: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            label="Endereço de Saída Precisão (Opcional)"
+                            value={formData.origem_endereco}
+                            onChange={(e) => setFormData({ ...formData, origem_endereco: e.target.value })}
+                            placeholder="Ex: Rua X, 123, Bairro, Cidade, SP"
+                        />
+                        <Input
+                            label="Endereço de Destino Precisão (Opcional)"
+                            value={formData.destino_endereco}
+                            onChange={(e) => setFormData({ ...formData, destino_endereco: e.target.value })}
+                            placeholder="Ex: Av. Y, 456, Centro, Cidade, UF"
                         />
                     </div>
 

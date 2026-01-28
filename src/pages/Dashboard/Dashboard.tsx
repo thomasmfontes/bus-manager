@@ -18,7 +18,12 @@ export const Dashboard: React.FC = () => {
     const { user } = useAuthStore();
     const [selectedTripId, setSelectedTripId] = React.useState<string>('all');
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
-    const [mapTarget, setMapTarget] = React.useState<{ origin: string; destination: string } | null>(null);
+    const [mapTarget, setMapTarget] = React.useState<{
+        origin: string;
+        destination: string;
+        originLabel: string;
+        destinationLabel: string;
+    } | null>(null);
 
     useEffect(() => {
         fetchOnibus();
@@ -101,7 +106,12 @@ export const Dashboard: React.FC = () => {
 
     const handleOpenMap = (trip: any) => {
         if (!trip.destino) return;
-        setMapTarget({ origin: trip.nome, destination: trip.destino });
+        setMapTarget({
+            origin: trip.origem_endereco || trip.nome,
+            destination: trip.destino_endereco || trip.destino,
+            originLabel: trip.nome,
+            destinationLabel: trip.destino
+        });
         setMapModalOpen(true);
     };
 
@@ -349,7 +359,7 @@ export const Dashboard: React.FC = () => {
                             <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] shrink-0" />
                             <p className="text-sm font-medium text-gray-600 truncate">
                                 <span className="text-gray-400 mr-2">Origem:</span>
-                                {mapTarget?.origin}
+                                {mapTarget?.originLabel}
                             </p>
                         </div>
                         <div className="ml-[4.5px] flex flex-col items-center w-0.5 gap-1 py-1">
@@ -360,7 +370,7 @@ export const Dashboard: React.FC = () => {
                             <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] shrink-0" />
                             <p className="text-sm font-bold text-gray-900 truncate">
                                 <span className="text-gray-400 font-medium mr-1">Destino:</span>
-                                {mapTarget?.destination}
+                                {mapTarget?.destinationLabel}
                             </p>
                         </div>
                     </div>
@@ -374,7 +384,7 @@ export const Dashboard: React.FC = () => {
                                 loading="lazy"
                                 allowFullScreen
                                 referrerPolicy="no-referrer-when-downgrade"
-                                src={`https://www.google.com/maps?q=${encodeURIComponent(mapTarget.origin)}+to+${encodeURIComponent(mapTarget.destination)}&output=embed`}
+                                src={`https://maps.google.com/maps?saddr=${encodeURIComponent(mapTarget.origin)}&daddr=${encodeURIComponent(mapTarget.destination)}&output=embed`}
                             ></iframe>
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
