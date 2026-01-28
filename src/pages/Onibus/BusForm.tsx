@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { Save, X, Bus as BusIcon, Plus } from 'lucide-react';
+import { X, Bus as BusIcon, Plus } from 'lucide-react';
 
 export const BusForm: React.FC = () => {
     const navigate = useNavigate();
