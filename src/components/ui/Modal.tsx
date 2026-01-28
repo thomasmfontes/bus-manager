@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 import { cn } from '@/utils/cn';
@@ -42,24 +43,24 @@ export const Modal: React.FC<ModalProps> = ({
         xl: 'max-w-4xl',
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in">
+    const modalContent = (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
             {/* Backdrop with blur */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity cursor-pointer"
                 onClick={onClose}
             />
 
-            {/* Modal */}
+            {/* Modal Container */}
             <div className={cn(
-                'relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full mx-4 max-h-[90vh] overflow-hidden',
-                'animate-in fade-in',
+                'relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col',
+                'animate-in zoom-in-95 duration-300',
                 sizes[size],
                 className
             )}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white truncate pr-4">{title}</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -69,19 +70,21 @@ export const Modal: React.FC<ModalProps> = ({
                 </div>
 
                 {/* Content */}
-                <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-140px)] scrollbar-thin">
+                <div className="px-6 py-6 overflow-y-auto scrollbar-thin flex-1">
                     {children}
                 </div>
 
                 {/* Footer */}
                 {footer && (
-                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 shrink-0">
                         {footer}
                     </div>
                 )}
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 interface ConfirmModalProps {

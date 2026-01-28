@@ -325,7 +325,7 @@ export const Dashboard: React.FC = () => {
                 onClose={() => setMapModalOpen(false)}
                 title="Visualização da Rota"
                 footer={
-                    <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-4">
+                    <div className="flex justify-center w-full">
                         <a
                             href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(mapTarget?.origin || '')}&destination=${encodeURIComponent(mapTarget?.destination || '')}&travelmode=driving`}
                             target="_blank"
@@ -333,19 +333,12 @@ export const Dashboard: React.FC = () => {
                             className="w-full sm:w-auto"
                         >
                             <Button
-                                className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                                className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm px-8"
                             >
                                 <MapIcon size={18} className="mr-2" />
                                 Abrir Maps
                             </Button>
                         </a>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setMapModalOpen(false)}
-                            className="w-full sm:w-auto"
-                        >
-                            Fechar
-                        </Button>
                     </div>
                 }
             >
@@ -388,19 +381,6 @@ export const Dashboard: React.FC = () => {
                                 <p className="text-gray-400">Carregando mapa...</p>
                             </div>
                         )}
-                    </div>
-
-                    <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                        <div className="p-2 bg-blue-100 rounded-lg text-blue-600 shrink-0">
-                            <ExternalLink size={20} />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-blue-900">Sugestão de Percurso</p>
-                            <p className="text-xs text-blue-700 leading-relaxed">
-                                Este mapa exibe uma rota sugerida. Tempos e condições reais podem variar.
-                                Clique em "Abrir Maps" para navegação GPS em tempo real.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </Modal>

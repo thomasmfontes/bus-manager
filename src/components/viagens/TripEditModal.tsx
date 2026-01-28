@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBusStore } from '@/stores/useBusStore';
 import { useToast } from '@/components/ui/Toast';
-import { Save, X, Bus as BusIcon, Info, Trash2, Plus, AlertCircle } from 'lucide-react';
+import { Save, Bus as BusIcon, Info, Trash2, Plus, AlertCircle } from 'lucide-react';
 
 interface TripEditModalProps {
     isOpen: boolean;
@@ -120,14 +120,10 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
             onClose={onClose}
             title="Editar Viagem"
             footer={
-                <div className="flex flex-col-reverse sm:flex-row gap-3 w-full">
-                    <Button variant="secondary" onClick={onClose} className="w-full sm:flex-1 py-3 text-base">
-                        <X size={20} className="mr-2" />
-                        Cancelar
-                    </Button>
+                <div className="flex w-full">
                     <Button
                         onClick={handleSubmit}
-                        className="w-full sm:flex-1 py-3 text-base shadow-lg shadow-blue-200"
+                        className="w-full py-3 text-base shadow-lg shadow-blue-200"
                         isLoading={loading}
                     >
                         <Save size={20} className="mr-2" />

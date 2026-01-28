@@ -235,7 +235,7 @@ export const TripSeatMap: React.FC = () => {
                     {user?.role === UserRole.ADMIN && (
                         <button
                             onClick={() => setEditModalOpen(true)}
-                            className="absolute -top-1 -right-1 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+                            className="absolute bottom-[-10px] right-[-10px] md:bottom-auto md:top-[-4px] md:right-[-4px] p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all bg-white/80 md:bg-transparent shadow-sm md:shadow-none border border-gray-100 md:border-transparent"
                             title="Editar Viagem"
                         >
                             <Pencil size={18} />
