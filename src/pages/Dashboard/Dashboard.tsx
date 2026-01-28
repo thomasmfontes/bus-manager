@@ -5,7 +5,7 @@ import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
-import { Bus, MapPin, Users, Calendar, ArrowRight, Eye } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter } from 'lucide-react';
 import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -14,6 +14,7 @@ export const Dashboard: React.FC = () => {
     const { trips, fetchViagens } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
+    const [selectedTripId, setSelectedTripId] = React.useState<string>('all');
 
     useEffect(() => {
         fetchOnibus();
@@ -21,24 +22,44 @@ export const Dashboard: React.FC = () => {
         fetchPassageiros();
     }, [fetchOnibus, fetchViagens, fetchPassageiros]);
 
+    // Filter trips and passengers based on selection
+    const filteredTrips = selectedTripId === 'all'
+        ? trips
+        : trips.filter(t => t.id === selectedTripId);
+
+    const filteredPassengers = selectedTripId === 'all'
+        ? passengers
+        : passengers.filter(p => p.viagem_id === selectedTripId);
+
     // Calculate stats
     const totalBuses = buses.length;
     const totalTrips = trips.length;
-    const totalPassengers = passengers.length;
-    // Count passengers with assigned seats
-    const occupiedSeats = passengers.filter((p) => p.assento !== null && p.assento !== undefined).length;
+    const totalPassengers = passengers.length; // Voltando para o global como solicitado
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Count passengers with assigned seats in the filtered group (apenas este card será filtrado)
+    const occupiedSeats = filteredPassengers.filter((p) => p.assento !== null && p.assento !== undefined).length;
 
-    const upcomingTrips = trips
+    // Calculate capacity for the selected trip(s)
+    const currentCapacity = filteredTrips.reduce((acc, trip) => {
+        const busIds = trip.onibus_ids || [];
+        const tripCapacity = busIds.reduce((busAcc, busId) => {
+            const bus = buses.find(b => b.id === busId);
+            return busAcc + (bus?.capacidade || 0);
+        }, 0);
+        return acc + tripCapacity;
+    }, 0);
+
+    const now = new Date();
+
+    const allUpcomingTrips = trips
         .filter((trip) => {
             if (!trip.data_ida) return false;
             const tripDate = new Date(trip.data_ida);
-            return tripDate >= today;
+            return tripDate >= now;
         })
-        .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime())
-        .slice(0, 5);
+        .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime());
+
+    const upcomingTrips = allUpcomingTrips.slice(0, 5);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -50,6 +71,16 @@ export const Dashboard: React.FC = () => {
             hour: '2-digit',
             minute: '2-digit',
         });
+    };
+
+    const formatPrettyDate = (dateString: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
     };
 
 
@@ -68,7 +99,7 @@ export const Dashboard: React.FC = () => {
             icon: MapPin,
             iconBg: 'bg-green-100',
             iconColor: 'text-green-600',
-            trend: upcomingTrips.length > 0 ? `${upcomingTrips.length} próximas` : totalTrips === 0 ? 'Nenhuma cadastrada' : 'Nenhuma próxima'
+            trend: allUpcomingTrips.length > 0 ? `${allUpcomingTrips.length} próximas` : totalTrips === 0 ? 'Nenhuma cadastrada' : 'Nenhuma próxima'
         },
         {
             label: 'Total de Passageiros',
@@ -84,7 +115,7 @@ export const Dashboard: React.FC = () => {
             icon: Calendar,
             iconBg: 'bg-orange-100',
             iconColor: 'text-orange-600',
-            trend: totalPassengers > 0 ? `de ${totalPassengers} total` : 'Nenhum reservado'
+            trend: currentCapacity > 0 ? `de ${currentCapacity} assentos` : 'Nenhum assento disponível'
         },
     ];
 
@@ -110,10 +141,32 @@ export const Dashboard: React.FC = () => {
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
                     <p className="text-gray-500">Visão geral do sistema</p>
+                </div>
+
+                {/* Trip Selector */}
+                <div className="w-full sm:w-auto min-w-[240px] relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                        <Filter size={18} />
+                    </div>
+                    <select
+                        value={selectedTripId}
+                        onChange={(e) => setSelectedTripId(e.target.value)}
+                        className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer"
+                    >
+                        <option value="all">TODAS AS VIAGENS</option>
+                        {trips.map(trip => (
+                            <option key={trip.id} value={trip.id}>
+                                {trip.nome} — {formatPrettyDate(trip.data_ida)}
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
+                        <ChevronDown size={18} />
+                    </div>
                 </div>
             </div>
 

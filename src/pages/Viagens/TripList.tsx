@@ -151,13 +151,15 @@ export const TripList: React.FC = () => {
                                                                 <Eye size={20} />
                                                             </button>
                                                         </Link>
-                                                        <button
-                                                            onClick={() => setDeleteId(trip.id)}
-                                                            className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                                            title="Excluir"
-                                                        >
-                                                            <Trash2 size={20} />
-                                                        </button>
+                                                        <ProtectedAction requiredPermission="delete">
+                                                            <button
+                                                                onClick={() => setDeleteId(trip.id)}
+                                                                className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                                                title="Excluir"
+                                                            >
+                                                                <Trash2 size={20} />
+                                                            </button>
+                                                        </ProtectedAction>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -187,13 +189,15 @@ export const TripList: React.FC = () => {
                                                         <Eye size={20} />
                                                     </button>
                                                 </Link>
-                                                <button
-                                                    onClick={() => setDeleteId(trip.id)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={20} />
-                                                </button>
+                                                <ProtectedAction requiredPermission="delete">
+                                                    <button
+                                                        onClick={() => setDeleteId(trip.id)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 size={20} />
+                                                    </button>
+                                                </ProtectedAction>
                                             </div>
                                         </div>
 

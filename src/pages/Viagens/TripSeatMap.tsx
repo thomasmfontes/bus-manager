@@ -422,11 +422,13 @@ export const TripSeatMap: React.FC = () => {
                                     Você não tem permissão para modificar assentos.
                                 </p>
                             </div>
-                        ) : currentPassenger?.nome_completo !== 'BLOQUEADO' ? (
-                            <p className="text-gray-600">Deseja liberar este assento?</p>
-                        ) : (
-                            <p className="text-gray-600">Deseja desbloquear este assento?</p>
-                        )}
+                        ) : user?.role === UserRole.ADMIN ? (
+                            currentPassenger?.nome_completo !== 'BLOQUEADO' ? (
+                                <p className="text-gray-600">Deseja liberar este assento?</p>
+                            ) : (
+                                <p className="text-gray-600">Deseja desbloquear este assento?</p>
+                            )
+                        ) : null}
                     </div>
                 )}
             </Modal>

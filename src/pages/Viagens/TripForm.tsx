@@ -47,12 +47,22 @@ export const TripForm: React.FC = () => {
             return;
         }
 
+        const formatWithOffset = (dateString: string) => {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            const tzo = -date.getTimezoneOffset();
+            const dif = tzo >= 0 ? '+' : '-';
+            const pad = (num: number) => (num < 10 ? '0' : '') + num;
+            const offset = dif + pad(Math.floor(Math.abs(tzo) / 60)) + ':' + pad(Math.abs(tzo) % 60);
+            return `${dateString.replace('T', ' ')}:00${offset}`;
+        };
+
         try {
             await createViagem({
                 nome: formData.nome,
                 destino: formData.destino,
-                data_ida: formData.data_ida,
-                data_volta: formData.data_volta || undefined,
+                data_ida: formatWithOffset(formData.data_ida) || '',
+                data_volta: formatWithOffset(formData.data_volta) || undefined,
                 preco,
                 onibus_ids: formData.onibus_ids,
             });
