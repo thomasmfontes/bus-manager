@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
-import { Plus, Edit, Trash2, Search, Upload, Trash } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Upload, Trash, Users } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const PassengerList: React.FC = () => {
@@ -93,7 +93,10 @@ export const PassengerList: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Passageiros</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                        <Users className="text-purple-600" size={32} />
+                        Passageiros
+                    </h1>
                     <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os passageiros cadastrados</p>
                 </div>
 

@@ -6,7 +6,7 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon, LayoutDashboard } from 'lucide-react';
 import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/Button';
@@ -214,7 +214,10 @@ export const Dashboard: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <LayoutDashboard className="text-blue-600" size={28} />
+                        Dashboard
+                    </h1>
                     <p className="text-gray-500">Visão geral do sistema</p>
                 </div>
 

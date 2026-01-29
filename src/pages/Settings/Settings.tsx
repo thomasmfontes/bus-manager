@@ -20,7 +20,10 @@ export const Settings: React.FC = () => {
         <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6">
             {/* Header */}
             <div className="animate-in">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Configurações</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                    <SettingsIcon className="text-gray-600 dark:text-gray-400" size={32} />
+                    Configurações
+                </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Gerencie as configurações do sistema</p>
             </div>
 

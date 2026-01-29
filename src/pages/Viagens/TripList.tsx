@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
-import { Plus, Eye, Trash2 } from 'lucide-react';
+import { Plus, Eye, Trash2, MapPin } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const TripList: React.FC = () => {
@@ -88,7 +88,10 @@ export const TripList: React.FC = () => {
     return (
         <div className="space-y-6 w-full">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-dark">Viagens</h1>
+                <h1 className="text-3xl font-bold text-gray-dark flex items-center gap-3">
+                    <MapPin className="text-emerald-600" size={32} />
+                    Viagens
+                </h1>
                 <ProtectedAction requiredPermission="create">
                     <Link to="/viagens/nova">
                         <Button>
