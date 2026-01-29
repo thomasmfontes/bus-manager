@@ -94,7 +94,7 @@ export const PassengerList: React.FC = () => {
             <div className="flex flex-col gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-                        <Users className="text-purple-600" size={32} />
+                        <Users className="text-blue-600" size={32} />
                         Passageiros
                     </h1>
                     <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os passageiros cadastrados</p>
