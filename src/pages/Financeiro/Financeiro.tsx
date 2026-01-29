@@ -4,7 +4,7 @@ import { useTripStore } from '@/stores/useTripStore';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { Search, Filter, CircleDollarSign, ChevronDown, MapPin } from 'lucide-react';
+import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, ArrowRight, LayoutDashboard } from 'lucide-react';
 
 export const Financeiro: React.FC = () => {
     const { passengers, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
@@ -14,6 +14,7 @@ export const Financeiro: React.FC = () => {
     const [selectedTripId, setSelectedTripId] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
 
     useEffect(() => {
         fetchPassageiros();
@@ -22,15 +23,22 @@ export const Financeiro: React.FC = () => {
 
     // Only show passengers that are assigned to a trip
     const tripPassengers = passengers.filter(p => p.viagem_id !== null && p.assento !== null);
+    const now = new Date();
 
     const filteredPassengers = tripPassengers.filter(p => {
+        const passengerTrip = trips.find(t => t.id === p.viagem_id);
+        const matchesTime = timeFilter === 'all' || (passengerTrip && (
+            timeFilter === 'future' ? new Date(passengerTrip.data_ida) >= now : new Date(passengerTrip.data_ida) < now
+        ));
+
         const matchesTrip = selectedTripId === 'all' || p.viagem_id === selectedTripId;
         const matchesStatus = statusFilter === 'all' ||
             (statusFilter === 'paid' && (p.pagamento === 'paid' || p.pagamento === 'Realizado')) ||
             (statusFilter === 'pending' && (p.pagamento === 'pending' || p.pagamento === 'Pendente'));
         const matchesSearch = p.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (p.assento || '').toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesTrip && matchesStatus && matchesSearch;
+
+        return matchesTime && matchesTrip && matchesStatus && matchesSearch;
     });
 
     const groupedPassengers = trips
@@ -81,32 +89,69 @@ export const Financeiro: React.FC = () => {
 
     return (
         <div className="space-y-6 w-full animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Header & Main Controls */}
+            <div className="flex flex-col gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                        <CircleDollarSign className="text-emerald-600" size={32} />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <CircleDollarSign className="text-emerald-600" size={28} />
                         Financeiro
                     </h1>
-                    <p className="text-gray-500 mt-1">Gestão de pagamentos por viagem</p>
+                    <p className="text-gray-500">Gestão de pagamentos e metas financeiras</p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="w-full sm:w-auto min-w-[240px] relative group">
+                {/* Combined Filter Container (Identical to Dashboard) */}
+                <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                    {/* Time Filter Tabs */}
+                    <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                        {[
+                            { id: 'future', label: 'Próximas', icon: Calendar },
+                            { id: 'past', label: 'Passadas', icon: ArrowRight },
+                            { id: 'all', label: 'Todas', icon: LayoutDashboard }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => {
+                                    setTimeFilter(tab.id as any);
+                                    setSelectedTripId('all');
+                                }}
+                                className={cn(
+                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                    timeFilter === tab.id
+                                        ? "bg-white text-emerald-600 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <tab.icon size={16} />
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Trip Selection Area */}
+                    <div className="relative group">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none">
                             <Filter size={18} />
                         </div>
                         <select
                             value={selectedTripId}
                             onChange={(e) => setSelectedTripId(e.target.value)}
-                            className="w-full pl-11 pr-10 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-emerald-50/50 focus:border-emerald-500 transition-all outline-none font-medium text-gray-700 dark:text-gray-300 appearance-none cursor-pointer"
+                            className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-emerald-50/50 focus:border-emerald-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
                         >
-                            <option value="all">TODAS AS VIAGENS</option>
-                            {trips.map(trip => (
-                                <option key={trip.id} value={trip.id}>
-                                    {trip.nome} — {formatPrettyDate(trip.data_ida)}
-                                </option>
-                            ))}
+                            <option value="all">Filtro de Viagem...</option>
+
+                            {trips
+                                .filter(t => {
+                                    if (timeFilter === 'all') return true;
+                                    const isFuture = new Date(t.data_ida) >= now;
+                                    return timeFilter === 'future' ? isFuture : !isFuture;
+                                })
+                                .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime())
+                                .map(trip => (
+                                    <option key={trip.id} value={trip.id}>
+                                        {trip.nome} — {formatPrettyDate(trip.data_ida)}
+                                    </option>
+                                ))
+                            }
                         </select>
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
                             <ChevronDown size={18} />

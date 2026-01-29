@@ -10,6 +10,7 @@ import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map
 import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/utils/cn';
 
 export const Dashboard: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
@@ -17,6 +18,7 @@ export const Dashboard: React.FC = () => {
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
     const [selectedTripId, setSelectedTripId] = React.useState<string>('all');
+    const [timeFilter, setTimeFilter] = React.useState<'future' | 'past' | 'all'>('future');
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
     const [mapTarget, setMapTarget] = React.useState<{
         origin: string;
@@ -32,18 +34,39 @@ export const Dashboard: React.FC = () => {
     }, [fetchOnibus, fetchViagens, fetchPassageiros]);
 
     // Filter trips and passengers based on selection
+    const now = new Date();
+
+    // Sort all trips by date
+    const sortedTrips = [...trips].sort((a, b) =>
+        new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime()
+    );
+
+    const futureTrips = sortedTrips.filter(t => new Date(t.data_ida) >= now);
+    const pastTrips = sortedTrips.filter(t => new Date(t.data_ida) < now);
+
+    const tripsInView = timeFilter === 'future' ? futureTrips : timeFilter === 'past' ? pastTrips : sortedTrips;
+
     const filteredTrips = selectedTripId === 'all'
-        ? trips
+        ? tripsInView
         : trips.filter(t => t.id === selectedTripId);
 
     const filteredPassengers = selectedTripId === 'all'
-        ? passengers
+        ? (timeFilter === 'all' ? passengers : passengers.filter(p => {
+            const passengerTrip = trips.find(t => t.id === p.viagem_id);
+            if (!passengerTrip) return false;
+            const isFuture = new Date(passengerTrip.data_ida) >= now;
+            return timeFilter === 'future' ? isFuture : !isFuture;
+        }))
         : passengers.filter(p => p.viagem_id === selectedTripId);
 
     // Calculate stats
     const totalBuses = buses.length;
     const totalTrips = trips.length;
-    const totalPassengers = passengers.length; // Voltando para o global como solicitado
+    // Calculate total unique passengers (identities)
+    const uniquePassengerIdentities = new Set(
+        passengers.map(p => `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`)
+    );
+    const totalPassengers = uniquePassengerIdentities.size;
 
     // Count passengers with assigned seats in the filtered group (apenas este card será filtrado)
     // Refined to ensure seat is in one of the trip's actual buses (fallback for legacy/dirty data)
@@ -69,8 +92,6 @@ export const Dashboard: React.FC = () => {
         }, 0);
         return acc + tripCapacity;
     }, 0);
-
-    const now = new Date();
 
     const allUpcomingTrips = trips
         .filter((trip) => {
@@ -133,10 +154,10 @@ export const Dashboard: React.FC = () => {
                 icon: MapPin,
                 iconBg: 'bg-green-100',
                 iconColor: 'text-green-600',
-                trend: allUpcomingTrips.length > 0 ? `${allUpcomingTrips.length} próximas` : totalTrips === 0 ? 'Nenhuma cadastrada' : 'Nenhuma próxima'
+                trend: futureTrips.length > 0 ? `${futureTrips.length} próximas` : totalTrips === 0 ? 'Nenhuma cadastrada' : 'Nenhuma próxima'
             },
             {
-                label: 'Total de Passageiros',
+                label: 'Passageiros (Total)',
                 value: totalPassengers,
                 icon: Users,
                 iconBg: 'bg-purple-100',
@@ -211,35 +232,66 @@ export const Dashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <LayoutDashboard className="text-blue-600" size={28} />
-                        Dashboard
-                    </h1>
-                    <p className="text-gray-500">Visão geral do sistema</p>
+            {/* Header & Controls */}
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                            <LayoutDashboard className="text-blue-600" size={28} />
+                            Dashboard
+                        </h1>
+                        <p className="text-gray-500">Visão geral do negócio</p>
+                    </div>
                 </div>
 
-                {/* Trip Selector */}
-                <div className="w-full sm:w-auto min-w-[240px] relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
-                        <Filter size={18} />
-                    </div>
-                    <select
-                        value={selectedTripId}
-                        onChange={(e) => setSelectedTripId(e.target.value)}
-                        className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer"
-                    >
-                        <option value="all">TODAS AS VIAGENS</option>
-                        {trips.map(trip => (
-                            <option key={trip.id} value={trip.id}>
-                                {trip.nome} — {formatPrettyDate(trip.data_ida)}
-                            </option>
+                {/* Unified Filter Container (Matched to User Image) */}
+                <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                    {/* Time Filter Tabs */}
+                    <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                        {[
+                            { id: 'future', label: 'Próximas', icon: Calendar },
+                            { id: 'past', label: 'Passadas', icon: ArrowRight },
+                            { id: 'all', label: 'Todas', icon: LayoutDashboard }
+                        ].map((fitlerType) => (
+                            <button
+                                key={fitlerType.id}
+                                onClick={() => {
+                                    setTimeFilter(fitlerType.id as any);
+                                    setSelectedTripId('all');
+                                }}
+                                className={cn(
+                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                    timeFilter === fitlerType.id
+                                        ? "bg-white text-blue-600 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <fitlerType.icon size={16} />
+                                {fitlerType.label}
+                            </button>
                         ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
-                        <ChevronDown size={18} />
+                    </div>
+
+                    {/* Integrated Trip Selector */}
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                            <Filter size={18} />
+                        </div>
+                        <select
+                            value={selectedTripId}
+                            onChange={(e) => setSelectedTripId(e.target.value)}
+                            className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
+                        >
+                            <option value="all">Filtro de Viagem...</option>
+                            {tripsInView.map(trip => (
+                                <option key={trip.id} value={trip.id}>
+                                    {trip.nome} — {formatPrettyDate(trip.data_ida)}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
+                            <ChevronDown size={18} />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -266,12 +318,16 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h2 className="text-xl font-semibold text-gray-900">
-                            {selectedTripId === 'all' ? 'Próximas Viagens' : 'Viagem Selecionada'}
+                            {selectedTripId !== 'all'
+                                ? 'Detalhes da Viagem'
+                                : timeFilter === 'future' ? 'Próximas Viagens'
+                                    : timeFilter === 'past' ? 'Viagens Passadas'
+                                        : 'Todas as Viagens'}
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                            {selectedTripId === 'all'
-                                ? 'Viagens agendadas para os próximos dias'
-                                : 'Detalhes da viagem filtrada'}
+                            {selectedTripId !== 'all'
+                                ? 'Dados específicos da viagem selecionada'
+                                : `Visualizando ${timeFilter === 'future' ? 'os próximos embarques' : 'histórico de viagens'}`}
                         </p>
                     </div>
                     {selectedTripId === 'all' && (

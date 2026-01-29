@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { Trash2, UserPlus, Shield, Loader2 } from 'lucide-react';
+import { ConfirmModal } from '@/components/ui/Modal';
 
 interface AdminProfile {
     id: string;
@@ -22,6 +23,7 @@ export const AdminList: React.FC = () => {
     const [newAdminName, setNewAdminName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [adminToConfirmDelete, setAdminToConfirmDelete] = useState<{ id: string, email: string } | null>(null);
     const { showToast } = useToast();
 
     const fetchAdmins = async () => {
@@ -93,8 +95,11 @@ export const AdminList: React.FC = () => {
         }
     };
 
-    const handleDeleteAdmin = async (id: string, email: string) => {
-        if (!confirm(`Tem certeza que deseja remover o administrador ${email}?`)) return;
+    const handleDeleteAdmin = async () => {
+        if (!adminToConfirmDelete) return;
+
+        const { id } = adminToConfirmDelete;
+        setAdminToConfirmDelete(null);
 
         setDeletingId(id);
         try {
@@ -203,7 +208,7 @@ export const AdminList: React.FC = () => {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => handleDeleteAdmin(admin.id, admin.email)}
+                                        onClick={() => setAdminToConfirmDelete({ id: admin.id, email: admin.email })}
                                         disabled={deletingId === admin.id}
                                         className="p-2 sm:p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-100"
                                         title="Remover acesso"
@@ -220,6 +225,14 @@ export const AdminList: React.FC = () => {
                     )}
                 </div>
             </Card>
+
+            <ConfirmModal
+                isOpen={!!adminToConfirmDelete}
+                onClose={() => setAdminToConfirmDelete(null)}
+                onConfirm={handleDeleteAdmin}
+                title="Remover Administrador"
+                message={`Tem certeza que deseja remover o acesso administrativo de "${adminToConfirmDelete?.email}"? Esta ação revogará o acesso imediato ao sistema.`}
+            />
         </div>
     );
 };

@@ -194,6 +194,49 @@ export const useTripStore = create<TripState>((set, get) => ({
     deleteViagem: async (id) => {
         set({ loading: true });
         try {
+            // 1. Get all passengers associated with this trip
+            const { data: tripPassengers, error: fetchError } = await supabase
+                .from('passageiros')
+                .select('*')
+                .eq('viagem_id', id);
+
+            if (fetchError) throw fetchError;
+
+            // 2. Handle each passenger
+            for (const p of (tripPassengers || [])) {
+                if (p.nome_completo === 'BLOQUEADO') {
+                    // Always delete blocked seats
+                    await supabase.from('passageiros').delete().eq('id', p.id);
+                } else {
+                    // Check if this person exists elsewhere (Master record or other trips)
+                    const { count, error: countError } = await supabase
+                        .from('passageiros')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('nome_completo', p.nome_completo)
+                        .eq('cpf_rg', p.cpf_rg || '')
+                        .neq('id', p.id);
+
+                    if (countError) console.error('Error checking passenger existence:', countError);
+
+                    if (count && count > 0) {
+                        // Recurso redundante (clone), pode deletar com segurança
+                        await supabase.from('passageiros').delete().eq('id', p.id);
+                    } else {
+                        // Único registro dessa pessoa! Promover ao cadastro geral (Master)
+                        await supabase.from('passageiros').update({ viagem_id: null, assento: null, onibus_id: null }).eq('id', p.id);
+                    }
+                }
+            }
+
+            // 3. Delete trip-bus relationships
+            const { error: relationError } = await supabase
+                .from('viagem_onibus')
+                .delete()
+                .eq('viagem_id', id);
+
+            if (relationError) console.error('Error deleting trip relations:', relationError);
+
+            // 4. Delete the trip itself
             const { error } = await supabase.from('viagens').delete().eq('id', id);
             if (error) throw error;
             set({ trips: get().trips.filter((t) => t.id !== id), loading: false });

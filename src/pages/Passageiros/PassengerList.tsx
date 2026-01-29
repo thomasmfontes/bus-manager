@@ -71,6 +71,12 @@ export const PassengerList: React.FC = () => {
     // Group by name and doc to show unique identities
     const uniquePassengersMap = new Map();
     passengers
+        .sort((a, b) => {
+            // Priority 1: Master record (no viagem_id)
+            if (a.viagem_id === null && b.viagem_id !== null) return -1;
+            if (a.viagem_id !== null && b.viagem_id === null) return 1;
+            return 0;
+        })
         .forEach(p => {
             const key = `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`;
             if (!uniquePassengersMap.has(key)) {

@@ -7,8 +7,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
-import { Plus, Eye, Trash2, MapPin } from 'lucide-react';
+import { Plus, Eye, Trash2, MapPin, Calendar, ArrowRight, LayoutDashboard } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
+import { cn } from '@/utils/cn';
 
 export const TripList: React.FC = () => {
     const { trips, fetchViagens, deleteViagem, loading } = useTripStore();
@@ -16,6 +17,7 @@ export const TripList: React.FC = () => {
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
 
     useEffect(() => {
         fetchViagens();
@@ -64,6 +66,17 @@ export const TripList: React.FC = () => {
         }, 0);
     };
 
+    const now = new Date();
+    const sortedTrips = [...trips].sort((a, b) =>
+        new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime()
+    );
+
+    const filteredByTime = sortedTrips.filter(t => {
+        if (timeFilter === 'all') return true;
+        const isFuture = new Date(t.data_ida) >= now;
+        return timeFilter === 'future' ? isFuture : !isFuture;
+    });
+
     const formatDate = (dateString: string) => {
         if (!dateString) return 'Data inválida';
 
@@ -87,19 +100,54 @@ export const TripList: React.FC = () => {
 
     return (
         <div className="space-y-6 w-full">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-dark flex items-center gap-3">
-                    <MapPin className="text-emerald-600" size={32} />
-                    Viagens
-                </h1>
-                <ProtectedAction requiredPermission="create">
-                    <Link to="/viagens/nova">
-                        <Button>
-                            <Plus size={20} className="md:mr-2" />
-                            <span className="hidden md:inline">Nova Viagem</span>
-                        </Button>
-                    </Link>
-                </ProtectedAction>
+            <div className="flex flex-col gap-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                        <MapPin className="text-blue-600" size={28} />
+                        Viagens
+                    </h1>
+                    <p className="text-gray-500">Gerenciamento de roteiros e itinerários</p>
+                </div>
+
+                {/* Unified Toolbar Container */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
+                        {/* Filter Tabs Block */}
+                        <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                            {[
+                                { id: 'future', label: 'Próximas', icon: Calendar },
+                                { id: 'past', label: 'Passadas', icon: ArrowRight },
+                                { id: 'all', label: 'Todas', icon: LayoutDashboard }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setTimeFilter(tab.id as any)}
+                                    className={cn(
+                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                        timeFilter === tab.id
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-gray-500 hover:text-gray-700"
+                                    )}
+                                >
+                                    <tab.icon size={16} />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="hidden sm:block w-px h-8 bg-gray-200/50 mx-2" />
+                    </div>
+
+                    {/* Action Button Integrated - Pushed to the right */}
+                    <ProtectedAction requiredPermission="create">
+                        <Link to="/viagens/nova" className="w-full sm:w-auto">
+                            <Button className="w-full sm:w-auto h-11 px-6 rounded-xl shadow-blue-100 shadow-lg hover:shadow-xl transition-all">
+                                <Plus size={20} className="mr-2" />
+                                <span>Nova Viagem</span>
+                            </Button>
+                        </Link>
+                    </ProtectedAction>
+                </div>
             </div>
 
             <Card>
@@ -128,7 +176,7 @@ export const TripList: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {trips.map((trip) => {
+                                    {filteredByTime.map((trip) => {
                                         const occupied = getOccupiedSeats(trip.id);
                                         const total = getTotalSeats(trip.onibus_ids);
                                         return (
@@ -179,9 +227,8 @@ export const TripList: React.FC = () => {
                             </table>
                         </div>
 
-                        {/* Mobile Card View */}
                         <div className="md:hidden space-y-4">
-                            {trips.map((trip) => {
+                            {filteredByTime.map((trip) => {
                                 const occupied = getOccupiedSeats(trip.id);
                                 const total = getTotalSeats(trip.onibus_ids);
                                 return (

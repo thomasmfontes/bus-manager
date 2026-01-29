@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { useTripStore } from '@/stores/useTripStore';
 import { Database, Download, FileSpreadsheet, RefreshCw, Circle } from 'lucide-react';
+import { ConfirmModal } from '@/components/ui/Modal';
 
 const AVAILABLE_FIELDS = [
     'Nome',
@@ -26,6 +27,7 @@ export const DataManagement: React.FC = () => {
     const [normalizing, setNormalizing] = useState(false);
     const [selectedFields, setSelectedFields] = useState<string[]>(['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento']);
     const [selectedTripId, setSelectedTripId] = useState<string>('all');
+    const [showConfirmReset, setShowConfirmReset] = useState(false);
 
     React.useEffect(() => {
         if (trips.length === 0) {
@@ -99,8 +101,6 @@ export const DataManagement: React.FC = () => {
     };
 
     const handleNormalizeStatus = async () => {
-        if (!confirm('Isso irá converter todos os status "Realizado" para "Pendente". Deseja continuar?')) return;
-
         setNormalizing(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -109,18 +109,29 @@ export const DataManagement: React.FC = () => {
                 return;
             }
 
-            const { data, error } = await supabase
+            let query = supabase
                 .from('passageiros')
                 .update({ pagamento: 'pending' })
-                .eq('pagamento', 'Realizado')
-                .select();
+                .eq('pagamento', 'Realizado');
+
+            // Apply filter only if a specific trip is selected
+            if (selectedTripId !== 'all') {
+                query = query.eq('viagem_id', selectedTripId);
+            } else {
+                // Safeguard: Do not allow global reset without explicit trip selection
+                showToast('Selecione uma viagem específica para reiniciar os status', 'error');
+                return;
+            }
+
+            const { data, error } = await query.select();
 
             if (error) throw error;
 
-            showToast(`${data?.length || 0} registros atualizados com sucesso!`, 'success');
+            showToast(`${data?.length || 0} registros reiniciados com sucesso!`, 'success');
+            setShowConfirmReset(false);
         } catch (error: any) {
             console.error('Error normalizing data:', error);
-            showToast(`Erro ao normalizar: ${error.message || 'Erro desconhecido'}`, 'error');
+            showToast(`Erro ao reiniciar: ${error.message || 'Erro desconhecido'}`, 'error');
         } finally {
             setNormalizing(false);
         }
@@ -228,25 +239,33 @@ export const DataManagement: React.FC = () => {
                             <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-1">
                                     <RefreshCw size={20} className="text-blue-600 shrink-0" />
-                                    <span>Normalizar Status</span>
+                                    <span>Reiniciar Status de Pagamento</span>
                                 </h3>
                                 <p className="text-sm text-gray-600">
-                                    Converte todos os status para "Pendente"
+                                    Converte status "Realizado" para "Pendente" para a viagem selecionada
                                 </p>
                             </div>
                             <button
-                                onClick={handleNormalizeStatus}
-                                disabled={normalizing}
-                                title="Normalizar"
-                                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                onClick={() => setShowConfirmReset(true)}
+                                disabled={normalizing || selectedTripId === 'all'}
+                                title={selectedTripId === 'all' ? "Selecione uma viagem para habilitar esta opção" : "Reiniciar"}
+                                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed disabled:hover:scale-100"
                             >
                                 <RefreshCw size={20} className={normalizing ? 'animate-spin' : ''} />
-                                <span className="text-sm">{normalizing ? 'Processando...' : 'Converter'}</span>
+                                <span className="text-sm">{normalizing ? 'Processando...' : 'Reiniciar'}</span>
                             </button>
                         </div>
                     </div>
                 </div>
             </Card>
+
+            <ConfirmModal
+                isOpen={showConfirmReset}
+                onClose={() => setShowConfirmReset(false)}
+                onConfirm={handleNormalizeStatus}
+                title="Reiniciar Status de Pagamento"
+                message={`Deseja converter todos os status "Realizado" para "Pendente" na viagem "${trips.find(t => t.id === selectedTripId)?.nome || '(Selecione uma viagem)'}"? Esta ação não pode ser desfeita.`}
+            />
         </div>
     );
 };

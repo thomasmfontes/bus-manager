@@ -41,12 +41,33 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
 
             if (getError) throw getError;
 
-            // 2. Determine if we should clone (different trip) or update (same trip or no trip)
-            // Note: Many passengers might not have a viagem_id initially if added to a global list
-            const shouldClone = passenger.viagem_id !== null && passenger.viagem_id !== viagemId;
+            // 2. Identify if this passenger is already assigned to THIS trip
+            // (could be the same record or another clone with same identity)
+            const { data: existingInTrip, error: existingError } = await supabase
+                .from('passageiros')
+                .select('id')
+                .eq('viagem_id', viagemId)
+                .eq('nome_completo', passenger.nome_completo)
+                .eq('cpf_rg', passenger.cpf_rg || '')
+                .maybeSingle();
 
-            if (shouldClone) {
-                console.log('🚌 Clonando passageiro para nova viagem:', passenger.nome_completo);
+            if (existingError) console.error('Error checking existing clone:', existingError);
+
+            const targetPassengerId = existingInTrip?.id || (passenger.viagem_id === viagemId ? passageiroId : null);
+
+            if (targetPassengerId) {
+                console.log('🔄 Atualizando registro existente na viagem:', passenger.nome_completo);
+                const { error: updateError } = await supabase
+                    .from('passageiros')
+                    .update({
+                        onibus_id: onibusId,
+                        assento: assento
+                    })
+                    .eq('id', targetPassengerId);
+
+                if (updateError) throw updateError;
+            } else {
+                console.log('🚌 Criando clone para viagem:', passenger.nome_completo);
                 const { error: insertError } = await supabase
                     .from('passageiros')
                     .insert([{
@@ -58,26 +79,14 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
                         idade: passenger.idade,
                         estado_civil: passenger.estado_civil,
                         auxiliar: passenger.auxiliar,
-                        pagamento: 'pending', // New trip, new payment status
-                        valor_pago: 0,        // New trip, starts with 0
+                        pagamento: 'pending',
+                        valor_pago: 0,
                         viagem_id: viagemId,
                         onibus_id: onibusId,
                         assento: assento
                     }]);
 
                 if (insertError) throw insertError;
-            } else {
-                console.log('🔄 Atualizando passageiro existente:', passenger.nome_completo);
-                const { error: updateError } = await supabase
-                    .from('passageiros')
-                    .update({
-                        viagem_id: viagemId,
-                        onibus_id: onibusId,
-                        assento: assento
-                    })
-                    .eq('id', passageiroId);
-
-                if (updateError) throw updateError;
             }
 
             set({ loading: false });

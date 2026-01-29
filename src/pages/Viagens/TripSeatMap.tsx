@@ -129,7 +129,8 @@ export const TripSeatMap: React.FC = () => {
 
             console.log('✅ Recarregando assentos...');
             await loadAssignments(); // Reload assignments
-            console.log('✅ Assentos recarregados');
+            await fetchPassageiros(); // Refresh global passengers list for the dropdown
+            console.log('✅ Assentos e passageiros recarregados');
         } catch (error) {
             console.error('❌ Erro ao atribuir:', error);
             showToast('Erro ao atribuir assento', 'error');
@@ -149,6 +150,7 @@ export const TripSeatMap: React.FC = () => {
             setModalOpen(false);
             setSelectedSeat(null);
             loadAssignments(); // Reload assignments
+            fetchPassageiros(); // Refresh global passengers list for the dropdown
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
         }
@@ -166,6 +168,7 @@ export const TripSeatMap: React.FC = () => {
             setModalOpen(false);
             setSelectedSeat(null);
             loadAssignments(); // Reload assignments
+            fetchPassageiros(); // Refresh global passengers list for the dropdown
         } catch (error) {
             showToast('Erro ao bloquear assento', 'error');
         }
