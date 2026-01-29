@@ -68,8 +68,20 @@ export const PassengerList: React.FC = () => {
         }
     };
 
-    const filteredPassengers = passengers.filter(
-        (p) =>
+    // Group by name and doc to show unique identities
+    const uniquePassengersMap = new Map();
+    passengers
+        .forEach(p => {
+            const key = `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`;
+            if (!uniquePassengersMap.has(key)) {
+                uniquePassengersMap.set(key, p);
+            }
+        });
+
+    const uniquePassengers = Array.from(uniquePassengersMap.values());
+
+    const filteredPassengers = uniquePassengers.filter(
+        (p: any) =>
             p.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.cpf_rg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.telefone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -177,7 +189,6 @@ export const PassengerList: React.FC = () => {
                                         <th>Telefone</th>
                                         <th>Congregação</th>
                                         <th>Idade</th>
-                                        <th>Status</th>
                                         <th className="text-right">Ações</th>
                                     </tr>
                                 </thead>
@@ -198,16 +209,6 @@ export const PassengerList: React.FC = () => {
                                             <td className="text-gray-600">{passenger.telefone}</td>
                                             <td className="text-gray-600">{passenger.comum_congregacao || '-'}</td>
                                             <td className="text-gray-600">{passenger.idade || '-'}</td>
-                                            <td>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${passenger.pagamento === 'paid' || passenger.pagamento === 'Realizado' ? 'bg-green-100 text-green-800' :
-                                                        passenger.pagamento === 'pending' || passenger.pagamento === 'Pendente' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                    {passenger.pagamento === 'paid' || passenger.pagamento === 'Realizado' ? 'Pago' :
-                                                        passenger.pagamento === 'pending' || passenger.pagamento === 'Pendente' ? 'Pendente' :
-                                                            passenger.pagamento || '-'}
-                                                </span>
-                                            </td>
                                             <td>
                                                 <div className="flex justify-end gap-2">
                                                     <Link to={`/passageiros/editar/${passenger.id}`}>

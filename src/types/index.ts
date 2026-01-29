@@ -20,6 +20,7 @@ export interface Trip {
     onibus_ids?: string[]; // New: array of bus IDs
     origem_endereco?: string;
     destino_endereco?: string;
+    meta_financeira?: number;
     created_at?: string;
     updated_at?: string;
 }

@@ -185,15 +185,24 @@ export const TripSeatMap: React.FC = () => {
         });
     };
 
-    const assignedPassengerIds = tripPassengers
-        .filter(p => p.assento) // Only passengers with seats
-        .map((p) => p.id);
+    // Filter unique passengers by name and CPF to avoid duplicates in the dropdown
+    const uniquePassengersMap = new Map();
+    passengers
+        .filter((p) => p.nome_completo !== 'BLOQUEADO')
+        .forEach(p => {
+            const key = `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`;
+            // If already assigned to CURRENT trip, mark this identity as assigned
+            if (p.viagem_id === id && p.assento) {
+                uniquePassengersMap.set(key, 'assigned');
+            } else if (!uniquePassengersMap.has(key)) {
+                uniquePassengersMap.set(key, p);
+            }
+        });
 
     const passengerOptions = [
         { value: '', label: '-- Selecione um passageiro --' },
-        ...passengers
-            .filter((p) => p.nome_completo !== 'BLOQUEADO') // Exclude blocked seat markers
-            .filter((p) => !assignedPassengerIds.includes(p.id)) // Filter out already assigned passengers
+        ...Array.from(uniquePassengersMap.values())
+            .filter(p => p !== 'assigned') // Remove identities already in this trip
             .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo))
             .map((p) => ({
                 value: p.id,

@@ -37,7 +37,6 @@ export const PassengerForm: React.FC = () => {
         estado_civil: '',
         instrumento: '',
         auxiliar: '',
-        pagamento: 'pending',
     });
 
     useEffect(() => {
@@ -62,7 +61,6 @@ export const PassengerForm: React.FC = () => {
                     estado_civil: passenger.estado_civil || '',
                     instrumento: passenger.instrumento || '',
                     auxiliar: passenger.auxiliar || '',
-                    pagamento: passenger.pagamento === 'Realizado' ? 'paid' : (passenger.pagamento || 'pending'),
                 });
             }
         }
@@ -220,21 +218,6 @@ export const PassengerForm: React.FC = () => {
                                 <option value="Não">Não</option>
                             </select>
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                Status de Pagamento
-                            </label>
-                            <select
-                                value={formData.pagamento}
-                                onChange={(e) => setFormData({ ...formData, pagamento: e.target.value })}
-                                className="input-base"
-                            >
-                                <option value="pending">Pendente</option>
-                                <option value="paid">Pago</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-100">
@@ -258,6 +241,6 @@ export const PassengerForm: React.FC = () => {
                     </div>
                 </form>
             </Card>
-        </div>
+        </div >
     );
 };

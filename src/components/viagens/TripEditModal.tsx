@@ -43,6 +43,7 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
         onibus_ids: [...(trip.onibus_ids || [])],
         origem_endereco: trip.origem_endereco || '',
         destino_endereco: trip.destino_endereco || '',
+        meta_financeira: trip.meta_financeira || 0,
     });
 
     useEffect(() => {
@@ -57,6 +58,7 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                 onibus_ids: [...(trip.onibus_ids || [])],
                 origem_endereco: trip.origem_endereco || '',
                 destino_endereco: trip.destino_endereco || '',
+                meta_financeira: trip.meta_financeira || 0,
             });
         }
     }, [isOpen, trip, fetchOnibus]);
@@ -89,6 +91,7 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                 onibus_ids: formData.onibus_ids,
                 origem_endereco: formData.origem_endereco,
                 destino_endereco: formData.destino_endereco,
+                meta_financeira: typeof formData.meta_financeira === 'string' ? parseFloat(formData.meta_financeira) || 0 : formData.meta_financeira,
             });
             showToast('Viagem atualizada com sucesso!', 'success');
             if (onSuccess) onSuccess();
@@ -213,15 +216,25 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                                     placeholder="Ex: Av. Y, 456, Centro, Cidade, UF"
                                 />
                             </div>
-                            <Input
-                                type="number"
-                                label="Preço por Pessoa"
-                                value={formData.preco}
-                                onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : 0 })}
-                                placeholder="0.00"
-                                step="0.01"
-                                required
-                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Input
+                                    type="number"
+                                    label="Preço por Pessoa"
+                                    value={formData.preco}
+                                    onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : 0 })}
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    required
+                                />
+                                <Input
+                                    type="number"
+                                    label="Meta Financeira Total"
+                                    value={formData.meta_financeira}
+                                    onChange={(e) => setFormData({ ...formData, meta_financeira: e.target.value ? parseFloat(e.target.value) : 0 })}
+                                    placeholder="Ex: 2500.00"
+                                    step="0.01"
+                                />
+                            </div>
                         </div>
                     ) : (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">

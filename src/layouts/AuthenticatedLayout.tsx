@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings } from 'lucide-react';
+import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings, CircleDollarSign } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
 import { RegistrationModal } from '@/components/RegistrationModal';
@@ -37,6 +37,7 @@ export const AuthenticatedLayout: React.FC = () => {
         { path: '/onibus', icon: Bus, label: 'Ônibus' },
         { path: '/viagens', icon: MapPin, label: 'Viagens' },
         { path: '/passageiros', icon: Users, label: 'Passageiros' },
+        { path: '/financeiro', icon: CircleDollarSign, label: 'Financeiro' },
         { path: '/settings', icon: Settings, label: 'Configurações' },
     ];
 
@@ -95,7 +96,7 @@ export const AuthenticatedLayout: React.FC = () => {
                         .filter((item) => {
                             // Hide Passageiros and Ônibus for non-admin users
                             if (user?.role !== UserRole.ADMIN) {
-                                if (item.path === '/passageiros' || item.path === '/onibus') {
+                                if (item.path === '/passageiros' || item.path === '/onibus' || item.path === '/financeiro') {
                                     return false;
                                 }
                             }

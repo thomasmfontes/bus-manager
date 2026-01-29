@@ -29,29 +29,57 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
         }
     },
 
-    // Atribui um assento a um passageiro
     atribuirAssento: async (passageiroId: string, assento: string, viagemId: string, onibusId?: string) => {
         set({ loading: true });
         try {
-            const updateData: any = {
-                assento,
-                viagem_id: viagemId // Always set viagem_id to current trip
-            };
-            if (onibusId) {
-                updateData.onibus_id = onibusId;
+            // 1. Get existing passenger data to determine if we update or clone
+            const { data: passenger, error: getError } = await supabase
+                .from('passageiros')
+                .select('*')
+                .eq('id', passageiroId)
+                .single();
+
+            if (getError) throw getError;
+
+            // 2. Determine if we should clone (different trip) or update (same trip or no trip)
+            // Note: Many passengers might not have a viagem_id initially if added to a global list
+            const shouldClone = passenger.viagem_id !== null && passenger.viagem_id !== viagemId;
+
+            if (shouldClone) {
+                console.log('🚌 Clonando passageiro para nova viagem:', passenger.nome_completo);
+                const { error: insertError } = await supabase
+                    .from('passageiros')
+                    .insert([{
+                        nome_completo: passenger.nome_completo,
+                        cpf_rg: passenger.cpf_rg,
+                        telefone: passenger.telefone,
+                        comum_congregacao: passenger.comum_congregacao,
+                        instrumento: passenger.instrumento,
+                        idade: passenger.idade,
+                        estado_civil: passenger.estado_civil,
+                        auxiliar: passenger.auxiliar,
+                        pagamento: 'pending', // New trip, new payment status
+                        valor_pago: 0,        // New trip, starts with 0
+                        viagem_id: viagemId,
+                        onibus_id: onibusId,
+                        assento: assento
+                    }]);
+
+                if (insertError) throw insertError;
+            } else {
+                console.log('🔄 Atualizando passageiro existente:', passenger.nome_completo);
+                const { error: updateError } = await supabase
+                    .from('passageiros')
+                    .update({
+                        viagem_id: viagemId,
+                        onibus_id: onibusId,
+                        assento: assento
+                    })
+                    .eq('id', passageiroId);
+
+                if (updateError) throw updateError;
             }
 
-            console.log('🎯 Atribuindo assento:', { passageiroId, assento, viagemId, onibusId, updateData });
-
-            const { data, error } = await supabase
-                .from('passageiros')
-                .update(updateData)
-                .eq('id', passageiroId)
-                .select();
-
-            console.log('📊 Resultado da atribuição:', { data, error });
-
-            if (error) throw error;
             set({ loading: false });
         } catch (error) {
             console.error('❌ Error assigning seat:', error);

@@ -24,6 +24,7 @@ export const TripForm: React.FC = () => {
         onibus_ids: [] as string[],
         origem_endereco: '',
         destino_endereco: '',
+        meta_financeira: '' as string | number,
     });
 
     useEffect(() => {
@@ -70,6 +71,7 @@ export const TripForm: React.FC = () => {
                 onibus_ids: formData.onibus_ids,
                 origem_endereco: formData.origem_endereco,
                 destino_endereco: formData.destino_endereco,
+                meta_financeira: typeof formData.meta_financeira === 'string' ? parseFloat(formData.meta_financeira) || 0 : formData.meta_financeira,
             });
             showToast('Viagem cadastrada com sucesso!', 'success');
             navigate('/viagens');
@@ -133,16 +135,27 @@ export const TripForm: React.FC = () => {
                         />
                     </div>
 
-                    <Input
-                        type="number"
-                        label="Preço"
-                        value={formData.preco}
-                        onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : '' })}
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        required
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            type="number"
+                            label="Preço por Pessoa"
+                            value={formData.preco}
+                            onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : '' })}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            required
+                        />
+                        <Input
+                            type="number"
+                            label="Meta Financeira Total (Opcional)"
+                            value={formData.meta_financeira}
+                            onChange={(e) => setFormData({ ...formData, meta_financeira: e.target.value ? parseFloat(e.target.value) : '' })}
+                            placeholder="Ex: 2500.00"
+                            min="0"
+                            step="0.01"
+                        />
+                    </div>
 
 
                     {(() => {
