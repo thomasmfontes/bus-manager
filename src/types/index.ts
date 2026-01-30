@@ -69,6 +69,7 @@ export interface Passenger {
     assento?: string;
     valor_pago?: number;
     pago_por?: string;
+    pago_por_email?: string;
     created_at?: string;
     updated_at?: string;
 }

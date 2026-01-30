@@ -237,10 +237,14 @@ export const TripSeatMap: React.FC = () => {
 
                 const userDoc = user?.email ? clean(user.email) : '';
                 const passengerDoc = p.cpf_rg ? clean(p.cpf_rg) : '';
+                const userEmail = user?.email?.toLowerCase().trim() || '';
+                const payerEmail = p.pago_por_email?.toLowerCase().trim() || '';
 
                 // Only themselves or people they paid for
-                const isMe = p.id === user?.id || (userDoc && userDoc === passengerDoc);
-                return isMe || p.pago_por === user?.id;
+                const isMe = p.id === user?.id || (userDoc && userDoc === passengerDoc) || (userEmail && userEmail === p.email);
+                const iPaidForThem = (user?.id && p.pago_por === user.id) || (userEmail && payerEmail === userEmail);
+
+                return isMe || iPaidForThem;
             })
             .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo));
 
