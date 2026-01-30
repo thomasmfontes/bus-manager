@@ -22,22 +22,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const secret = process.env.WOOVI_WEBHOOK_SECRET;
         const rawBody = JSON.stringify(req.body);
 
+        // --- DEBUG LOGS (BEFORE SECURITY CHECK) ---
+        console.log('--- WEBHOOK INBOUND ---');
+        console.log('Headers:', JSON.stringify(req.headers));
+        console.log('Body:', JSON.stringify(req.body));
+        console.log('Event:', req.body?.event);
+        console.log('--- END INBOUND ---');
+
         // 1. Security Check
         if (secret && !validateSignature(rawBody, signature, secret)) {
-            console.error('❌ Webhook Security Alert: Invalid signature. Check your WOOVI_WEBHOOK_SECRET.');
+            console.error('❌ Signature mismatch for body:', rawBody);
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const { event, charge } = req.body;
-
-        // --- DEBUG LOGS ---
-        console.log('--- WEBHOOK DEBUG START ---');
-        console.log('Headers:', JSON.stringify(req.headers));
-        console.log('Body:', JSON.stringify(req.body));
-        console.log('Event:', event);
-        console.log('CorrelationID:', charge?.correlationID);
-        console.log('--- WEBHOOK DEBUG END ---');
-        // ------------------
 
         if (!event || !charge || !charge.correlationID) {
             console.log('⚠️ Webhook ignored: Missing required fields (event, charge, or correlationID)');
@@ -52,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 2. Fetch transaction with specific columns for processing
         const { data: transaction, error: fetchError } = await supabase
             .from('pagamentos')
-            .select('id, status, passageiros_ids, viagem_id')
+            .select('id, status, passageiros_ids, viagem_id, valor_total')
             .eq('id', correlationID)
             .single();
 
@@ -84,12 +82,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
 
             // 4. Update linked passengers status
-            // Scoped strictly to the IDs stored in this transaction
+            // Calculate individual value per passenger
+            const individualValue = (transaction.valor_total || 0) / (transaction.passageiros_ids?.length || 1);
+
             const { error: pUpdateError } = await supabase
                 .from('passageiros')
-                .update({ pagamento: 'Pago' })
+                .update({
+                    pagamento: 'Pago',
+                    valor_pago: individualValue // Ensure the value is recorded
+                })
                 .in('id', transaction.passageiros_ids)
-                .eq('viagem_id', transaction.viagem_id); // Change .is to .eq
+                .eq('viagem_id', transaction.viagem_id);
 
             if (pUpdateError) {
                 console.error('Error updating passengers:', pUpdateError);
