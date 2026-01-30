@@ -21,13 +21,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const signature = req.headers['x-openpix-signature'] as string;
         const secret = process.env.WOOVI_WEBHOOK_SECRET;
         const rawBody = JSON.stringify(req.body);
+        const { event, charge } = req.body; // Destructure event and charge early
 
         // --- DEBUG LOGS (BEFORE SECURITY CHECK) ---
         console.log('--- WEBHOOK INBOUND ---');
         console.log('Headers:', JSON.stringify(req.headers));
         console.log('Body:', JSON.stringify(req.body));
-        console.log('Event:', req.body?.event);
+        console.log('Event:', event); // Use the destructured event
         console.log('--- END INBOUND ---');
+
+        // Handle Woovi connectivity test
+        if (event === 'teste_webhook') {
+            console.log('✅ Woovi Connectivity Test Received!');
+            return res.status(200).json({ received: true, message: 'Test webhook received successfully!' });
+        }
 
         // 1. Security Check
         if (secret && !validateSignature(rawBody, signature, secret)) {
@@ -35,11 +42,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const { event, charge } = req.body;
-
         if (!event || !charge || !charge.correlationID) {
             console.log('⚠️ Webhook ignored: Missing required fields (event, charge, or correlationID)');
-            return res.status(200).json({ received: true, ignored: true, reason: 'Missing payload data' });
+            return res.status(200).json({
+                received: true,
+                ignored: true,
+                reason: 'Missing payload data',
+                details: 'This usually happens during generic tests. Real simulation on a Charge will have the data.'
+            });
         }
 
         const correlationID = charge.correlationID;
