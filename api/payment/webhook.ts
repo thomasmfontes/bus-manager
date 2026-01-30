@@ -29,9 +29,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const { event, charge } = req.body;
-        console.log(`📩 Webhook Event Received: ${event} for Identifier: ${charge?.identifier}`);
+
+        // --- DEBUG LOGS ---
+        console.log('--- WEBHOOK DEBUG START ---');
+        console.log('Headers:', JSON.stringify(req.headers));
+        console.log('Body:', JSON.stringify(req.body));
+        console.log('Event:', event);
+        console.log('CorrelationID:', charge?.correlationID);
+        console.log('--- WEBHOOK DEBUG END ---');
+        // ------------------
 
         if (!event || !charge || !charge.correlationID) {
+            console.log('⚠️ Webhook ignored: Missing required fields (event, charge, or correlationID)');
             return res.status(200).json({ received: true, ignored: true, reason: 'Missing payload data' });
         }
 
