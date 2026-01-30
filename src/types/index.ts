@@ -21,7 +21,7 @@ export interface Trip {
     origem_endereco?: string;
     destino_endereco?: string;
     meta_financeira?: number;
-    pagamento_gateway: 'off' | 'asaas' | 'mp' | 'manual';
+    pagamento_gateway?: 'off' | 'asaas' | 'mp' | 'manual';
     chave_pix?: string;
     titular_pix?: string;
     gateway_api_key?: string;
