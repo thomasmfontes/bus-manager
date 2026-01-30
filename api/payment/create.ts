@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const { passengerIds, tripId, payerName, payerEmail } = req.body;
+        const { passengerIds, tripId, payerName, payerEmail, payerId } = req.body;
 
         if (!passengerIds || !tripId || passengerIds.length === 0) {
             return res.status(400).json({ error: 'Passenger IDs and Trip ID are required' });
@@ -63,21 +63,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(404).json({ error: 'Trip not found' });
         }
 
-        // 2. Pre-generate our Internal ID for strict correlation
-        const internalId = uuidv4();
-        const totalAmountCents = Math.round(passengerIds.length * trip.preco * 100);
+        // 2. Resolve Passenger IDs (Clone Master records if necessary)
+        // This ensures every ID in the payment belongs specifically to this trip
+        const resolvedPassengerIds: string[] = [];
 
-        // 3. Initial Record in 'pagamentos'
+        for (const pid of passengerIds) {
+            const { data: p } = await supabase.from('passageiros').select('*').eq('id', pid).single();
+            if (!p) continue;
+
+            if (p.viagem_id === tripId) {
+                // Already in the trip, keep it
+                resolvedPassengerIds.push(p.id);
+            } else {
+                // Master record or from another trip, clone it for THIS trip
+                const { data: clone, error: cErr } = await supabase
+                    .from('passageiros')
+                    .insert([{
+                        nome_completo: p.nome_completo,
+                        cpf_rg: p.cpf_rg,
+                        telefone: p.telefone,
+                        instrumento: p.instrumento,
+                        comum_congregacao: p.comum_congregacao,
+                        estado_civil: p.estado_civil,
+                        auxiliar: p.auxiliar,
+                        idade: p.idade,
+                        viagem_id: tripId,
+                        pagamento: 'Pendente' // Initial state
+                    }])
+                    .select()
+                    .single();
+
+                if (cErr) {
+                    console.error('Error cloning passenger:', cErr);
+                    continue;
+                }
+                resolvedPassengerIds.push(clone.id);
+            }
+        }
+
+        // 3. Stamp "pago_por" on all resolved passengers to link them to the payer
+        if (payerId) {
+            await supabase
+                .from('passageiros')
+                .update({
+                    pago_por: payerId,
+                    pago_por_email: payerEmail || null
+                })
+                .in('id', resolvedPassengerIds);
+        }
+
+        if (resolvedPassengerIds.length === 0) {
+            return res.status(400).json({ error: 'No valid passengers found' });
+        }
+
+        // 3. Pre-generate our Internal ID for strict correlation
+        const internalId = uuidv4();
+        const totalAmountCents = Math.round(resolvedPassengerIds.length * trip.preco * 100);
+
+        // 4. Initial Record in 'pagamentos'
         const { data: payment, error: paymentError } = await supabase
             .from('pagamentos')
             .insert([{
                 id: internalId,
                 viagem_id: tripId,
-                valor_total: passengerIds.length * trip.preco,
+                valor_total: resolvedPassengerIds.length * trip.preco,
                 status: 'pending',
-                passageiros_ids: passengerIds,
+                passageiros_ids: resolvedPassengerIds, // Use the NEW IDs
                 payer_name: payerName || 'Administrador',
-                correlation_id: internalId // Explicit correlation
+                correlation_id: internalId
             }])
             .select()
             .single();
@@ -87,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'Failed to record transaction header' });
         }
 
-        // 4. Create Woovi Charge
+        // 5. Create Woovi Charge
         const wooviResponse = await createWooviPayment(
             totalAmountCents,
             internalId,
@@ -97,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const charge = wooviResponse.charge;
 
-        // 5. Update Payment with External details
+        // 6. Update Payment with External details
         await supabase
             .from('pagamentos')
             .update({
@@ -108,8 +161,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             })
             .eq('id', internalId);
 
-        // 6. Record granular passenger payments
-        const passengerPayments = passengerIds.map((pid: string) => ({
+        // 7. Record granular passenger payments
+        const passengerPayments = resolvedPassengerIds.map((pid: string) => ({
             pagamento_id: internalId,
             passageiro_id: pid,
             valor: Math.round(trip.preco * 100)

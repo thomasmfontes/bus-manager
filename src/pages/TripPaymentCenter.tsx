@@ -42,7 +42,7 @@ export const TripPaymentCenter = () => {
     const { passengers, fetchPassageiros } = usePassengerStore();
     const [selectedPassengers, setSelectedPassengers] = useState<Passenger[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [paymentStatus, setPaymentStatus] = useState<'selection' | 'pix'>('selection');
+    const [paymentStatus, setPaymentStatus] = useState<'selection' | 'pix' | 'success'>('selection');
     const [selectedTripFilterId, setSelectedTripFilterId] = useState<string>('all');
     const [customPayerName, setCustomPayerName] = useState('');
     const [tripPayments, setTripPayments] = useState<Set<string>>(new Set());
@@ -232,7 +232,8 @@ export const TripPaymentCenter = () => {
                     passengerIds: selectedPassengers.map(p => p.id),
                     tripId: trip.id,
                     payerName: customPayerName || user?.full_name || 'Administrador',
-                    payerEmail: user?.email
+                    payerEmail: user?.email,
+                    payerId: user?.id
                 })
             });
 
@@ -261,15 +262,19 @@ export const TripPaymentCenter = () => {
 
                     const normalizedStatus = data.status?.toLowerCase();
                     if (normalizedStatus === 'paid') {
+                        setPaymentStatus('success');
                         showToast('Pagamento confirmado com sucesso!', 'success');
-                        setPaymentStatus('selection');
-                        setSelectedPassengers([]);
-                        setSearchQuery('');
-                        setSearchResults([]);
-                        setPixData(null);
 
-                        // Update local trip payments to reflect the new state
-                        fetchPassageiros();
+                        // Wait 3 seconds to show the success state before resetting
+                        setTimeout(() => {
+                            setPaymentStatus('selection');
+                            setSelectedPassengers([]);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            setPixData(null);
+                            fetchPassageiros();
+                        }, 3000);
+
                     } else if (normalizedStatus === 'expired' || normalizedStatus === 'cancelled') {
                         showToast('O tempo Limite do Pix expirou.', 'warning');
                         setPaymentStatus('selection');
@@ -592,6 +597,18 @@ export const TripPaymentCenter = () => {
                                     </div>
                                 )}
                             </>
+                        ) : paymentStatus === 'success' ? (
+                            <div className="animate-in fade-in zoom-in duration-500 py-12 text-center">
+                                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <CheckCircle2 size={48} className="text-green-600 animate-bounce" />
+                                </div>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Pagamento Confirmado!</h2>
+                                <p className="text-gray-500 mb-8">O pagamento de {formatCurrency(totalAmount)} foi processado com sucesso.</p>
+                                <div className="max-w-xs mx-auto p-4 bg-green-50 rounded-xl border border-green-100 mb-8">
+                                    <p className="text-sm text-green-800 font-medium">Os passageiros agora podem selecionar seus assentos no mapa.</p>
+                                </div>
+                                <p className="text-xs text-gray-400">Retornando para a seleção em instantes...</p>
+                            </div>
                         ) : (
                             <div className="animate-in zoom-in-95 duration-300">
                                 <div className="overflow-hidden">

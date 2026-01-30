@@ -24,11 +24,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // 1. Security Check
         if (secret && !validateSignature(rawBody, signature, secret)) {
-            console.error('Invalid webhook signature');
+            console.error('❌ Webhook Security Alert: Invalid signature. Check your WOOVI_WEBHOOK_SECRET.');
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const { event, charge } = req.body;
+        console.log(`📩 Webhook Event Received: ${event} for Identifier: ${charge?.identifier}`);
 
         if (!event || !charge || !charge.correlationID) {
             return res.status(200).json({ received: true, ignored: true, reason: 'Missing payload data' });
@@ -79,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 .from('passageiros')
                 .update({ pagamento: 'Pago' })
                 .in('id', transaction.passageiros_ids)
-                .is('viagem_id', transaction.viagem_id); // Ensure trip context match
+                .eq('viagem_id', transaction.viagem_id); // Change .is to .eq
 
             if (pUpdateError) {
                 console.error('Error updating passengers:', pUpdateError);
@@ -87,6 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 // In a true production app, this would be a single DB transaction/RPC call.
             }
 
+            console.log('✅ Payment and passengers updated successfully!');
             return res.status(200).json({ success: true, status: 'paid' });
         }
 
