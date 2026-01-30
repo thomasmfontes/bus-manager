@@ -39,6 +39,10 @@ export const router = createBrowserRouter([
         element: <Success />,
     },
     {
+        path: '/excursao',
+        element: <ExcursaoForm />,
+    },
+    {
         path: '/',
         element: <AuthenticatedLayout />,
         children: [
@@ -53,10 +57,6 @@ export const router = createBrowserRouter([
                         <Dashboard />
                     </ProtectedRoute>
                 ),
-            },
-            {
-                path: 'excursao',
-                element: <ExcursaoForm />,
             },
             {
                 path: 'pagamento',

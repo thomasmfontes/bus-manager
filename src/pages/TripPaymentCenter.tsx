@@ -15,12 +15,11 @@ import {
     MapPin,
     Calendar,
     ArrowLeft,
-    ArrowRight,
-    LayoutDashboard,
     CreditCard as CreditCardIcon,
     ChevronRight as ChevronRightIcon,
     Filter,
     ChevronDown,
+    Clock,
 } from 'lucide-react';
 import { MdPix } from 'react-icons/md';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
@@ -40,7 +39,6 @@ export const TripPaymentCenter = () => {
     const [trips, setTrips] = useState<Trip[]>([]);
     const [trip, setTrip] = useState<Trip | null>(null);
     const [loading, setLoading] = useState(true);
-    const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Passenger[]>([]);
     const { passengers, fetchPassageiros } = usePassengerStore();
@@ -92,14 +90,9 @@ export const TripPaymentCenter = () => {
                         .select('*');
 
                     const now = new Date().toISOString();
+                    query = query.gte('data_ida', now);
 
-                    if (timeFilter === 'future') {
-                        query = query.gte('data_ida', now);
-                    } else if (timeFilter === 'past') {
-                        query = query.lt('data_ida', now);
-                    }
-
-                    const { data, error } = await query.order('data_ida', { ascending: timeFilter !== 'past' });
+                    const { data, error } = await query.order('data_ida', { ascending: true });
 
                     if (error) throw error;
                     setTrips(data || []);
@@ -112,7 +105,7 @@ export const TripPaymentCenter = () => {
             }
         }
         loadData();
-    }, [initialTripId, timeFilter]);
+    }, [initialTripId]);
 
     const selectTrip = (t: Trip) => {
         setTrip(t);
@@ -361,54 +354,49 @@ export const TripPaymentCenter = () => {
             {activeTab === 'payment' ? (
                 <>
                     {/* 2. Unified Toolbar - Glass Container for Controls */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                    <div className="flex flex-col gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
                         {step === 'trip-selection' ? (
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
-                                {/* Time Filter Tabs */}
-                                <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
-                                    {[
-                                        { id: 'future', label: 'Próximas', icon: Calendar },
-                                        { id: 'past', label: 'Passadas', icon: ArrowRight },
-                                        { id: 'all', label: 'Todas', icon: LayoutDashboard }
-                                    ].map((tab) => (
-                                        <button
-                                            key={tab.id}
-                                            onClick={() => {
-                                                setTimeFilter(tab.id as any);
-                                                setSelectedTripFilterId('all');
-                                            }}
-                                            className={cn(
-                                                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                                timeFilter === tab.id
-                                                    ? "bg-white text-blue-600 shadow-sm"
-                                                    : "text-gray-500 hover:text-gray-700"
-                                            )}
+                            <div className="flex flex-col gap-4 w-full">
+                                {/* Desktop/Mobile Search Controls */}
+                                <div className="flex items-center gap-4 w-full px-1">
+                                    {/* Trip Selection Dropdown (Desktop) */}
+                                    <div className="relative group flex-1 hidden sm:block">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                            <Filter size={18} />
+                                        </div>
+                                        <select
+                                            value={selectedTripFilterId}
+                                            onChange={(e) => setSelectedTripFilterId(e.target.value)}
+                                            className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-bold text-gray-700 appearance-none cursor-pointer text-sm"
                                         >
-                                            <tab.icon size={16} />
-                                            {tab.label}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="hidden sm:block w-px h-8 bg-gray-200/50 mx-2" />
-
-                                {/* Trip Selection Dropdown (Identical to Dashboard) */}
-                                <div className="relative group flex-1">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
-                                        <Filter size={18} />
+                                            <option value="all">Busca Rápida...</option>
+                                            {trips.map(t => (
+                                                <option key={t.id} value={t.id}>{t.nome}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                            <ChevronDown size={18} />
+                                        </div>
                                     </div>
-                                    <select
-                                        value={selectedTripFilterId}
-                                        onChange={(e) => setSelectedTripFilterId(e.target.value)}
-                                        className="w-full pl-11 pr-10 py-2 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
-                                    >
-                                        <option value="all">Filtro de Viagem...</option>
-                                        {trips.map(t => (
-                                            <option key={t.id} value={t.id}>{t.nome}</option>
-                                        ))}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                        <ChevronDown size={18} />
+
+                                    {/* Mobile Search Dropdown */}
+                                    <div className="sm:hidden relative group w-full">
+                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                            <Filter size={18} />
+                                        </div>
+                                        <select
+                                            value={selectedTripFilterId}
+                                            onChange={(e) => setSelectedTripFilterId(e.target.value)}
+                                            className="w-full pl-12 pr-10 py-3 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-bold text-gray-700 appearance-none cursor-pointer text-sm"
+                                        >
+                                            <option value="all">Busca por Roteiro...</option>
+                                            {trips.map(t => (
+                                                <option key={t.id} value={t.id}>{t.nome}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                            <ChevronDown size={18} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -444,44 +432,75 @@ export const TripPaymentCenter = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="divide-y divide-gray-100">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
                                         {trips
                                             .filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId)
                                             .map(t => (
                                                 <div
                                                     key={t.id}
                                                     onClick={() => selectTrip(t)}
-                                                    className="group p-4 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                                                    className="group relative bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col"
                                                 >
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between items-start sm:mb-1">
-                                                            <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                                                {t.nome}
-                                                            </h3>
-                                                            <div className="sm:hidden w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                                                <ChevronRightIcon size={18} />
-                                                            </div>
-                                                        </div>
+                                                    {/* Decorator Gradient Header */}
+                                                    <div className="h-24 bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 p-6 flex flex-col justify-end relative overflow-hidden">
+                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
+                                                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full blur-xl -ml-12 -mb-12" />
 
-                                                        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-500 mt-2 sm:mt-0">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <MapPin size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                                                                <span>{t.destino}</span>
+                                                        <div className="relative flex justify-between items-center">
+                                                            <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30">
+                                                                <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">
+                                                                    {t.data_ida ? new Date(t.data_ida).toLocaleDateString('pt-BR', { month: 'long' }) : 'Próxima'}
+                                                                </p>
                                                             </div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Calendar size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                                                                <span>{new Date(t.data_ida).toLocaleDateString()}</span>
-                                                            </div>
+                                                            <ChevronRightIcon className="text-white/60 group-hover:text-white transition-colors translate-x-0 group-hover:translate-x-1" size={20} />
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between sm:justify-end gap-6 mt-2 sm:mt-0 border-t sm:border-t-0 border-gray-50 pt-3 sm:pt-0">
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Valor do assento</p>
-                                                            <p className="text-lg font-bold text-blue-600">{formatCurrency(t.preco)}</p>
+                                                    <div className="p-6 flex-1 flex flex-col gap-5">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">
+                                                                {t.nome}
+                                                            </h3>
+                                                            <div className="flex items-center gap-1.5 text-gray-400 font-bold">
+                                                                <MapPin size={14} className="shrink-0" />
+                                                                <span className="text-xs uppercase tracking-wider truncate">{t.destino}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="hidden sm:flex w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-600 group-hover:text-white items-center justify-center text-gray-400 transition-all">
-                                                            <ChevronRightIcon size={20} />
+
+                                                        <div className="flex items-center gap-5 text-sm font-bold text-gray-500 py-3 border-y border-gray-50">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                                                    <Calendar size={16} />
+                                                                </div>
+                                                                <span>{new Date(t.data_ida).toLocaleDateString('pt-BR')}</span>
+                                                            </div>
+                                                            <div className="w-px h-4 bg-gray-100" />
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                                                    <Clock size={16} />
+                                                                </div>
+                                                                <span>07:00</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between mt-auto pt-2">
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest leading-none">Preço Assento</p>
+                                                                <p className="text-2xl font-black text-gray-900 leading-none">
+                                                                    {formatCurrency(t.preco || 0)}
+                                                                </p>
+                                                            </div>
+
+                                                            <button className="bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300">
+                                                                Selecionar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Status Badge (Optional) */}
+                                                    <div className="absolute top-4 left-4 z-10">
+                                                        <div className="bg-green-500 text-white text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-md shadow-lg shadow-green-500/20">
+                                                            Disponível
                                                         </div>
                                                     </div>
                                                 </div>
@@ -553,10 +572,10 @@ export const TripPaymentCenter = () => {
                                                     <p className="text-xs text-gray-400 px-10">Tente buscar pelo nome completo ou documento cadastrado.</p>
                                                 </div>
                                             )}
-                                            {((!searchQuery && searchResults.length === 0) || (searchQuery && searchResults.length === 0)) && (
+                                            {!searchQuery && searchResults.length === 0 && (
                                                 <div className="py-4 text-center text-gray-400">
                                                     <p className="text-xs font-medium">
-                                                        {searchQuery ? 'Nenhum passageiro encontrado' : 'Use o campo acima para buscar os passageiros.'}
+                                                        Use o campo acima para buscar os passageiros.
                                                     </p>
                                                 </div>
                                             )}
@@ -693,7 +712,8 @@ export const TripPaymentCenter = () => {
                 <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <PaymentList userId={user?.id} hideHeader />
                 </div>
-            )}
+            )
+            }
         </div>
     );
 };

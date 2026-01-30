@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import ProgressIndicator from "../components/ProgressIndicator";
-import { FormTabs } from "../components/excursao/FormTabs";
-import { PixPaymentPanel } from "../components/excursao/PixPaymentPanel";
 import { PassengerFormFields } from "../components/excursao/PassengerFormFields";
 import { FormLayout } from "../components/excursao/FormLayout";
 import { FormHeader } from "../components/excursao/FormHeader";
 import { SubmitButton } from "../components/excursao/SubmitButton";
-import { maskCPF, maskRG, maskPhone, maskNumber, formatCurrency, onlyDigits } from "../utils/formatters";
+import { maskCPF, maskRG, maskPhone, maskNumber, onlyDigits } from "../utils/formatters";
 import { validateForm, PassengerForm } from "../utils/validators";
 import { supabase } from "../lib/supabase";
 import { useCongregacaoStore } from "../stores/useCongregacaoStore";
@@ -18,8 +16,6 @@ export default function ExcursaoForm() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    // Tabs
-    const [activeTab, setActiveTab] = useState<'form' | 'pix'>("form");
 
     // State for Dynamic Trip Data
     const [trip, setTrip] = useState<any>(null);
@@ -52,47 +48,9 @@ export default function ExcursaoForm() {
         fetchTrip();
     }, [tripId]);
 
-    // PIX
-    const PIX_COPIA_E_COLA = trip?.chave_pix || import.meta.env.VITE_PIX_COPIA_E_COLA || "";
-    const [pixQrDataUrl, setPixQrDataUrl] = useState("");
     const panelsRef = useRef<HTMLDivElement>(null);
     const formPanelRef = useRef<HTMLDivElement>(null);
-    const pixPanelRef = useRef<HTMLDivElement>(null);
 
-    // Extrai o valor (tag 54) do BR Code Pix
-    function parsePixAmount(brcode: string) {
-        if (!brcode) return null;
-        let i = 0;
-        try {
-            while (i + 4 <= brcode.length) {
-                const id = brcode.slice(i, i + 2);
-                const lenStr = brcode.slice(i + 2, i + 4);
-                const len = parseInt(lenStr, 10);
-                if (Number.isNaN(len) || len < 0) return null;
-                const start = i + 4;
-                const end = start + len;
-                if (end > brcode.length) return null;
-                const value = brcode.slice(start, end);
-                if (id === "54") {
-                    const n = Number(value.replace(",", "."));
-                    return Number.isFinite(n) ? n : null;
-                }
-                i = end;
-            }
-        } catch {
-            return null;
-        }
-        return null;
-    }
-
-    const pixAmount = useMemo(() => {
-        if (trip?.preco) return trip.preco;
-        return parsePixAmount(PIX_COPIA_E_COLA);
-    }, [PIX_COPIA_E_COLA, trip?.preco]);
-    const pixAmountFormatted = useMemo(() => {
-        if (pixAmount == null) return null;
-        return formatCurrency(pixAmount);
-    }, [pixAmount]);
 
     // Form
     const [form, setForm] = useState<PassengerForm>({
@@ -140,11 +98,6 @@ export default function ExcursaoForm() {
             console.error('Erro ao carregar rascunho:', e);
         }
 
-        // Check for tab parameter in URL
-        const tab = searchParams.get('tab');
-        if (tab === 'pix') {
-            setActiveTab('pix');
-        }
     }, [searchParams]);
 
     // Fetch data from database
@@ -278,18 +231,6 @@ export default function ExcursaoForm() {
         }
     }, [form.congregation]);
 
-    useEffect(() => {
-        if (!form.instrument) {
-            setInstrumentSelect("");
-            return;
-        }
-        const instrumentList = Object.values(instruments).flat();
-        if (instrumentList.includes(form.instrument) || form.instrument === "Não toco") {
-            setInstrumentSelect(form.instrument);
-        } else {
-            setInstrumentSelect("__OTHER__");
-        }
-    }, [form.instrument]);
 
     async function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -340,26 +281,12 @@ export default function ExcursaoForm() {
             console.log('✅ Cadastro realizado com sucesso!');
             toast.success("Cadastro confirmado! 🎉", { id: toastId });
 
-            // Salva dados da submissão
             try {
                 localStorage.setItem('lastSubmission', JSON.stringify(form));
                 localStorage.removeItem('formDraft');
             } catch (e) {
                 console.error('Erro ao salvar submissão:', e);
             }
-
-            // Limpa formulário
-            setForm({
-                fullName: "",
-                cpf: "",
-                rg: "",
-                congregation: "",
-                maritalStatus: "",
-                age: "",
-                phone: "",
-                instrument: "",
-                auxiliar: "",
-            });
 
             // Redireciona para página de sucesso
             setTimeout(() => {
@@ -374,71 +301,38 @@ export default function ExcursaoForm() {
         }
     }
 
-    // Geração do QR do Pix
-    useEffect(() => {
-        let cancelled = false;
-        async function gen() {
-            try {
-                if (activeTab !== "pix" || !PIX_COPIA_E_COLA) return;
-                const QRCode = (await import("qrcode")).default;
-                const url = await QRCode.toDataURL(PIX_COPIA_E_COLA, { width: 256, margin: 1 });
-                if (!cancelled) setPixQrDataUrl(url);
-            } catch (e) {
-                console.error(e);
-                if (!cancelled) toast.error("Falha ao gerar QR do Pix");
-            }
-        }
-        gen();
-        return () => {
-            cancelled = true;
-        };
-    }, [activeTab, PIX_COPIA_E_COLA]);
 
-    function copyPix() {
-        if (!PIX_COPIA_E_COLA) {
-            toast.error("Configure o código Pix primeiro");
-            return;
-        }
-        navigator.clipboard
-            .writeText(PIX_COPIA_E_COLA)
-            .then(() => toast.success("Código Pix copiado!"))
-            .catch(() => toast.error("Não foi possível copiar"));
-    }
 
     // Ajusta altura do container
     useEffect(() => {
         const panels = panelsRef.current;
         if (!panels) return;
-        const activeEl = activeTab === "form" ? formPanelRef.current : pixPanelRef.current;
+        const activeEl = formPanelRef.current;
         if (!activeEl) return;
         const h = activeEl.scrollHeight;
         panels.style.height = h + "px";
-    }, [activeTab, form, pixQrDataUrl, congregationSelect, instrumentSelect, errors]);
+    }, [form, congregationSelect, instrumentSelect, errors]);
 
     useEffect(() => {
         const panels = panelsRef.current;
         if (!panels) return;
-        const activeEl = activeTab === "form" ? formPanelRef.current : pixPanelRef.current;
+        const activeEl = formPanelRef.current;
         if (activeEl) panels.style.height = activeEl.scrollHeight + "px";
 
         function onResize() {
-            const el = activeTab === "form" ? formPanelRef.current : pixPanelRef.current;
+            const el = formPanelRef.current;
             if (el && panels) panels.style.height = el.scrollHeight + "px";
         }
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
-    }, [activeTab]);
+    }, []);
 
     return (
         <FormLayout>
             <FormHeader
-                title={activeTab === "form" ? (trip?.nome || "Excursão") : "Pagamento via Pix"}
-                description={activeTab === "form"
-                    ? (trip ? `Preencha seus dados para garantir a vaga na ${trip.nome}.` : "Preencha seus dados para garantir a vaga.")
-                    : "Pague via Pix lendo o QR Code ou copiando o código."}
+                title={trip?.nome || "Excursão"}
+                description={trip ? `Preencha seus dados para garantir a vaga na ${trip.nome}.` : "Preencha seus dados para garantir a vaga."}
             />
-
-            <FormTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             <div className="tab-panels min-h-[24rem]" ref={panelsRef}>
                 {loadingTrip ? (
@@ -453,8 +347,7 @@ export default function ExcursaoForm() {
                     </div>
                 ) : (
                     <>
-                        {/* Form panel */}
-                        <div className="tab-panel" ref={formPanelRef} data-active={activeTab === "form"} aria-hidden={activeTab !== "form"}>
+                        <div className="opacity-100 visible" ref={formPanelRef}>
                             <form onSubmit={submit} noValidate>
                                 <ProgressIndicator form={form} />
 
@@ -474,16 +367,6 @@ export default function ExcursaoForm() {
                                     Seus dados serão usados apenas para organizar a excursão.
                                 </footer>
                             </form>
-                        </div>
-
-                        {/* Pix panel */}
-                        <div className="tab-panel" ref={pixPanelRef} data-active={activeTab === "pix"} aria-hidden={activeTab !== "pix"}>
-                            <PixPaymentPanel
-                                pixCode={PIX_COPIA_E_COLA}
-                                pixAmount={pixAmountFormatted}
-                                qrDataUrl={pixQrDataUrl}
-                                onCopy={copyPix}
-                            />
                         </div>
                     </>
                 )}

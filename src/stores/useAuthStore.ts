@@ -84,7 +84,7 @@ export const useAuthStore = create<AuthState>()(
                     set({
                         isAuthenticated: true,
                         user: {
-                            id: passageiroId || '',
+                            id: passageiroId || authData.user.id,
                             email: email || documento || '',
                             full_name: userName,
                             role,

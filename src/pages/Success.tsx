@@ -83,26 +83,13 @@ export default function Success() {
                     <li className="flex items-start gap-3 bg-white/60 dark:bg-blue-900/30 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700">
                         <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm mt-1">1</span>
                         <div className="flex-1">
-                            <span className="font-medium text-base block mb-3">Realize o pagamento via Pix na aba "Pix"</span>
+                            <span className="font-medium text-base block mb-3">Acompanhe seu pagamento e escolha seu assento</span>
                             <button
-                                onClick={() => navigate('/excursao?tab=pix')}
-                                className="btn-base btn-secondary w-full sm:w-auto text-sm py-2"
-                            >
-                                <span className="text-lg">💸</span>
-                                <span>Ir para Pix</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li className="flex items-start gap-3 bg-white/60 dark:bg-blue-900/30 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700">
-                        <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm mt-1">2</span>
-                        <div className="flex-1">
-                            <span className="font-medium text-base block mb-3">Escolha seu assento no sistema de ônibus</span>
-                            <button
-                                onClick={() => navigate('/login')}
+                                onClick={() => navigate('/pagamento')}
                                 className="btn-base btn-primary w-full sm:w-auto text-sm py-2"
                             >
-                                <span className="text-lg">💺</span>
-                                <span>Escolher Assento</span>
+                                <span className="text-lg">💳</span>
+                                <span>Ir para Pagamentos</span>
                             </button>
                         </div>
                     </li>

@@ -124,14 +124,14 @@ export const TripList: React.FC = () => {
                                     key={tab.id}
                                     onClick={() => setTimeFilter(tab.id as any)}
                                     className={cn(
-                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
                                         timeFilter === tab.id
                                             ? "bg-white text-blue-600 shadow-sm"
                                             : "text-gray-500 hover:text-gray-700"
                                     )}
                                 >
-                                    <tab.icon size={16} />
-                                    {tab.label}
+                                    <tab.icon size={18} />
+                                    <span className="hidden sm:inline">{tab.label}</span>
                                 </button>
                             ))}
                         </div>
