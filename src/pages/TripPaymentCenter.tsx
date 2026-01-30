@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Trip, Passenger } from '@/types';
 import { Card } from '@/components/ui/Card';
@@ -28,6 +28,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 
 export const TripPaymentCenter = () => {
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { showToast } = useToast();
     const { user } = useAuthStore();
@@ -264,17 +265,6 @@ export const TripPaymentCenter = () => {
                     if (normalizedStatus === 'paid') {
                         setPaymentStatus('success');
                         showToast('Pagamento confirmado com sucesso!', 'success');
-
-                        // Wait 3 seconds to show the success state before resetting
-                        setTimeout(() => {
-                            setPaymentStatus('selection');
-                            setSelectedPassengers([]);
-                            setSearchQuery('');
-                            setSearchResults([]);
-                            setPixData(null);
-                            fetchPassageiros();
-                        }, 3000);
-
                     } else if (normalizedStatus === 'expired' || normalizedStatus === 'cancelled') {
                         showToast('O tempo Limite do Pix expirou.', 'warning');
                         setPaymentStatus('selection');
@@ -607,7 +597,28 @@ export const TripPaymentCenter = () => {
                                 <div className="max-w-xs mx-auto p-4 bg-green-50 rounded-xl border border-green-100 mb-8">
                                     <p className="text-sm text-green-800 font-medium">Os passageiros agora podem selecionar seus assentos no mapa.</p>
                                 </div>
-                                <p className="text-xs text-gray-400">Retornando para a seleção em instantes...</p>
+                                <div className="flex flex-col gap-3 max-w-xs mx-auto">
+                                    <Button
+                                        onClick={() => navigate('/viagens')}
+                                        className="w-full h-12 text-base font-bold shadow-lg shadow-blue-200"
+                                    >
+                                        VER MAPA DE ASSENTOS
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => {
+                                            setPaymentStatus('selection');
+                                            setSelectedPassengers([]);
+                                            setSearchQuery('');
+                                            setSearchResults([]);
+                                            setPixData(null);
+                                            fetchPassageiros();
+                                        }}
+                                        className="w-full h-10 font-bold text-gray-500"
+                                    >
+                                        Novo Pagamento neste Roteiro
+                                    </Button>
+                                </div>
                             </div>
                         ) : (
                             <div className="animate-in zoom-in-95 duration-300">
