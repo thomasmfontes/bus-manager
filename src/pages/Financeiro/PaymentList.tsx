@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { CreditCard, Clock, ArrowDownLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { UserRole } from '@/types';
 
 interface PaymentListProps {
     userId?: string;
@@ -18,6 +20,9 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
     const { showToast } = useToast();
     const { trips, fetchViagens } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
+    const { user } = useAuthStore();
+    const isAdmin = user?.role === UserRole.ADMIN;
+
     const [payments, setPayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -87,10 +92,11 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
                 throw error;
             }
 
-            // Manual Join in Memory
+            // Manual Join in Memory (using getState to get the most recent data after fetch)
+            const currentTrips = useTripStore.getState().trips;
             const combinedData = (data || []).map(p => ({
                 ...p,
-                viagem: trips.find(t => t.id === p.viagem_id)
+                viagem: currentTrips.find(t => t.id === p.viagem_id)
             }));
 
             setPayments(combinedData);
@@ -142,18 +148,18 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
 
             {/* Filters Container */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-row items-center gap-2 w-full">
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-gray-900 outline-none transition-all"
+                        className="flex-1 min-w-0 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-gray-900 outline-none transition-all appearance-none text-gray-700"
                     >
                         <option value="all">Todos os Status</option>
                         <option value="paid">Pagos</option>
                         <option value="pending">Pendentes</option>
                         <option value="failed">Falhas</option>
                     </select>
-                    <Button variant="secondary" onClick={fetchPayments} size="sm">
+                    <Button variant="secondary" onClick={fetchPayments} size="sm" className="shrink-0 h-[38px] px-4 font-bold">
                         Atualizar
                     </Button>
                 </div>
@@ -214,7 +220,7 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
                                                             (p.status === 'expired' ? "bg-gray-100 text-gray-400" :
                                                                 (p.status === 'failed' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"))
                                                     )}>
-                                                        {isPaid ? <ArrowDownLeft size={20} /> :
+                                                        {isPaid ? (isAdmin ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />) :
                                                             (p.status === 'failed' ? <AlertCircle size={20} /> : <Clock size={20} />)}
                                                     </div>
 
@@ -222,13 +228,14 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
                                                         <div className="flex flex-row items-start justify-between gap-3">
                                                             <div className="flex-1 min-w-0 space-y-1">
                                                                 <p className={cn(
-                                                                    "text-xs sm:text-sm font-bold uppercase tracking-wider",
+                                                                    "text-[10px] sm:text-xs font-black uppercase tracking-widest",
                                                                     isPaid ? "text-green-600" :
                                                                         (p.status === 'expired' ? "text-gray-400" :
                                                                             (p.status === 'failed' ? "text-red-500" : "text-blue-500"))
                                                                 )}>
-                                                                    {isPaid ? (p.gateway_id === 'Manual' ? "Pagamento manual" : "Pix recebido") :
-                                                                        (p.status === 'expired' ? "Pagamento expirado" :
+                                                                    {isPaid
+                                                                        ? (p.gateway_id === 'Manual' ? "Pagamento manual" : (isAdmin ? "Pix recebido" : "Pix enviado"))
+                                                                        : (p.status === 'expired' ? "Pagamento expirado" :
                                                                             (p.status === 'failed' ? "Falha no pagamento" : "Pagamento pendente"))}
                                                                 </p>
                                                                 <h3 className="text-base font-black text-gray-900 truncate pr-2">
@@ -294,70 +301,82 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Viagem</h4>
-                                    <p className="text-base font-black text-gray-900">{selectedPayment.viagem?.nome || 'Viagem não encontrada'}</p>
-                                </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Status</h4>
+                                <p className={cn(
+                                    "text-base font-black uppercase tracking-widest",
+                                    isPaid ? "text-green-600" :
+                                        (selectedPayment.status === 'expired' ? "text-gray-400" :
+                                            (selectedPayment.status === 'failed' ? "text-red-500" : "text-blue-500"))
+                                )}>
+                                    {isPaid
+                                        ? (selectedPayment.gateway_id === 'Manual' ? "PAGAMENTO MANUAL" : (isAdmin ? "PIX RECEBIDO" : "PIX ENVIADO"))
+                                        : (selectedPayment.status === 'expired' ? "PAGAMENTO EXPIRADO" :
+                                            (selectedPayment.status === 'failed' ? "FALHA NO PAGAMENTO" : "PAGAMENTO PENDENTE"))}
+                                </p>
+                            </div>
 
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Responsável pelo Pagamento</h4>
-                                    <p className="text-base font-black text-gray-900">
-                                        {selectedPayment.payer_name || (selectedPayment.passageiros_ids?.length > 0
-                                            ? (passengers.find(pass => pass.id === selectedPayment.passageiros_ids[0])?.nome_completo || "Não identificado")
-                                            : "Não identificado")}
-                                    </p>
-                                    {selectedPayment.payer_email && <p className="text-sm text-gray-500">{selectedPayment.payer_email}</p>}
-                                </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Viagem</h4>
+                                <p className="text-base font-black text-gray-900">{selectedPayment.viagem?.nome || 'Viagem não encontrada'}</p>
+                            </div>
 
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Passageiros Incluídos</h4>
-                                    <div className="space-y-1 mt-1">
-                                        {selectedPayment.passageiros_ids?.length > 0 ? (
-                                            selectedPayment.passageiros_ids.map((id: string) => {
-                                                const name = passengers.find(pass => pass.id === id)?.nome_completo;
-                                                return name ? (
-                                                    <p key={id} className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                                                        {name}
-                                                    </p>
-                                                ) : null;
-                                            })
-                                        ) : (
-                                            <p className="text-sm font-bold text-gray-500">Nenhum passageiro listado</p>
-                                        )}
-                                    </div>
-                                </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Responsável pelo Pagamento</h4>
+                                <p className="text-base font-black text-gray-900">
+                                    {selectedPayment.payer_name || (selectedPayment.passageiros_ids?.length > 0
+                                        ? (passengers.find(pass => pass.id === selectedPayment.passageiros_ids[0])?.nome_completo || "Não identificado")
+                                        : "Não identificado")}
+                                </p>
+                                {selectedPayment.payer_email && <p className="text-sm text-gray-500">{selectedPayment.payer_email}</p>}
+                            </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Canal</h4>
-                                        <p className="text-sm font-bold text-gray-900 break-all">{selectedPayment.gateway_id || 'Manual'}</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Data/Hora</h4>
-                                        <p className="text-sm font-bold text-gray-900">
-                                            {new Intl.DateTimeFormat('pt-BR', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            }).format(new Date(selectedPayment.created_at))}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="pt-2 border-t border-gray-50 pt-4">
-                                    <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">ID da Transação</h4>
-                                    <p className="text-[10px] font-mono text-gray-400 break-all">{selectedPayment.id}</p>
+                            <div>
+                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Passageiros Incluídos</h4>
+                                <div className="space-y-1 mt-1">
+                                    {selectedPayment.passageiros_ids?.length > 0 ? (
+                                        selectedPayment.passageiros_ids.map((id: string) => {
+                                            const name = passengers.find(pass => pass.id === id)?.nome_completo;
+                                            return name ? (
+                                                <p key={id} className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                                    {name}
+                                                </p>
+                                            ) : null;
+                                        })
+                                    ) : (
+                                        <p className="text-sm font-bold text-gray-500">Nenhum passageiro listado</p>
+                                    )}
                                 </div>
                             </div>
 
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Canal</h4>
+                                    <p className="text-sm font-bold text-gray-900 break-all">{selectedPayment.gateway_id || 'Manual'}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Data/Hora</h4>
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {new Intl.DateTimeFormat('pt-BR', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        }).format(new Date(selectedPayment.created_at))}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-gray-50 pt-4">
+                                <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">ID da Transação</h4>
+                                <p className="text-[10px] font-mono text-gray-400 break-all">{selectedPayment.id}</p>
+                            </div>
                         </div>
                     );
                 })()}
             </Modal>
-        </div >
+        </div>
     );
 };
