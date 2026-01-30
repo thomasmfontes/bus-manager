@@ -623,36 +623,36 @@ export const TripPaymentCenter = () => {
                         ) : (
                             <div className="animate-in zoom-in-95 duration-300">
                                 <div className="overflow-hidden">
-                                    <div className="p-6">
-                                        <PixPaymentPanel
-                                            pixCode={pixData?.brCode || ""}
-                                            pixAmount={formatCurrency(totalAmount)}
-                                            qrDataUrl={pixData?.qrCodeImage || ""}
-                                            onCopy={() => {
-                                                navigator.clipboard.writeText(pixData?.brCode || "");
-                                                showToast('Código PIX copiado com sucesso!', 'success');
-                                            }}
-                                        />
+                                    <PixPaymentPanel
+                                        pixCode={pixData?.brCode || ""}
+                                        pixAmount={formatCurrency(totalAmount)}
+                                        qrDataUrl={pixData?.qrCodeImage || ""}
+                                        onCopy={() => {
+                                            navigator.clipboard.writeText(pixData?.brCode || "");
+                                            showToast('Código PIX copiado com sucesso!', 'success');
+                                        }}
+                                    />
 
-                                        <div className="flex items-center justify-center gap-2 mt-4 text-blue-600 font-bold animate-pulse">
-                                            <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                                            <span className="text-xs uppercase tracking-widest">Aguardando pagamento...</span>
-                                        </div>
+                                    <div className="flex items-center justify-center gap-2 mt-8 text-blue-600 font-bold animate-pulse">
+                                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                                        <span className="text-xs uppercase tracking-widest">Aguardando confirmação...</span>
+                                    </div>
 
-                                        <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                                            <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">
-                                                Identificação do Pagador
-                                            </label>
+                                    <div className="mt-8 p-6 bg-blue-50/30 rounded-[2rem] border border-blue-100/50">
+                                        <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 ml-2">
+                                            Identificação do Pagador
+                                        </label>
+                                        <div className="relative">
                                             <Input
                                                 value={customPayerName}
                                                 onChange={(e) => setCustomPayerName(e.target.value)}
-                                                placeholder="Nome de quem está pagando..."
-                                                className="bg-white border-blue-100 focus:ring-blue-500 h-10 text-sm"
+                                                placeholder="Quem está pagando?"
+                                                className="bg-white border-blue-100 focus:ring-blue-500 rounded-2xl h-12 text-sm pl-4 shadow-sm"
                                             />
-                                            <p className="text-[10px] text-blue-400 mt-2 font-medium">
-                                                * Este nome aparecerá no extrato bancário do sistema.
-                                            </p>
                                         </div>
+                                        <p className="text-[10px] text-blue-400 mt-3 ml-2 font-medium">
+                                            * O nome que aparecerá no extrato do sistema.
+                                        </p>
                                     </div>
 
                                     <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">

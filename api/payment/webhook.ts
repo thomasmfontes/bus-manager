@@ -36,15 +36,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ received: true, message: 'Test success' });
         }
 
-        // 2. Security Check (With detailed mismatch logging)
+        // 2. Security Check (Production Strictness)
         if (secret && !validateSignature(rawBody, signature, secret)) {
             const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
             console.error('❌ SIGNATURE MISMATCH!');
-            console.error('Expected:', expected);
-            console.error('Received:', signature);
-
-            // FOR DEBUGGING ONLY: We will proceed even if signature fails to see if the rest works
-            console.warn('⚠️ PROCEEDING IN DEBUG MODE DESPITE MISMATCH');
+            return res.status(401).json({ error: 'Unauthorized' });
         }
 
         if (!event || !charge || !charge.correlationID) {
