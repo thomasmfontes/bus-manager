@@ -272,7 +272,7 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
             <Modal
                 isOpen={!!selectedPayment}
                 onClose={() => setSelectedPayment(null)}
-                title="Detalhes do Lançamento"
+                title="Detalhes"
                 size="md"
             >
                 {selectedPayment && (() => {
