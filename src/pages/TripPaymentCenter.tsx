@@ -281,24 +281,6 @@ export const TripPaymentCenter = () => {
         };
     }, [paymentStatus, pixData?.databaseId, fetchPassageiros]);
 
-    const handleConfirmPayment = async () => {
-        // Manual confirmation logic for fallback/admin override
-        if (selectedPassengers.length === 0 || !trip) return;
-
-        setIsProcessing(true);
-        try {
-            // Updated legacy logic to follow the new rules
-            showToast('Use o sistema automático ou o painel Financeiro para baixas manuais.', 'info');
-        } catch (err) {
-            console.error('Error confirming payment:', err);
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    const handlePrintReceipt = () => {
-        window.print();
-    };
 
     if (loading) {
         return (
@@ -655,34 +637,15 @@ export const TripPaymentCenter = () => {
                                         </p>
                                     </div>
 
-                                    <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
+                                    <div className="p-8 bg-gray-50/50 border-t border-gray-100">
                                         <Button
-                                            onClick={handleConfirmPayment}
-                                            isLoading={isProcessing}
-                                            className="w-full h-12 text-base font-bold bg-green-600 hover:bg-green-700 shadow-md"
+                                            variant="secondary"
+                                            className="w-full h-12 font-bold text-gray-400 hover:text-gray-600 transition-colors rounded-2xl border-dashed border-2 hover:border-gray-300"
+                                            onClick={() => setPaymentStatus('selection')}
+                                            disabled={isProcessing}
                                         >
-                                            <CheckCircle2 size={20} className="mr-2" />
-                                            CONFIRMAR PAGAMENTO RECEBIDO
+                                            CANCELAR E VOLTAR
                                         </Button>
-
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <Button
-                                                variant="secondary"
-                                                className="flex-1 h-10 font-bold text-gray-600 text-sm"
-                                                onClick={() => setPaymentStatus('selection')}
-                                                disabled={isProcessing}
-                                            >
-                                                VOLTAR E ALTERAR SELEÇÃO
-                                            </Button>
-                                            <Button
-                                                variant="secondary"
-                                                className="flex-1 h-10 font-bold text-sm"
-                                                onClick={handlePrintReceipt}
-                                                disabled={isProcessing}
-                                            >
-                                                IMPRIMIR COMPROVANTE
-                                            </Button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
