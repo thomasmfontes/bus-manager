@@ -103,13 +103,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // 3. Stamp "pago_por" on all resolved passengers to link them to the payer
         if (payerId) {
-            await supabase
+            const { error: stampError } = await supabase
                 .from('passageiros')
                 .update({
-                    pago_por: payerId,
-                    pago_por_email: payerEmail || null
+                    pago_por: payerId
                 })
                 .in('id', resolvedPassengerIds);
+
+            if (stampError) {
+                console.error('Error stamping payer link:', stampError);
+                // We continue, but this is why the seat map wouldn't show them
+            }
         }
 
         if (resolvedPassengerIds.length === 0) {
