@@ -21,14 +21,12 @@ const validateSignature = (payload: string, signature: string, secret: string) =
     if (!secret) return true;
 
     // 1. Try SHA256 (Modern) - Hex & Base64
-    const hmac256 = crypto.createHmac('sha256', secret).update(payload);
-    const expected256Hex = hmac256.digest('hex');
+    const expected256Hex = crypto.createHmac('sha256', secret).update(payload).digest('hex');
     const expected256Base64 = crypto.createHmac('sha256', secret).update(payload).digest('base64');
 
     // 2. Try SHA1 (Legacy/Standard for some Woovi versions) - Hex & Base64
-    const hmac1 = crypto.createHmac('sha1', secret).update(payload);
-    const expected1Hex = hmac1.digest('hex');
-    const expected1Base64 = hmac1.digest('base64');
+    const expected1Hex = crypto.createHmac('sha1', secret).update(payload).digest('hex');
+    const expected1Base64 = crypto.createHmac('sha1', secret).update(payload).digest('base64');
 
     const isValid = [
         expected256Hex, expected256Base64,
