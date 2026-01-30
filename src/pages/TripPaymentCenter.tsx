@@ -20,12 +20,15 @@ import {
     CreditCard as CreditCardIcon,
     ChevronRight as ChevronRightIcon,
     Filter,
-    ChevronDown
+    ChevronDown,
 } from 'lucide-react';
+import { MdPix } from 'react-icons/md';
+import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { PixPaymentPanel } from '@/components/excursao/PixPaymentPanel';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
+import { PaymentList } from './Financeiro/PaymentList';
 
 export const TripPaymentCenter = () => {
     const navigate = useNavigate();
@@ -47,6 +50,7 @@ export const TripPaymentCenter = () => {
     const [selectedTripFilterId, setSelectedTripFilterId] = useState<string>('all');
     const [customPayerName, setCustomPayerName] = useState('');
     const [tripPayments, setTripPayments] = useState<Set<string>>(new Set());
+    const [activeTab, setActiveTab] = useState<'payment' | 'history'>('payment');
 
     // Pre-fill payer name with logged-in user
     useEffect(() => {
@@ -307,353 +311,389 @@ export const TripPaymentCenter = () => {
     }
 
     return (
-        <div className="space-y-6 w-full animate-in fade-in duration-500">
-            {/* 1. Header Area - Outside the container */}
-            <div className="flex flex-col gap-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <CreditCardIcon className="text-white" size={20} />
+        <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 animate-in fade-in duration-500">
+            {/* 1. Header with App Identity */}
+            <div className="flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                <CreditCardIcon className="text-white" size={20} />
+                            </div>
+                            Central de Pagamentos
+                        </h1>
+                        <p className="text-gray-500 text-sm ml-[52px]">Gerencie seus pagamentos e acompanhe seu histórico.</p>
                     </div>
-                    {step === 'trip-selection' ? 'Central de Pagamentos' : trip?.nome}
-                </h1>
-                <p className="text-gray-500 text-sm ml-[52px]">
-                    {step === 'trip-selection'
-                        ? 'Selecione um roteiro para realizar o pagamento.'
-                        : paymentStatus === 'selection'
-                            ? 'Selecione os passageiros para gerar o PIX.'
-                            : 'Aguardando confirmação do pagamento.'}
-                </p>
+
+                </div>
             </div>
 
-            {/* 2. Unified Toolbar - Glass Container for Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
-                {step === 'trip-selection' ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
-                        {/* Time Filter Tabs */}
-                        <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
-                            {[
-                                { id: 'future', label: 'Próximas', icon: Calendar },
-                                { id: 'past', label: 'Passadas', icon: ArrowRight },
-                                { id: 'all', label: 'Todas', icon: LayoutDashboard }
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        setTimeFilter(tab.id as any);
-                                        setSelectedTripFilterId('all');
-                                    }}
-                                    className={cn(
-                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                        timeFilter === tab.id
-                                            ? "bg-white text-blue-600 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-700"
-                                    )}
-                                >
-                                    <tab.icon size={16} />
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="hidden sm:block w-px h-8 bg-gray-200/50 mx-2" />
-
-                        {/* Trip Selection Dropdown (Identical to Dashboard) */}
-                        <div className="relative group flex-1">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
-                                <Filter size={18} />
-                            </div>
-                            <select
-                                value={selectedTripFilterId}
-                                onChange={(e) => setSelectedTripFilterId(e.target.value)}
-                                className="w-full pl-11 pr-10 py-2 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
-                            >
-                                <option value="all">Filtro de Viagem...</option>
-                                {trips.map(t => (
-                                    <option key={t.id} value={t.id}>{t.nome}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                <ChevronDown size={18} />
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-4 w-full p-1">
-                        <button
-                            onClick={() => setStep('trip-selection')}
-                            className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors bg-white px-4 py-2 rounded-xl border border-blue-100 shadow-sm"
-                        >
-                            <ArrowLeft size={16} />
-                            Mudar Roteiro
-                        </button>
-                        <div className="ml-auto text-right pr-2">
-                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest leading-none mb-1">Valor Unitário</p>
-                            <p className="text-lg font-bold text-gray-900 leading-none">{formatCurrency(trip?.preco || 0)}</p>
-                        </div>
-                    </div>
-                )}
+            <div className="relative -mx-4 sm:mx-0">
+                <div className="flex gap-1 sm:gap-2 border-b border-gray-200 overflow-x-auto scrollbar-thin px-4 sm:px-0 snap-x snap-mandatory">
+                    <button
+                        onClick={() => setActiveTab('payment')}
+                        className={cn(
+                            "px-6 sm:px-8 py-3 transition-all flex items-center justify-center border-b-2 snap-start",
+                            activeTab === 'payment'
+                                ? "border-blue-600 text-blue-600 bg-blue-50/50"
+                                : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                        )}
+                        title="Pagamento PIX"
+                    >
+                        <MdPix size={24} className="shrink-0" />
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={cn(
+                            "px-6 sm:px-8 py-3 transition-all flex items-center justify-center border-b-2 snap-start",
+                            activeTab === 'history'
+                                ? "border-blue-600 text-blue-600 bg-blue-50/50"
+                                : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                        )}
+                        title="Meu Extrato"
+                    >
+                        <AiOutlineUnorderedList size={24} className="shrink-0" />
+                    </button>
+                </div>
             </div>
 
-            {/* 3. Main Content Container */}
-            <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm w-full pt-2">
-                {step === 'trip-selection' ? (
-                    <div className="overflow-hidden">
-                        {trips.filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId).length === 0 ? (
-                            <div className="p-12 text-center text-gray-500">
-                                <div className="flex flex-col items-center gap-4">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
-                                        <Users size={32} className="text-gray-300" />
+            {/* Content Area */}
+            {activeTab === 'payment' ? (
+                <>
+                    {/* 2. Unified Toolbar - Glass Container for Controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                        {step === 'trip-selection' ? (
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+                                {/* Time Filter Tabs */}
+                                <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                                    {[
+                                        { id: 'future', label: 'Próximas', icon: Calendar },
+                                        { id: 'past', label: 'Passadas', icon: ArrowRight },
+                                        { id: 'all', label: 'Todas', icon: LayoutDashboard }
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => {
+                                                setTimeFilter(tab.id as any);
+                                                setSelectedTripFilterId('all');
+                                            }}
+                                            className={cn(
+                                                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                                timeFilter === tab.id
+                                                    ? "bg-white text-blue-600 shadow-sm"
+                                                    : "text-gray-500 hover:text-gray-700"
+                                            )}
+                                        >
+                                            <tab.icon size={16} />
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="hidden sm:block w-px h-8 bg-gray-200/50 mx-2" />
+
+                                {/* Trip Selection Dropdown (Identical to Dashboard) */}
+                                <div className="relative group flex-1">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                        <Filter size={18} />
                                     </div>
-                                    <p className="text-lg font-medium">Nenhuma viagem aberta no momento.</p>
-                                    <p className="text-sm">Novos roteiros aparecerão aqui em breve.</p>
+                                    <select
+                                        value={selectedTripFilterId}
+                                        onChange={(e) => setSelectedTripFilterId(e.target.value)}
+                                        className="w-full pl-11 pr-10 py-2 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
+                                    >
+                                        <option value="all">Filtro de Viagem...</option>
+                                        {trips.map(t => (
+                                            <option key={t.id} value={t.id}>{t.nome}</option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                        <ChevronDown size={18} />
+                                    </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="divide-y divide-gray-100">
-                                {trips
-                                    .filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId)
-                                    .map(t => (
-                                        <div
-                                            key={t.id}
-                                            onClick={() => selectTrip(t)}
-                                            className="group p-4 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                                        >
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-start sm:mb-1">
-                                                    <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                                        {t.nome}
-                                                    </h3>
-                                                    <div className="sm:hidden w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                                        <ChevronRightIcon size={18} />
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-500 mt-2 sm:mt-0">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <MapPin size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                                                        <span>{t.destino}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Calendar size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-                                                        <span>{new Date(t.data_ida).toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center justify-between sm:justify-end gap-6 mt-2 sm:mt-0 border-t sm:border-t-0 border-gray-50 pt-3 sm:pt-0">
-                                                <div className="text-right">
-                                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Valor do assento</p>
-                                                    <p className="text-lg font-bold text-blue-600">{formatCurrency(t.preco)}</p>
-                                                </div>
-                                                <div className="hidden sm:flex w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-600 group-hover:text-white items-center justify-center text-gray-400 transition-all">
-                                                    <ChevronRightIcon size={20} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                            <div className="flex items-center gap-4 w-full p-1">
+                                <button
+                                    onClick={() => setStep('trip-selection')}
+                                    className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors bg-white px-4 py-2 rounded-xl border border-blue-100 shadow-sm"
+                                >
+                                    <ArrowLeft size={16} />
+                                    Mudar Roteiro
+                                </button>
+                                <div className="ml-auto text-right pr-2">
+                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest leading-none mb-1">Valor Unitário</p>
+                                    <p className="text-lg font-bold text-gray-900 leading-none">{formatCurrency(trip?.preco || 0)}</p>
+                                </div>
                             </div>
                         )}
                     </div>
-                ) : (
-                    <div className="space-y-6">
-                        {paymentStatus === 'selection' ? (
-                            <>
 
-                                <div className="p-4 border-b border-gray-50 bg-gray-50/30">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                                        <input
-                                            type="text"
-                                            placeholder="Nome ou documento do passageiro..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
+                    {/* 3. Main Content Container */}
+                    <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm w-full pt-2">
+                        {step === 'trip-selection' ? (
+                            <div className="overflow-hidden">
+                                {trips.filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId).length === 0 ? (
+                                    <div className="p-12 text-center text-gray-500">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                                                <Users size={32} className="text-gray-300" />
+                                            </div>
+                                            <p className="text-lg font-medium">Nenhuma viagem aberta no momento.</p>
+                                            <p className="text-sm">Novos roteiros aparecerão aqui em breve.</p>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div className="p-1 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
-                                    {searchResults.map(p => {
-                                        const isSelected = selectedPassengers.find(item => item.id === p.id);
-                                        const isPaid = tripPayments.has(p.id);
-
-                                        return (
-                                            <div
-                                                key={p.id}
-                                                onClick={() => !isPaid && togglePassengerSelection(p)}
-                                                className={`
-                                                        flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer group
-                                                        ${isSelected ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md' : 'bg-transparent hover:bg-gray-50'}
-                                                        ${isPaid ? 'opacity-40 cursor-not-allowed grayscale' : ''}
-                                                    `}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-transform group-hover:scale-105
-                                                            ${isSelected ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'}
-                                                        `}>
-                                                        {p.nome_completo.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <p className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                                                            {p.nome_completo}
-                                                        </p>
-                                                        <p className={`text-[10px] uppercase font-bold ${isSelected ? 'text-blue-100' : 'text-gray-400'}`}>
-                                                            {isPaid ? 'Pagamento Confirmado' : p.cpf_rg || 'Sem Documento'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {isPaid && <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center"><CheckCircle2 size={16} className="text-green-600" /></div>}
-                                                    {!isPaid && isSelected && <CheckCircle2 size={20} className="text-white" />}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    {searchQuery && searchResults.length === 0 && !loading && (
-                                        <div className="py-12 text-center">
-                                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                                <Users size={28} className="text-gray-200" />
-                                            </div>
-                                            <p className="text-gray-500 font-bold text-sm">Nenhum passageiro encontrado.</p>
-                                            <p className="text-xs text-gray-400 px-10">Tente buscar pelo nome completo ou documento cadastrado.</p>
-                                        </div>
-                                    )}
-                                    {((!searchQuery && searchResults.length === 0) || (searchQuery && searchResults.length === 0)) && (
-                                        <div className="py-4 text-center text-gray-400">
-                                            <p className="text-xs font-medium">
-                                                {searchQuery ? 'Nenhum passageiro encontrado' : 'Use o campo acima para buscar os passageiros.'}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-
-                                {selectedPassengers.length > 0 && (
-                                    <div className="mt-6 overflow-hidden rounded-xl border border-gray-200 shadow-sm">
-                                        <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-blue-50 to-indigo-50/30">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-blue-600 text-[10px] font-bold uppercase tracking-wider mb-1">Resumo da Seleção</p>
-                                                    <h3 className="text-xl font-bold text-gray-900">{selectedPassengers.length} {selectedPassengers.length === 1 ? 'Passageiro' : 'Passageiros'}</h3>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Total a pagar</p>
-                                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{formatCurrency(totalAmount)}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col divide-y divide-gray-100 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                            {selectedPassengers.map(p => (
-                                                <div key={p.id} className="flex justify-between items-center py-4 px-6 hover:bg-gray-50/50 transition-colors">
-                                                    <div className="flex items-center gap-3 active:scale-95 transition-transform">
-                                                        <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
-                                                            {p.nome_completo.charAt(0)}
+                                ) : (
+                                    <div className="divide-y divide-gray-100">
+                                        {trips
+                                            .filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId)
+                                            .map(t => (
+                                                <div
+                                                    key={t.id}
+                                                    onClick={() => selectTrip(t)}
+                                                    className="group p-4 sm:p-6 hover:bg-gray-50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                                                >
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-start sm:mb-1">
+                                                            <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                                {t.nome}
+                                                            </h3>
+                                                            <div className="sm:hidden w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                                                <ChevronRightIcon size={18} />
+                                                            </div>
                                                         </div>
-                                                        <span className="text-sm font-medium text-gray-700 truncate max-w-[180px] sm:max-w-xs">{p.nome_completo}</span>
+
+                                                        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-500 mt-2 sm:mt-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <MapPin size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                                                <span>{t.destino}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Calendar size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                                                <span>{new Date(t.data_ida).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-blue-600 font-bold whitespace-nowrap text-sm">{formatCurrency(trip?.preco || 0)}</span>
+
+                                                    <div className="flex items-center justify-between sm:justify-end gap-6 mt-2 sm:mt-0 border-t sm:border-t-0 border-gray-50 pt-3 sm:pt-0">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Valor do assento</p>
+                                                            <p className="text-lg font-bold text-blue-600">{formatCurrency(t.preco)}</p>
+                                                        </div>
+                                                        <div className="hidden sm:flex w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-600 group-hover:text-white items-center justify-center text-gray-400 transition-all">
+                                                            <ChevronRightIcon size={20} />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {paymentStatus === 'selection' ? (
+                                    <>
+                                        <div className="p-4 border-b border-gray-50 bg-gray-50/30">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nome ou documento do passageiro..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                />
+                                            </div>
                                         </div>
 
-                                        <div className="p-4 bg-gray-50/50 border-t border-gray-100">
+                                        <div className="p-1 space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                            {searchResults.map(p => {
+                                                const isSelected = selectedPassengers.find(item => item.id === p.id);
+                                                const isPaid = tripPayments.has(p.id);
+
+                                                return (
+                                                    <div
+                                                        key={p.id}
+                                                        onClick={() => !isPaid && togglePassengerSelection(p)}
+                                                        className={cn(
+                                                            "flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer group",
+                                                            isSelected ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md' : 'bg-transparent hover:bg-gray-50',
+                                                            isPaid && 'opacity-40 cursor-not-allowed grayscale'
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={cn(
+                                                                "w-10 h-10 rounded-full flex items-center justify-center font-bold transition-transform group-hover:scale-105",
+                                                                isSelected ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'
+                                                            )}>
+                                                                {p.nome_completo.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <p className={cn("font-bold text-sm", isSelected ? 'text-white' : 'text-gray-900')}>
+                                                                    {p.nome_completo}
+                                                                </p>
+                                                                <p className={cn("text-[10px] uppercase font-bold", isSelected ? 'text-blue-100' : 'text-gray-400')}>
+                                                                    {isPaid ? 'Pagamento Confirmado' : p.cpf_rg || 'Sem Documento'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            {isPaid && <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center"><CheckCircle2 size={16} className="text-green-600" /></div>}
+                                                            {!isPaid && isSelected && <CheckCircle2 size={20} className="text-white" />}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {searchQuery && searchResults.length === 0 && !loading && (
+                                                <div className="py-12 text-center">
+                                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                        <Users size={28} className="text-gray-200" />
+                                                    </div>
+                                                    <p className="text-gray-500 font-bold text-sm">Nenhum passageiro encontrado.</p>
+                                                    <p className="text-xs text-gray-400 px-10">Tente buscar pelo nome completo ou documento cadastrado.</p>
+                                                </div>
+                                            )}
+                                            {((!searchQuery && searchResults.length === 0) || (searchQuery && searchResults.length === 0)) && (
+                                                <div className="py-4 text-center text-gray-400">
+                                                    <p className="text-xs font-medium">
+                                                        {searchQuery ? 'Nenhum passageiro encontrado' : 'Use o campo acima para buscar os passageiros.'}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+
+                                        {selectedPassengers.length > 0 && (
+                                            <div className="mt-6 overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+                                                <div className="p-6 border-b border-gray-100 bg-gradient-to-br from-blue-50 to-indigo-50/30">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="text-blue-600 text-[10px] font-bold uppercase tracking-wider mb-1">Resumo da Seleção</p>
+                                                            <h3 className="text-xl font-bold text-gray-900">{selectedPassengers.length} {selectedPassengers.length === 1 ? 'Passageiro' : 'Passageiros'}</h3>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Total a pagar</p>
+                                                            <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{formatCurrency(totalAmount)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col divide-y divide-gray-100 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                    {selectedPassengers.map(p => (
+                                                        <div key={p.id} className="flex justify-between items-center py-4 px-6 hover:bg-gray-50/50 transition-colors">
+                                                            <div className="flex items-center gap-3 active:scale-95 transition-transform">
+                                                                <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
+                                                                    {p.nome_completo.charAt(0)}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-gray-700 truncate max-w-[180px] sm:max-w-xs">{p.nome_completo}</span>
+                                                            </div>
+                                                            <span className="text-blue-600 font-bold whitespace-nowrap text-sm">{formatCurrency(trip?.preco || 0)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="p-4 bg-gray-50/50 border-t border-gray-100">
+                                                    <Button
+                                                        onClick={handleGeneratePayment}
+                                                        isLoading={isProcessing}
+                                                        className="w-full h-12 text-base font-bold shadow-md"
+                                                    >
+                                                        GERAR PIX DE PAGAMENTO
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : paymentStatus === 'success' ? (
+                                    <div className="animate-in fade-in zoom-in duration-500 py-12 text-center">
+                                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <CheckCircle2 size={48} className="text-green-600 animate-bounce" />
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900 mb-2">Pagamento Confirmado!</h2>
+                                        <p className="text-gray-500 mb-8">O pagamento de {formatCurrency(totalAmount)} foi processado com sucesso.</p>
+                                        <div className="max-w-xs mx-auto p-4 bg-green-50 rounded-xl border border-green-100 mb-8">
+                                            <p className="text-sm text-green-800 font-medium">Os passageiros agora podem selecionar seus assentos no mapa.</p>
+                                        </div>
+                                        <div className="flex flex-col gap-3 max-w-xs mx-auto">
                                             <Button
-                                                onClick={handleGeneratePayment}
-                                                isLoading={isProcessing}
-                                                className="w-full h-12 text-base font-bold shadow-md"
+                                                onClick={() => navigate('/viagens')}
+                                                className="w-full h-12 text-base font-bold shadow-lg shadow-blue-200"
                                             >
-                                                GERAR PIX DE PAGAMENTO
+                                                VER MAPA DE ASSENTOS
+                                            </Button>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    setPaymentStatus('selection');
+                                                    setSelectedPassengers([]);
+                                                    setSearchQuery('');
+                                                    setSearchResults([]);
+                                                    setPixData(null);
+                                                    fetchPassageiros();
+                                                }}
+                                                className="w-full h-10 font-bold text-gray-500"
+                                            >
+                                                Novo Pagamento neste Roteiro
                                             </Button>
                                         </div>
                                     </div>
-                                )}
-                            </>
-                        ) : paymentStatus === 'success' ? (
-                            <div className="animate-in fade-in zoom-in duration-500 py-12 text-center">
-                                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <CheckCircle2 size={48} className="text-green-600 animate-bounce" />
-                                </div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Pagamento Confirmado!</h2>
-                                <p className="text-gray-500 mb-8">O pagamento de {formatCurrency(totalAmount)} foi processado com sucesso.</p>
-                                <div className="max-w-xs mx-auto p-4 bg-green-50 rounded-xl border border-green-100 mb-8">
-                                    <p className="text-sm text-green-800 font-medium">Os passageiros agora podem selecionar seus assentos no mapa.</p>
-                                </div>
-                                <div className="flex flex-col gap-3 max-w-xs mx-auto">
-                                    <Button
-                                        onClick={() => navigate('/viagens')}
-                                        className="w-full h-12 text-base font-bold shadow-lg shadow-blue-200"
-                                    >
-                                        VER MAPA DE ASSENTOS
-                                    </Button>
-                                    <Button
-                                        variant="secondary"
-                                        onClick={() => {
-                                            setPaymentStatus('selection');
-                                            setSelectedPassengers([]);
-                                            setSearchQuery('');
-                                            setSearchResults([]);
-                                            setPixData(null);
-                                            fetchPassageiros();
-                                        }}
-                                        className="w-full h-10 font-bold text-gray-500"
-                                    >
-                                        Novo Pagamento neste Roteiro
-                                    </Button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="animate-in zoom-in-95 duration-300">
-                                <div className="overflow-hidden">
-                                    <PixPaymentPanel
-                                        pixCode={pixData?.brCode || ""}
-                                        pixAmount={formatCurrency(totalAmount)}
-                                        qrDataUrl={pixData?.qrCodeImage || ""}
-                                        onCopy={() => {
-                                            navigator.clipboard.writeText(pixData?.brCode || "");
-                                            showToast('Código PIX copiado com sucesso!', 'success');
-                                        }}
-                                    />
-
-                                    <div className="flex items-center justify-center gap-2 mt-8 text-blue-600 font-bold animate-pulse">
-                                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                                        <span className="text-xs uppercase tracking-widest">Aguardando confirmação...</span>
-                                    </div>
-
-                                    <div className="mt-8 p-6 bg-blue-50/30 rounded-[2rem] border border-blue-100/50">
-                                        <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 ml-2">
-                                            Identificação do Pagador
-                                        </label>
-                                        <div className="relative">
-                                            <Input
-                                                value={customPayerName}
-                                                onChange={(e) => setCustomPayerName(e.target.value)}
-                                                placeholder="Quem está pagando?"
-                                                className="bg-white border-blue-100 focus:ring-blue-500 rounded-2xl h-12 text-sm pl-4 shadow-sm"
+                                ) : (
+                                    <div className="animate-in zoom-in-95 duration-300">
+                                        <div className="overflow-hidden">
+                                            <PixPaymentPanel
+                                                pixCode={pixData?.brCode || ""}
+                                                pixAmount={formatCurrency(totalAmount)}
+                                                qrDataUrl={pixData?.qrCodeImage || ""}
+                                                onCopy={() => {
+                                                    navigator.clipboard.writeText(pixData?.brCode || "");
+                                                    showToast('Código PIX copiado com sucesso!', 'success');
+                                                }}
                                             />
-                                        </div>
-                                        <p className="text-[10px] text-blue-400 mt-3 ml-2 font-medium">
-                                            * O nome que aparecerá no extrato do sistema.
-                                        </p>
-                                    </div>
 
-                                    <div className="p-8 bg-gray-50/50 border-t border-gray-100">
-                                        <Button
-                                            variant="secondary"
-                                            className="w-full h-12 font-bold text-gray-400 hover:text-gray-600 transition-colors rounded-2xl border-dashed border-2 hover:border-gray-300"
-                                            onClick={() => setPaymentStatus('selection')}
-                                            disabled={isProcessing}
-                                        >
-                                            CANCELAR E VOLTAR
-                                        </Button>
+                                            <div className="flex items-center justify-center gap-2 mt-8 text-blue-600 font-bold animate-pulse">
+                                                <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                                                <span className="text-xs uppercase tracking-widest">Aguardando confirmação...</span>
+                                            </div>
+
+                                            <div className="mt-8 p-6 bg-blue-50/30 rounded-[2rem] border border-blue-100/50">
+                                                <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 ml-2">
+                                                    Identificação do Pagador
+                                                </label>
+                                                <div className="relative">
+                                                    <Input
+                                                        value={customPayerName}
+                                                        onChange={(e) => setCustomPayerName(e.target.value)}
+                                                        placeholder="Quem está pagando?"
+                                                        className="bg-white border-blue-100 focus:ring-blue-500 rounded-2xl h-12 text-sm pl-4 shadow-sm"
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-blue-400 mt-3 ml-2 font-medium">
+                                                    * O nome que aparecerá no extrato do sistema.
+                                                </p>
+                                            </div>
+
+                                            <div className="p-8 bg-gray-50/50 border-t border-gray-100">
+                                                <Button
+                                                    variant="secondary"
+                                                    className="w-full h-12 font-bold text-gray-400 hover:text-gray-600 transition-colors rounded-2xl border-dashed border-2 hover:border-gray-300"
+                                                    onClick={() => setPaymentStatus('selection')}
+                                                    disabled={isProcessing}
+                                                >
+                                                    CANCELAR E VOLTAR
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
-                        )
-                        }
-                    </div >
-                )}
-            </div >
-        </div >
+                        )}
+                    </div>
+                </>
+            ) : (
+                <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <PaymentList userId={user?.id} hideHeader />
+                </div>
+            )}
+        </div>
     );
 };

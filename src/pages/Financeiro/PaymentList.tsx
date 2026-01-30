@@ -4,12 +4,17 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { CreditCard, Clock, ArrowDownLeft, ChevronRight } from 'lucide-react';
+import { CreditCard, Clock, ArrowDownLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 
-export const PaymentList = () => {
+interface PaymentListProps {
+    userId?: string;
+    hideHeader?: boolean;
+}
+
+export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) => {
     const { showToast } = useToast();
     const { trips, fetchViagens } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
@@ -25,12 +30,11 @@ export const PaymentList = () => {
             fetchPayments();
         };
         init();
-    }, [filterStatus]);
+    }, [filterStatus, userId]);
 
     const fetchPayments = async () => {
         try {
             setLoading(true);
-            console.log('📡 Fetching payments with status:', filterStatus);
 
             let query = supabase
                 .from('pagamentos')
@@ -41,16 +45,49 @@ export const PaymentList = () => {
                 query = query.eq('status', filterStatus);
             }
 
+            // If userId is provided, filter for that user (as included passenger)
+            if (userId) {
+                // 1. First find the CPF/RG for this userId
+                const { data: userData } = await supabase
+                    .from('passageiros')
+                    .select('cpf_rg')
+                    .eq('id', userId)
+                    .single();
+
+                if (userData?.cpf_rg) {
+                    // 2. Find all IDs associated with this identity:
+                    // - Their own records (shared CPF/RG)
+                    // - Records they PAID for (pago_por)
+                    const { data: related } = await supabase
+                        .from('passageiros')
+                        .select('id')
+                        .or(`cpf_rg.eq."${userData.cpf_rg}",pago_por.eq.${userId}`);
+
+                    const allUserIds = related?.map(r => r.id) || [userId];
+
+                    // 3. Find any payments that include ANY of these IDs in the passageiros_ids array
+                    query = query.overlaps('passageiros_ids', allUserIds);
+                } else {
+                    // Fallback: If CPF not found, at least try to find things paid by this userId
+                    const { data: related } = await supabase
+                        .from('passageiros')
+                        .select('id')
+                        .eq('pago_por', userId);
+
+                    const paidIds = related?.map(r => r.id) || [];
+                    const allUserIds = [...new Set([userId, ...paidIds])];
+
+                    query = query.overlaps('passageiros_ids', allUserIds);
+                }
+            }
+
             const { data, error } = await query;
 
             if (error) {
-                console.error('❌ Error fetching payments:', error);
                 throw error;
             }
 
-            console.log('✅ Payments received:', data?.length || 0);
-
-            // Manual Join in Memory (Safer than relationship guessing)
+            // Manual Join in Memory
             const combinedData = (data || []).map(p => ({
                 ...p,
                 viagem: trips.find(t => t.id === p.viagem_id)
@@ -91,15 +128,17 @@ export const PaymentList = () => {
     return (
         <div className="space-y-6 w-full animate-in fade-in duration-500">
             {/* Header */}
-            <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-lg shadow-gray-900/20">
-                        <CreditCard className="text-white" size={20} />
-                    </div>
-                    Extrato
-                </h1>
-                <p className="text-gray-500 text-sm ml-[52px]">Acompanhamento detalhado de entradas e saídas.</p>
-            </div>
+            {!hideHeader && (
+                <div className="space-y-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-lg shadow-gray-900/20">
+                            <CreditCard className="text-white" size={20} />
+                        </div>
+                        Extrato
+                    </h1>
+                    <p className="text-gray-500 text-sm ml-[52px]">Acompanhamento detalhado de entradas e saídas.</p>
+                </div>
+            )}
 
             {/* Filters Container */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
@@ -121,7 +160,10 @@ export const PaymentList = () => {
             </div>
 
             {/* Main Content Container */}
-            <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm w-full">
+            <div className={cn(
+                "bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm w-full",
+                hideHeader && "border-none shadow-none bg-transparent"
+            )}>
                 {loading ? (
                     <div className="p-8 space-y-8">
                         {Array.from({ length: 2 }).map((_, i) => (
@@ -168,34 +210,44 @@ export const PaymentList = () => {
                                                 >
                                                     <div className={cn(
                                                         "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                                                        isPaid ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-400"
+                                                        isPaid ? "bg-green-50 text-green-600" :
+                                                            (p.status === 'expired' ? "bg-gray-100 text-gray-400" :
+                                                                (p.status === 'failed' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"))
                                                     )}>
-                                                        {isPaid ? <ArrowDownLeft size={20} /> : <Clock size={20} />}
+                                                        {isPaid ? <ArrowDownLeft size={20} /> :
+                                                            (p.status === 'failed' ? <AlertCircle size={20} /> : <Clock size={20} />)}
                                                     </div>
 
                                                     <div className="flex-1 min-w-0 border-b border-gray-100 pb-6 group-last:border-0 group-last:pb-0">
-                                                        <div className="flex justify-between items-start gap-2">
-                                                            <div className="space-y-1">
-                                                                <p className="text-sm text-gray-500 font-medium">
-                                                                    {!isPaid ? "Pagamento pendente" : (p.gateway_id === 'Manual' ? "Pagamento manual" : "Pix recebido")}
+                                                        <div className="flex flex-row items-start justify-between gap-3">
+                                                            <div className="flex-1 min-w-0 space-y-1">
+                                                                <p className={cn(
+                                                                    "text-xs sm:text-sm font-bold uppercase tracking-wider",
+                                                                    isPaid ? "text-green-600" :
+                                                                        (p.status === 'expired' ? "text-gray-400" :
+                                                                            (p.status === 'failed' ? "text-red-500" : "text-blue-500"))
+                                                                )}>
+                                                                    {isPaid ? (p.gateway_id === 'Manual' ? "Pagamento manual" : "Pix recebido") :
+                                                                        (p.status === 'expired' ? "Pagamento expirado" :
+                                                                            (p.status === 'failed' ? "Falha no pagamento" : "Pagamento pendente"))}
                                                                 </p>
-                                                                <h3 className="text-base font-black text-gray-900 truncate">
+                                                                <h3 className="text-base font-black text-gray-900 truncate pr-2">
                                                                     {p.payer_name || (p.passageiros_ids?.length > 0
                                                                         ? (passengers.find(pass => pass.id === p.passageiros_ids[0])?.nome_completo || "Passageiro")
                                                                         : "Passageiro")}
                                                                 </h3>
-                                                                <p className="text-sm font-bold text-gray-400">
+                                                                <p className="text-xs sm:text-sm font-bold text-gray-400 truncate opacity-80">
                                                                     {p.viagem?.nome || "Viagem Individual"}
                                                                 </p>
                                                             </div>
-                                                            <div className="flex flex-col items-end gap-1">
+                                                            <div className="flex flex-col items-end shrink-0 pt-0.5">
                                                                 <span className={cn(
-                                                                    "text-lg font-black",
+                                                                    "text-base sm:text-lg font-black whitespace-nowrap",
                                                                     isPaid ? "text-green-600" : "text-gray-900"
                                                                 )}>
                                                                     {p.status === 'failed' ? '-' : ''} {formatCurrency(p.valor_total)}
                                                                 </span>
-                                                                <ChevronRight size={18} className="text-gray-300" />
+                                                                <ChevronRight size={18} className="text-gray-300 mt-1" />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -216,88 +268,95 @@ export const PaymentList = () => {
                 title="Detalhes do Lançamento"
                 size="md"
             >
-                {selectedPayment && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                            <div>
-                                <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Valor Total</p>
-                                <p className={cn(
-                                    "text-2xl font-black",
-                                    (selectedPayment.status === 'paid' || selectedPayment.status === 'Pago' || selectedPayment.status === 'Realizado') ? "text-green-600" : "text-gray-900"
-                                )}>
-                                    {formatCurrency(selectedPayment.valor_total)}
-                                </p>
-                            </div>
-                            <div className={cn(
-                                "px-3 py-1 rounded-full text-xs font-black border",
-                                (selectedPayment.status === 'paid' || selectedPayment.status === 'Pago' || selectedPayment.status === 'Realizado') ? "bg-green-100 text-green-700 border-green-200" : "bg-gray-100 text-gray-700 border-gray-200"
-                            )}>
-                                {selectedPayment.status === 'paid' || selectedPayment.status === 'Pago' || selectedPayment.status === 'Realizado' ? 'PAGO' : 'PENDENTE'}
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Viagem</h4>
-                                <p className="text-base font-black text-gray-900">{selectedPayment.viagem?.nome || 'Viagem não encontrada'}</p>
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Responsável pelo Pagamento</h4>
-                                <p className="text-base font-black text-gray-900">
-                                    {selectedPayment.payer_name || (selectedPayment.passageiros_ids?.length > 0
-                                        ? (passengers.find(pass => pass.id === selectedPayment.passageiros_ids[0])?.nome_completo || "Não identificado")
-                                        : "Não identificado")}
-                                </p>
-                                {selectedPayment.payer_email && <p className="text-sm text-gray-500">{selectedPayment.payer_email}</p>}
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Passageiros Incluídos</h4>
-                                <div className="space-y-1 mt-1">
-                                    {selectedPayment.passageiros_ids?.length > 0 ? (
-                                        selectedPayment.passageiros_ids.map((id: string) => {
-                                            const name = passengers.find(pass => pass.id === id)?.nome_completo;
-                                            return name ? (
-                                                <p key={id} className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                                                    {name}
-                                                </p>
-                                            ) : null;
-                                        })
-                                    ) : (
-                                        <p className="text-sm font-bold text-gray-500">Nenhum passageiro listado</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                {selectedPayment && (() => {
+                    const isPaid = selectedPayment.status === 'paid' || selectedPayment.status === 'Pago' || selectedPayment.status === 'Realizado';
+                    return (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
                                 <div>
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Canal</h4>
-                                    <p className="text-sm font-bold text-gray-900">{selectedPayment.gateway_id || 'Manual'}</p>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Data/Hora</h4>
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {new Intl.DateTimeFormat('pt-BR', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        }).format(new Date(selectedPayment.created_at))}
+                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Valor Total</p>
+                                    <p className={cn(
+                                        "text-2xl font-black",
+                                        isPaid ? "text-green-600" : "text-gray-900"
+                                    )}>
+                                        {formatCurrency(selectedPayment.valor_total)}
                                     </p>
                                 </div>
+                                <div className={cn(
+                                    "px-3 py-1 rounded-full text-xs font-black border",
+                                    isPaid ? "bg-green-100 text-green-700 border-green-200" :
+                                        (selectedPayment.status === 'expired' ? "bg-gray-100 text-gray-500 border-gray-200" :
+                                            (selectedPayment.status === 'failed' ? "bg-red-100 text-red-700 border-red-200" : "bg-blue-100 text-blue-700 border-blue-200"))
+                                )}>
+                                    {isPaid ? 'PAGO' :
+                                        (selectedPayment.status === 'expired' ? 'EXPIRADO' :
+                                            (selectedPayment.status === 'failed' ? 'FALHOU' : 'PENDENTE'))}
+                                </div>
                             </div>
 
-                            <div className="pt-2 border-t border-gray-50 pt-4">
-                                <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">ID da Transação</h4>
-                                <p className="text-[10px] font-mono text-gray-400 break-all">{selectedPayment.id}</p>
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Viagem</h4>
+                                    <p className="text-base font-black text-gray-900">{selectedPayment.viagem?.nome || 'Viagem não encontrada'}</p>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Responsável pelo Pagamento</h4>
+                                    <p className="text-base font-black text-gray-900">
+                                        {selectedPayment.payer_name || (selectedPayment.passageiros_ids?.length > 0
+                                            ? (passengers.find(pass => pass.id === selectedPayment.passageiros_ids[0])?.nome_completo || "Não identificado")
+                                            : "Não identificado")}
+                                    </p>
+                                    {selectedPayment.payer_email && <p className="text-sm text-gray-500">{selectedPayment.payer_email}</p>}
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-tighter mb-1">Passageiros Incluídos</h4>
+                                    <div className="space-y-1 mt-1">
+                                        {selectedPayment.passageiros_ids?.length > 0 ? (
+                                            selectedPayment.passageiros_ids.map((id: string) => {
+                                                const name = passengers.find(pass => pass.id === id)?.nome_completo;
+                                                return name ? (
+                                                    <p key={id} className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                                        {name}
+                                                    </p>
+                                                ) : null;
+                                            })
+                                        ) : (
+                                            <p className="text-sm font-bold text-gray-500">Nenhum passageiro listado</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Canal</h4>
+                                        <p className="text-sm font-bold text-gray-900 break-all">{selectedPayment.gateway_id || 'Manual'}</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Data/Hora</h4>
+                                        <p className="text-sm font-bold text-gray-900">
+                                            {new Intl.DateTimeFormat('pt-BR', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            }).format(new Date(selectedPayment.created_at))}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-gray-50 pt-4">
+                                    <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">ID da Transação</h4>
+                                    <p className="text-[10px] font-mono text-gray-400 break-all">{selectedPayment.id}</p>
+                                </div>
                             </div>
+
                         </div>
-
-                    </div>
-                )}
+                    );
+                })()}
             </Modal>
         </div >
     );
