@@ -21,6 +21,24 @@ export interface Trip {
     origem_endereco?: string;
     destino_endereco?: string;
     meta_financeira?: number;
+    pagamento_gateway: 'off' | 'asaas' | 'mp' | 'manual';
+    chave_pix?: string;
+    titular_pix?: string;
+    gateway_api_key?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// Payment Transaction types
+export interface PaymentTransaction {
+    id: string;
+    viagem_id: string;
+    valor_total: number;
+    status: 'pending' | 'paid' | 'failed' | 'refunded';
+    gateway_id?: string;
+    passageiros_ids: string[];
+    payer_name?: string;
+    payer_email?: string;
     created_at?: string;
     updated_at?: string;
 }
@@ -50,6 +68,7 @@ export interface Passenger {
     onibus_id?: string;
     assento?: string;
     valor_pago?: number;
+    pago_por?: string;
     created_at?: string;
     updated_at?: string;
 }

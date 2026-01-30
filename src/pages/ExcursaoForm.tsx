@@ -21,8 +21,39 @@ export default function ExcursaoForm() {
     // Tabs
     const [activeTab, setActiveTab] = useState<'form' | 'pix'>("form");
 
+    // State for Dynamic Trip Data
+    const [trip, setTrip] = useState<any>(null);
+    const [loadingTrip, setLoadingTrip] = useState(true);
+
+    const tripId = searchParams.get('v');
+
+    useEffect(() => {
+        async function fetchTrip() {
+            if (!tripId) {
+                setLoadingTrip(false);
+                return;
+            }
+            try {
+                const { data, error } = await supabase
+                    .from('viagens')
+                    .select('*')
+                    .eq('id', tripId)
+                    .single();
+
+                if (error) throw error;
+                setTrip(data);
+            } catch (err) {
+                console.error('Erro ao carregar viagem:', err);
+                toast.error('Viagem não encontrada ou link inválido');
+            } finally {
+                setLoadingTrip(false);
+            }
+        }
+        fetchTrip();
+    }, [tripId]);
+
     // PIX
-    const PIX_COPIA_E_COLA = import.meta.env.VITE_PIX_COPIA_E_COLA || "";
+    const PIX_COPIA_E_COLA = trip?.chave_pix || import.meta.env.VITE_PIX_COPIA_E_COLA || "";
     const [pixQrDataUrl, setPixQrDataUrl] = useState("");
     const panelsRef = useRef<HTMLDivElement>(null);
     const formPanelRef = useRef<HTMLDivElement>(null);
@@ -54,7 +85,10 @@ export default function ExcursaoForm() {
         return null;
     }
 
-    const pixAmount = useMemo(() => parsePixAmount(PIX_COPIA_E_COLA), [PIX_COPIA_E_COLA]);
+    const pixAmount = useMemo(() => {
+        if (trip?.preco) return trip.preco;
+        return parsePixAmount(PIX_COPIA_E_COLA);
+    }, [PIX_COPIA_E_COLA, trip?.preco]);
     const pixAmountFormatted = useMemo(() => {
         if (pixAmount == null) return null;
         return formatCurrency(pixAmount);
@@ -294,6 +328,7 @@ export default function ExcursaoForm() {
                         instrumento: form.instrument,
                         auxiliar: form.auxiliar,
                         pagamento: 'Pendente',
+                        viagem_id: tripId || null,
                     }
                 ]);
 
@@ -397,47 +432,61 @@ export default function ExcursaoForm() {
     return (
         <FormLayout>
             <FormHeader
-                title={activeTab === "form" ? "Excursão Campinas" : "Pix do Ônibus"}
+                title={activeTab === "form" ? (trip?.nome || "Excursão") : "Pagamento via Pix"}
                 description={activeTab === "form"
-                    ? "Preencha seus dados para garantir a vaga no ônibus."
+                    ? (trip ? `Preencha seus dados para garantir a vaga na ${trip.nome}.` : "Preencha seus dados para garantir a vaga.")
                     : "Pague via Pix lendo o QR Code ou copiando o código."}
             />
 
             <FormTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             <div className="tab-panels min-h-[24rem]" ref={panelsRef}>
-                {/* Form panel */}
-                <div className="tab-panel" ref={formPanelRef} data-active={activeTab === "form"} aria-hidden={activeTab !== "form"}>
-                    <form onSubmit={submit} noValidate>
-                        <ProgressIndicator form={form} />
+                {loadingTrip ? (
+                    <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-500 font-medium">Carregando informações da viagem...</p>
+                    </div>
+                ) : !trip && tripId ? (
+                    <div className="text-center p-12 bg-red-50 rounded-2xl border border-red-100">
+                        <p className="text-red-600 font-bold mb-2">Viagem não encontrada</p>
+                        <p className="text-sm text-red-500">O link acessado é inválido ou a viagem foi removida.</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Form panel */}
+                        <div className="tab-panel" ref={formPanelRef} data-active={activeTab === "form"} aria-hidden={activeTab !== "form"}>
+                            <form onSubmit={submit} noValidate>
+                                <ProgressIndicator form={form} />
 
-                        <PassengerFormFields
-                            form={form}
-                            errors={errors}
-                            onChange={onChange}
-                            congregations={congregations}
-                            instruments={instruments}
-                            congregationSelect={congregationSelect}
-                            instrumentSelect={instrumentSelect}
-                        />
+                                <PassengerFormFields
+                                    form={form}
+                                    errors={errors}
+                                    onChange={onChange}
+                                    congregations={congregations}
+                                    instruments={instruments}
+                                    congregationSelect={congregationSelect}
+                                    instrumentSelect={instrumentSelect}
+                                />
 
-                        <SubmitButton isSubmitting={submitting} label="Enviar cadastro" />
+                                <SubmitButton isSubmitting={submitting} label="Enviar cadastro" />
 
-                        <footer className="mt-3 text-muted text-sm text-center">
-                            Seus dados serão usados apenas para organizar a excursão.
-                        </footer>
-                    </form>
-                </div>
+                                <footer className="mt-3 text-muted text-sm text-center">
+                                    Seus dados serão usados apenas para organizar a excursão.
+                                </footer>
+                            </form>
+                        </div>
 
-                {/* Pix panel */}
-                <div className="tab-panel" ref={pixPanelRef} data-active={activeTab === "pix"} aria-hidden={activeTab !== "pix"}>
-                    <PixPaymentPanel
-                        pixCode={PIX_COPIA_E_COLA}
-                        pixAmount={pixAmountFormatted}
-                        qrDataUrl={pixQrDataUrl}
-                        onCopy={copyPix}
-                    />
-                </div>
+                        {/* Pix panel */}
+                        <div className="tab-panel" ref={pixPanelRef} data-active={activeTab === "pix"} aria-hidden={activeTab !== "pix"}>
+                            <PixPaymentPanel
+                                pixCode={PIX_COPIA_E_COLA}
+                                pixAmount={pixAmountFormatted}
+                                qrDataUrl={pixQrDataUrl}
+                                onCopy={copyPix}
+                            />
+                        </div>
+                    </>
+                )}
             </div>
         </FormLayout>
     );

@@ -58,14 +58,17 @@ export const useAuthStore = create<AuthState>()(
                         // Clean the document (remove non-digits)
                         const cleanDoc = documento.replace(/\D/g, '');
 
-                        // Try to find in passageiros
-                        const { data: passenger } = await supabase
+                        // Try to find in passageiros - fetch all and prioritize Master
+                        const { data: results } = await supabase
                             .from('passageiros')
-                            .select('id, cpf_rg, nome_completo')
-                            .or(`cpf_rg.eq.${documento},cpf_rg.eq.${cleanDoc}`)
-                            .maybeSingle();
+                            .select('id, cpf_rg, nome_completo, viagem_id')
+                            .or(`cpf_rg.eq.${documento},cpf_rg.eq.${cleanDoc}`);
 
-                        if (passenger) {
+                        if (results && results.length > 0) {
+                            // Prioritize the Master record (where viagem_id is null)
+                            // If no master record exists (rare), take the first trip record found
+                            const passenger = results.find(p => !p.viagem_id) || results[0];
+
                             role = UserRole.PASSAGEIRO;
                             passageiroId = passenger.id;
                             userName = passenger.nome_completo;

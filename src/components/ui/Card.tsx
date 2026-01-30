@@ -1,15 +1,17 @@
 import React from 'react';
 import { cn } from '@/utils/cn';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
-    className?: string;
     hover?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className, hover = false }) => {
+export const Card: React.FC<CardProps> = ({ children, className, hover = false, ...props }) => {
     return (
-        <div className={cn('card', hover && 'card-hover', className)}>
+        <div
+            className={cn('card', hover && 'card-hover', className)}
+            {...props}
+        >
             {children}
         </div>
     );

@@ -65,6 +65,10 @@ export const useTripStore = create<TripState>((set, get) => ({
                     origem_endereco: trip.origem_endereco,
                     destino_endereco: trip.destino_endereco,
                     meta_financeira: trip.meta_financeira,
+                    pagamento_gateway: trip.pagamento_gateway || 'off',
+                    chave_pix: trip.chave_pix,
+                    titular_pix: trip.titular_pix,
+                    gateway_api_key: trip.gateway_api_key,
                 }])
                 .select()
                 .single();
@@ -113,6 +117,10 @@ export const useTripStore = create<TripState>((set, get) => ({
             if (trip.origem_endereco !== undefined) updates.origem_endereco = trip.origem_endereco;
             if (trip.destino_endereco !== undefined) updates.destino_endereco = trip.destino_endereco;
             if (trip.meta_financeira !== undefined) updates.meta_financeira = trip.meta_financeira;
+            if (trip.pagamento_gateway !== undefined) updates.pagamento_gateway = trip.pagamento_gateway;
+            if (trip.chave_pix !== undefined) updates.chave_pix = trip.chave_pix;
+            if (trip.titular_pix !== undefined) updates.titular_pix = trip.titular_pix;
+            if (trip.gateway_api_key !== undefined) updates.gateway_api_key = trip.gateway_api_key;
 
             const { data: updatedTrip, error: tripError } = await supabase
                 .from('viagens')

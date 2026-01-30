@@ -98,6 +98,7 @@ export const TripList: React.FC = () => {
         }
     };
 
+
     return (
         <div className="space-y-6 w-full">
             <div className="flex flex-col gap-6">
@@ -204,15 +205,16 @@ export const TripList: React.FC = () => {
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <div className="flex justify-end gap-2">
+
                                                         <Link to={`/viagens/${trip.id}`}>
-                                                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Ver mapa">
+                                                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Ver mapa">
                                                                 <Eye size={20} />
                                                             </button>
                                                         </Link>
                                                         <ProtectedAction requiredPermission="delete">
                                                             <button
                                                                 onClick={() => setDeleteId(trip.id)}
-                                                                className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                                                                 title="Excluir"
                                                             >
                                                                 <Trash2 size={20} />
@@ -241,6 +243,7 @@ export const TripList: React.FC = () => {
                                                 <p className="text-sm text-gray-500">{formatDate(trip.data_ida)}</p>
                                             </div>
                                             <div className="flex gap-1">
+
                                                 <Link to={`/viagens/${trip.id}`}>
                                                     <button className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Ver mapa">
                                                         <Eye size={20} />

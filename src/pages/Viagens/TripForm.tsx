@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
-import { Save, X, Plus, AlertCircle } from 'lucide-react';
+import { Save, X, Plus, AlertCircle, CreditCard, Key, User } from 'lucide-react';
 
 export const TripForm: React.FC = () => {
     const navigate = useNavigate();
@@ -25,6 +25,10 @@ export const TripForm: React.FC = () => {
         origem_endereco: '',
         destino_endereco: '',
         meta_financeira: '' as string | number,
+        pagamento_gateway: 'manual' as 'off' | 'asaas' | 'mp' | 'manual',
+        chave_pix: '',
+        titular_pix: '',
+        gateway_api_key: '',
     });
 
     useEffect(() => {
@@ -72,6 +76,10 @@ export const TripForm: React.FC = () => {
                 origem_endereco: formData.origem_endereco,
                 destino_endereco: formData.destino_endereco,
                 meta_financeira: typeof formData.meta_financeira === 'string' ? parseFloat(formData.meta_financeira) || 0 : formData.meta_financeira,
+                pagamento_gateway: formData.pagamento_gateway,
+                chave_pix: formData.chave_pix,
+                titular_pix: formData.titular_pix,
+                gateway_api_key: formData.gateway_api_key,
             });
             showToast('Viagem cadastrada com sucesso!', 'success');
             navigate('/viagens');
@@ -155,6 +163,68 @@ export const TripForm: React.FC = () => {
                             min="0"
                             step="0.01"
                         />
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100">
+                        <div className="flex items-center gap-2 mb-4">
+                            <CreditCard className="text-blue-600" size={20} />
+                            <h2 className="text-lg font-bold text-gray-900">Configurações de Pagamento</h2>
+                        </div>
+
+                        <div className="space-y-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Método de Pagamento
+                                </label>
+                                <select
+                                    value={formData.pagamento_gateway}
+                                    onChange={(e) => setFormData({ ...formData, pagamento_gateway: e.target.value as any })}
+                                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                >
+                                    <option value="manual">PIX Manual (Copia e Cola)</option>
+                                    <option value="asaas">ASAAS (Automatizado)</option>
+                                    <option value="mp">Mercado Pago (Automatizado)</option>
+                                    <option value="off">Nenhum / Desativado</option>
+                                </select>
+                            </div>
+
+                            {formData.pagamento_gateway === 'manual' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <Input
+                                        label="Chave PIX"
+                                        value={formData.chave_pix}
+                                        onChange={(e) => setFormData({ ...formData, chave_pix: e.target.value })}
+                                        placeholder="CPF, Email, Celular ou Chave Aleatória"
+                                        icon={<Key size={18} />}
+                                    />
+                                    <Input
+                                        label="Titular do PIX"
+                                        value={formData.titular_pix}
+                                        onChange={(e) => setFormData({ ...formData, titular_pix: e.target.value })}
+                                        placeholder="Nome completo do recebedor"
+                                        icon={<User size={18} />}
+                                    />
+                                </div>
+                            )}
+
+                            {(formData.pagamento_gateway === 'asaas' || formData.pagamento_gateway === 'mp') && (
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <Input
+                                        type="password"
+                                        label={formData.pagamento_gateway === 'asaas' ? "ASAAS Access Token" : "Mercado Pago Access Token"}
+                                        value={formData.gateway_api_key}
+                                        onChange={(e) => setFormData({ ...formData, gateway_api_key: e.target.value })}
+                                        placeholder="Insira o token da API para automação"
+                                        icon={<Key size={18} />}
+                                    />
+                                    <p className="mt-2 text-xs text-gray-500">
+                                        {formData.pagamento_gateway === 'asaas'
+                                            ? "As cobranças serão geradas automaticamente e os status atualizados via Webhook."
+                                            : "Integração via checkout do Mercado Pago para cartões e PIX."}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
 

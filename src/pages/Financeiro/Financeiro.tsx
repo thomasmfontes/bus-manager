@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useTripStore } from '@/stores/useTripStore';
-import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
 import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, ArrowRight, LayoutDashboard } from 'lucide-react';
@@ -33,8 +32,8 @@ export const Financeiro: React.FC = () => {
 
         const matchesTrip = selectedTripId === 'all' || p.viagem_id === selectedTripId;
         const matchesStatus = statusFilter === 'all' ||
-            (statusFilter === 'paid' && (p.pagamento === 'paid' || p.pagamento === 'Realizado')) ||
-            (statusFilter === 'pending' && (p.pagamento === 'pending' || p.pagamento === 'Pendente'));
+            (statusFilter === 'paid' && (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')) ||
+            (statusFilter === 'pending' && (p.pagamento === 'pending' || p.pagamento === 'Pendente' || !p.pagamento));
         const matchesSearch = p.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (p.assento || '').toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -63,11 +62,12 @@ export const Financeiro: React.FC = () => {
             const trip = trips.find(t => t.id === passenger.viagem_id);
             const tripPreco = trip?.preco || 0;
 
-            const isPaid = newStatus === 'paid' || newStatus === 'Realizado';
+            const isPaid = newStatus === 'paid' || newStatus === 'Realizado' || newStatus === 'Pago';
+            const statusToSave = isPaid ? 'Pago' : 'Pendente';
             const valor_pago = isPaid ? tripPreco : 0;
 
             await updatePassageiro(id, {
-                pagamento: newStatus as any,
+                pagamento: statusToSave as any,
                 valor_pago
             });
             showToast('Pagamento atualizado!', 'success');
@@ -91,12 +91,14 @@ export const Financeiro: React.FC = () => {
         <div className="space-y-6 w-full animate-in fade-in duration-500">
             {/* Header & Main Controls */}
             <div className="flex flex-col gap-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <CircleDollarSign className="text-emerald-600" size={28} />
+                <div className="space-y-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <CircleDollarSign className="text-white" size={20} />
+                        </div>
                         Financeiro
                     </h1>
-                    <p className="text-gray-500">Gestão de pagamentos e metas financeiras</p>
+                    <p className="text-gray-500 text-sm ml-[52px]">Gestão de pagamentos e metas financeiras</p>
                 </div>
 
                 {/* Combined Filter Container (Identical to Dashboard) */}
@@ -160,9 +162,10 @@ export const Financeiro: React.FC = () => {
                 </div>
             </div>
 
-            <Card className="overflow-hidden border-none shadow-soft-xl bg-white/80 backdrop-blur-md">
+            {/* Main Content Container */}
+            <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm w-full">
                 {/* Search and Filters */}
-                <div className="pb-4 sm:pb-6 border-b border-gray-100 flex flex-col lg:flex-row gap-4">
+                <div className="flex flex-col lg:flex-row gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
@@ -198,7 +201,7 @@ export const Financeiro: React.FC = () => {
                 ) : filteredPassengers.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">Nenhum passageiro encontrado com assento atribuído.</div>
                 ) : (
-                    <div className="overflow-x-auto">
+                    <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                         {/* Desktop Table View */}
                         <table className="w-full text-left hidden sm:table border-collapse">
                             <thead className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider font-bold">
@@ -267,7 +270,7 @@ export const Financeiro: React.FC = () => {
                                                 <td className="px-6 py-5 text-center">
                                                     <span className={cn(
                                                         "font-mono font-bold",
-                                                        (p.pagamento === 'paid' || p.pagamento === 'Realizado') ? "text-emerald-600" : "text-gray-400"
+                                                        (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? "text-emerald-600" : "text-gray-400"
                                                     )}>
                                                         R$ {p.valor_pago?.toFixed(2) || '0,00'}
                                                     </span>
@@ -275,17 +278,18 @@ export const Financeiro: React.FC = () => {
                                                 <td className="px-6 py-5 text-right pr-8">
                                                     <button
                                                         onClick={() => {
-                                                            const currentStatus = p.pagamento || 'pending';
-                                                            const newStatus = (currentStatus === 'paid' || currentStatus === 'Realizado') ? 'pending' : 'paid';
+                                                            const currentStatus = p.pagamento || 'Pendente';
+                                                            const isCurrentlyPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
+                                                            const newStatus = isCurrentlyPaid ? 'Pendente' : 'Pago';
                                                             handleUpdateStatus(p.id, newStatus);
                                                         }}
                                                         className={cn(
-                                                            "px-4 py-1.5 rounded-full text-xs font-bold border-none outline-none ring-1 transition-all min-w-[100px]",
-                                                            (p.pagamento === 'paid' || p.pagamento === 'Realizado') ? "bg-emerald-100 text-emerald-700 ring-emerald-200 hover:bg-emerald-200" :
-                                                                "bg-amber-100 text-amber-700 ring-amber-200 hover:bg-amber-200"
+                                                            "px-4 py-1.5 rounded-full text-xs font-bold border-none outline-none ring-1 transition-all min-w-[100px] hover:scale-105 active:scale-95",
+                                                            (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 ring-emerald-200 hover:from-emerald-200 hover:to-emerald-100 shadow-sm" :
+                                                                "bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 ring-amber-200 hover:from-amber-200 hover:to-amber-100 shadow-sm"
                                                         )}
                                                     >
-                                                        {(p.pagamento === 'paid' || p.pagamento === 'Realizado') ? 'PAGO' : 'PENDENTE'}
+                                                        {(p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? 'PAGO' : 'PENDENTE'}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -335,7 +339,7 @@ export const Financeiro: React.FC = () => {
                                                 key={p.id}
                                                 className={cn(
                                                     "relative overflow-hidden bg-white rounded-2xl border transition-all p-4 space-y-3",
-                                                    (p.pagamento === 'paid' || p.pagamento === 'Realizado')
+                                                    (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')
                                                         ? "border-emerald-100 shadow-sm"
                                                         : "border-gray-100 shadow-sm"
                                                 )}
@@ -343,7 +347,7 @@ export const Financeiro: React.FC = () => {
                                                 {/* Left Status Bar */}
                                                 <div className={cn(
                                                     "absolute left-0 top-0 bottom-0 w-1",
-                                                    (p.pagamento === 'paid' || p.pagamento === 'Realizado') ? "bg-emerald-500" : "bg-amber-400"
+                                                    (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? "bg-emerald-500" : "bg-amber-400"
                                                 )} />
 
                                                 <div className="flex justify-between items-start">
@@ -372,18 +376,19 @@ export const Financeiro: React.FC = () => {
 
                                                     <button
                                                         onClick={() => {
-                                                            const currentStatus = p.pagamento || 'pending';
-                                                            const newStatus = (currentStatus === 'paid' || currentStatus === 'Realizado') ? 'pending' : 'paid';
+                                                            const currentStatus = p.pagamento || 'Pendente';
+                                                            const isCurrentlyPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
+                                                            const newStatus = isCurrentlyPaid ? 'Pendente' : 'Pago';
                                                             handleUpdateStatus(p.id, newStatus);
                                                         }}
                                                         className={cn(
                                                             "px-6 py-2 rounded-xl text-[10px] font-black border-none outline-none ring-1 transition-all uppercase tracking-widest flex-1 max-w-[140px] text-center ml-auto",
-                                                            (p.pagamento === 'paid' || p.pagamento === 'Realizado')
+                                                            (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')
                                                                 ? "bg-emerald-100 text-emerald-700 ring-emerald-200 active:bg-emerald-200"
                                                                 : "bg-amber-100 text-amber-700 ring-amber-200 active:bg-amber-200"
                                                         )}
                                                     >
-                                                        {(p.pagamento === 'paid' || p.pagamento === 'Realizado') ? 'PAGO' : 'PENDENTE'}
+                                                        {(p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? 'PAGO' : 'PENDENTE'}
                                                     </button>
                                                 </div>
                                             </div>
@@ -394,7 +399,7 @@ export const Financeiro: React.FC = () => {
                         </div>
                     </div>
                 )}
-            </Card>
+            </div>
         </div>
     );
 };

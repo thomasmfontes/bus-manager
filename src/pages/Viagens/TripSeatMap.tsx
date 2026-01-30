@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBusStore } from '@/stores/useBusStore';
@@ -112,6 +112,12 @@ export const TripSeatMap: React.FC = () => {
             return;
         }
 
+        const passenger = passengers.find(p => p.id === selectedPassengerId);
+        if (user?.role !== UserRole.ADMIN && passenger && passenger.pagamento !== 'Pago' && passenger.pagamento !== 'Realizado') {
+            showToast('Apenas passageiros com pagamento CONFIRMADO podem reservar assento', 'warning');
+            return;
+        }
+
         console.log('🚀 Iniciando atribuição:', {
             tripId: id,
             seat: selectedSeat,
@@ -188,30 +194,64 @@ export const TripSeatMap: React.FC = () => {
         });
     };
 
-    // Filter unique passengers by name and CPF to avoid duplicates in the dropdown
-    const uniquePassengersMap = new Map();
-    passengers
-        .filter((p) => p.nome_completo !== 'BLOQUEADO')
-        .forEach(p => {
-            const key = `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`;
-            // If already assigned to CURRENT trip, mark this identity as assigned
-            if (p.viagem_id === id && p.assento) {
-                uniquePassengersMap.set(key, 'assigned');
-            } else if (!uniquePassengersMap.has(key)) {
-                uniquePassengersMap.set(key, p);
+    // Filter passengers by trip, payment status, and payer relationship
+    const passengerOptions = useMemo(() => {
+        const clean = (s: string) => s.replace(/\D/g, '');
+
+        // 1. Group by identity (Name + CPF)
+        const identityMap = new Map<string, any>();
+        passengers.forEach(p => {
+            const key = `${p.nome_completo.toLowerCase().trim()}-${clean(p.cpf_rg || '')}`;
+            const existing = identityMap.get(key);
+
+            // Priority 1: Match for THIS trip (Highest)
+            if (p.viagem_id === id) {
+                identityMap.set(key, p);
+            }
+            // Priority 2: Master record (No trip assigned)
+            else if (!p.viagem_id) {
+                if (!existing || existing.viagem_id !== id) {
+                    identityMap.set(key, p);
+                }
+            }
+            // Priority 3: Record from ANY other trip (Lowest)
+            else if (!existing) {
+                identityMap.set(key, p);
             }
         });
 
-    const passengerOptions = [
-        { value: '', label: '-- Selecione um passageiro --' },
-        ...Array.from(uniquePassengersMap.values())
-            .filter(p => p !== 'assigned') // Remove identities already in this trip
-            .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo))
-            .map((p) => ({
+        const filtered = Array.from(identityMap.values())
+            .filter(p => {
+                // Not already assigned to a seat in this trip (or globally if it's the trip record)
+                if (p.viagem_id === id && p.assento) return false;
+
+                // Admin can see all passengers
+                if (user?.role === UserRole.ADMIN) return true;
+
+                // For regular users:
+                // Must be in this trip
+                if (p.viagem_id !== id) return false;
+                // Must have paid
+                const hasPaid = p.pagamento === 'Pago' || p.pagamento === 'Realizado';
+                if (!hasPaid) return false;
+
+                const userDoc = user?.email ? clean(user.email) : '';
+                const passengerDoc = p.cpf_rg ? clean(p.cpf_rg) : '';
+
+                // Only themselves or people they paid for
+                const isMe = p.id === user?.id || (userDoc && userDoc === passengerDoc);
+                return isMe || p.pago_por === user?.id;
+            })
+            .sort((a, b) => a.nome_completo.localeCompare(b.nome_completo));
+
+        return [
+            { value: '', label: '-- Selecione um passageiro --' },
+            ...filtered.map((p) => ({
                 value: p.id,
                 label: `${p.nome_completo} (${p.cpf_rg || 'Sem documento'})`,
             })),
-    ];
+        ];
+    }, [passengers, id, user]);
 
     const currentAssignment = selectedSeat
         ? assignments.find((a) => a.assentoCodigo === selectedSeat)
@@ -418,7 +458,7 @@ export const TripSeatMap: React.FC = () => {
                                     onChange={(e) => setSelectedPassengerId(e.target.value)}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 >
-                                    {passengerOptions.map((option) => (
+                                    {passengerOptions.map((option: any) => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>

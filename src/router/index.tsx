@@ -14,20 +14,14 @@ import { TripSeatMap } from '@/pages/Viagens/TripSeatMap';
 import { PassengerList } from '@/pages/Passageiros/PassengerList';
 import { PassengerForm } from '@/pages/Passageiros/PassengerForm';
 import { Financeiro } from '@/pages/Financeiro/Financeiro';
+import { PaymentList } from '@/pages/Financeiro/PaymentList';
 import { Settings } from '@/pages/Settings/Settings';
 import ExcursaoForm from '@/pages/ExcursaoForm';
 import Success from '@/pages/Success';
+import { TripPaymentCenter } from '@/pages/TripPaymentCenter';
 import { UserRole } from '@/types';
 
 export const router = createBrowserRouter([
-    {
-        path: '/excursao',
-        element: <ExcursaoForm />,
-    },
-    {
-        path: '/success',
-        element: <Success />,
-    },
     {
         path: '/login',
         element: <Login />,
@@ -41,12 +35,12 @@ export const router = createBrowserRouter([
         element: <UserLogin />,
     },
     {
+        path: '/success',
+        element: <Success />,
+    },
+    {
         path: '/',
-        element: (
-            <ProtectedRoute>
-                <AuthenticatedLayout />
-            </ProtectedRoute>
-        ),
+        element: <AuthenticatedLayout />,
         children: [
             {
                 index: true,
@@ -54,7 +48,19 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'dashboard',
-                element: <Dashboard />,
+                element: (
+                    <ProtectedRoute>
+                        <Dashboard />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: 'excursao',
+                element: <ExcursaoForm />,
+            },
+            {
+                path: 'pagamento',
+                element: <TripPaymentCenter />,
             },
             {
                 path: 'onibus',
@@ -82,15 +88,27 @@ export const router = createBrowserRouter([
             },
             {
                 path: 'viagens',
-                element: <TripList />,
+                element: (
+                    <ProtectedRoute>
+                        <TripList />
+                    </ProtectedRoute>
+                ),
             },
             {
                 path: 'viagens/nova',
-                element: <TripForm />,
+                element: (
+                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                        <TripForm />
+                    </RoleProtectedRoute>
+                ),
             },
             {
                 path: 'viagens/:id',
-                element: <TripSeatMap />,
+                element: (
+                    <ProtectedRoute>
+                        <TripSeatMap />
+                    </ProtectedRoute>
+                ),
             },
             {
                 path: 'passageiros',
@@ -121,6 +139,14 @@ export const router = createBrowserRouter([
                 element: (
                     <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                         <Financeiro />
+                    </RoleProtectedRoute>
+                ),
+            },
+            {
+                path: 'pagamentos',
+                element: (
+                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                        <PaymentList />
                     </RoleProtectedRoute>
                 ),
             },

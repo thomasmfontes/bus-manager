@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings, CircleDollarSign } from 'lucide-react';
+import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings, CircleDollarSign, CreditCard } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
 import { RegistrationModal } from '@/components/RegistrationModal';
@@ -32,12 +32,19 @@ export const AuthenticatedLayout: React.FC = () => {
         navigate('/login');
     };
 
+    const isAdmin = user?.role === UserRole.ADMIN;
+
     const menuItems = [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/onibus', icon: Bus, label: 'Ônibus' },
         { path: '/viagens', icon: MapPin, label: 'Viagens' },
         { path: '/passageiros', icon: Users, label: 'Passageiros' },
         { path: '/financeiro', icon: CircleDollarSign, label: 'Financeiro' },
+        {
+            path: isAdmin ? '/pagamentos' : '/pagamento',
+            icon: CreditCard,
+            label: 'Pagamentos'
+        },
         { path: '/settings', icon: Settings, label: 'Configurações' },
     ];
 
@@ -48,13 +55,15 @@ export const AuthenticatedLayout: React.FC = () => {
             {/* Mobile Header */}
             <div className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-50 h-16 px-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                        className="p-2 -ml-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        aria-label="Toggle menu"
-                    >
-                        {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
-                    </button>
+                    {user && (
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="p-2 -ml-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            aria-label="Toggle menu"
+                        >
+                            {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+                        </button>
+                    )}
                     <span className="font-bold text-gray-900 dark:text-white text-lg">Bus Manager</span>
                 </div>
             </div>
@@ -74,7 +83,8 @@ export const AuthenticatedLayout: React.FC = () => {
                     'transition-transform duration-300 ease-out',
                     'flex flex-col shadow-2xl lg:shadow-none border-r border-gray-700',
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-                    'lg:translate-x-0'
+                    'lg:translate-x-0',
+                    !user && 'hidden lg:hidden'
                 )}
             >
                 {/* Logo */}
@@ -94,9 +104,9 @@ export const AuthenticatedLayout: React.FC = () => {
                 <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto scrollbar-thin">
                     {menuItems
                         .filter((item) => {
-                            // Hide Passageiros and Ônibus for non-admin users
-                            if (user?.role !== UserRole.ADMIN) {
-                                if (item.path === '/passageiros' || item.path === '/onibus' || item.path === '/financeiro') {
+                            // Hide Admin-only sections for non-admin users
+                            if (!isAdmin) {
+                                if (['/passageiros', '/onibus', '/financeiro', '/pagamentos'].includes(item.path)) {
                                     return false;
                                 }
                             }
@@ -165,7 +175,7 @@ export const AuthenticatedLayout: React.FC = () => {
             <main
                 className={cn(
                     'transition-all duration-300 ease-out min-h-screen',
-                    'lg:ml-72',
+                    user ? 'lg:ml-72' : 'lg:ml-0',
                     'pt-20 px-2 pb-8 lg:px-4'
                 )}
             >
