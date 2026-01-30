@@ -16,22 +16,34 @@ async function getRawBody(req: VercelRequest): Promise<string> {
     return Buffer.concat(chunks).toString('utf8');
 }
 
-// Validate Woovi Signature (Supports Hex and Base64)
+// Validate Woovi Signature (Supports SHA256 and SHA1)
 const validateSignature = (payload: string, signature: string, secret: string) => {
     if (!secret) return true;
-    const hmac = crypto.createHmac('sha256', secret).update(payload);
 
-    const expectedHex = hmac.digest('hex');
-    // Try Base64 too as some OpenPix versions use it
-    const expectedBase64 = crypto.createHmac('sha256', secret).update(payload).digest('base64');
+    // 1. Try SHA256 (Modern) - Hex & Base64
+    const hmac256 = crypto.createHmac('sha256', secret).update(payload);
+    const expected256Hex = hmac256.digest('hex');
+    const expected256Base64 = crypto.createHmac('sha256', secret).update(payload).digest('base64');
 
-    const isValid = expectedHex === signature || expectedBase64 === signature;
+    // 2. Try SHA1 (Legacy/Standard for some Woovi versions) - Hex & Base64
+    const hmac1 = crypto.createHmac('sha1', secret).update(payload);
+    const expected1Hex = hmac1.digest('hex');
+    const expected1Base64 = hmac1.digest('base64');
+
+    const isValid = [
+        expected256Hex, expected256Base64,
+        expected1Hex, expected1Base64
+    ].includes(signature);
 
     if (!isValid) {
         console.error('❌ Signature Mismatch Detail:');
-        console.error('Expected (Hex):', expectedHex);
-        console.error('Expected (B64):', expectedBase64);
-        console.error('Received:', signature);
+        console.error('Received Signature:', signature);
+        console.error('--- Calculated SHA256 ---');
+        console.error('Hex:', expected256Hex);
+        console.error('B64:', expected256Base64);
+        console.error('--- Calculated SHA1 ---');
+        console.error('Hex:', expected1Hex);
+        console.error('B64:', expected1Base64);
     }
 
     return isValid;
