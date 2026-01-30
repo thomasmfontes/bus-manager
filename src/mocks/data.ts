@@ -75,6 +75,7 @@ export const mockTrips: Trip[] = [
         data_ida: '2025-11-26T08:00:00',
         preco: 150.00,
         onibus_id: '1',
+        pagamento_gateway: 'manual',
     },
     {
         id: '2',
@@ -83,6 +84,7 @@ export const mockTrips: Trip[] = [
         data_ida: '2025-11-27T14:00:00',
         preco: 200.00,
         onibus_id: '2',
+        pagamento_gateway: 'manual',
     },
 ];
 
