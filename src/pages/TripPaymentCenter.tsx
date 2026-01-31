@@ -59,8 +59,10 @@ export const TripPaymentCenter = () => {
         const searchFromUrl = searchParams.get('search');
         if (searchFromUrl) {
             setSearchQuery(searchFromUrl);
-        } else if (user?.full_name && !searchQuery) {
-            // Only use user.full_name as fallback if nothing else is searching
+        }
+
+        // Always ensure the payer name is initialized to the logged-in user if empty
+        if (user?.full_name && !customPayerName) {
             setCustomPayerName(user.full_name);
         }
     }, [user, searchParams]);
