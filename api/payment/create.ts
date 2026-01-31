@@ -125,7 +125,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const totalAmountCents = Math.round(resolvedPassengerIds.length * trip.preco * 100);
 
         // 4. Initial Record in 'pagamentos'
-        const { data: payment, error: paymentError } = await supabase
+        const { error: paymentError } = await supabase
             .from('pagamentos')
             .insert([{
                 id: internalId,
