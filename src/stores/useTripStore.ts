@@ -122,14 +122,19 @@ export const useTripStore = create<TripState>((set, get) => ({
             if (trip.titular_pix !== undefined) updates.titular_pix = trip.titular_pix;
             if (trip.gateway_api_key !== undefined) updates.gateway_api_key = trip.gateway_api_key;
 
-            const { data: updatedTrip, error: tripError } = await supabase
+            const { data: updatedData, error: tripError } = await supabase
                 .from('viagens')
                 .update(updates)
                 .eq('id', id)
-                .select()
-                .single();
+                .select();
 
             if (tripError) throw tripError;
+
+            if (!updatedData || updatedData.length === 0) {
+                throw new Error('Nenhuma viagem encontrada para atualizar. Verifique se você tem permissões de administrador.');
+            }
+
+            const updatedTrip = updatedData[0];
 
             // Update trip-bus relationships if onibus_ids is provided
             if (trip.onibus_ids !== undefined) {

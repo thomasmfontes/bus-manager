@@ -24,7 +24,7 @@ const createWooviPayment = async (amount: number, correlationID: string, tripNam
                 name: customerData.name,
                 email: customerData.email || 'noreply@busmanager.com'
             },
-            expiresIn: 900 // 15 minutes
+            expiresIn: 300 // 5 minutes
         })
     });
 
