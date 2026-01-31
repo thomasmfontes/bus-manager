@@ -59,7 +59,7 @@ export const Modal: React.FC<ModalProps> = ({
                 className
             )}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0 rounded-t-2xl">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white truncate pr-4">{title}</h2>
                     <button
                         onClick={onClose}
@@ -76,7 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
 
                 {/* Footer */}
                 {footer && (
-                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 shrink-0">
+                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 shrink-0 rounded-b-2xl">
                         {footer}
                     </div>
                 )}

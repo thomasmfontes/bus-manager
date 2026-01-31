@@ -7,7 +7,7 @@ export const Login: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-soft-xl p-8 w-full max-w-2xl border border-gray-100 animate-scale-in">
+            <div className="bg-white rounded-2xl shadow-soft-xl p-8 w-full max-w-2xl border border-gray-100 fade-in duration-500">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
                         <Bus className="text-white" size={40} strokeWidth={2} />

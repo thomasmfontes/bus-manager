@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings, CircleDollarSign, CreditCard } from 'lucide-react';
+import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
 import { RegistrationModal } from '@/components/RegistrationModal';
@@ -41,9 +42,9 @@ export const AuthenticatedLayout: React.FC = () => {
         { path: '/passageiros', icon: Users, label: 'Passageiros' },
         { path: '/financeiro', icon: CircleDollarSign, label: 'Financeiro' },
         {
-            path: isAdmin ? '/pagamentos' : '/pagamento',
-            icon: CreditCard,
-            label: 'Pagamentos'
+            path: isAdmin ? '/extrato' : '/pagamento',
+            icon: isAdmin ? AiOutlineUnorderedList : CreditCard,
+            label: isAdmin ? 'Extrato' : 'Pagamentos'
         },
         { path: '/settings', icon: Settings, label: 'Configurações' },
     ];
@@ -106,7 +107,7 @@ export const AuthenticatedLayout: React.FC = () => {
                         .filter((item) => {
                             // Hide Admin-only sections for non-admin users
                             if (!isAdmin) {
-                                if (['/passageiros', '/onibus', '/financeiro', '/pagamentos'].includes(item.path)) {
+                                if (['/passageiros', '/onibus', '/financeiro', '/extrato'].includes(item.path)) {
                                     return false;
                                 }
                             }
@@ -174,7 +175,7 @@ export const AuthenticatedLayout: React.FC = () => {
             {/* Main Content */}
             <main
                 className={cn(
-                    'transition-all duration-300 ease-out min-h-screen',
+                    'min-h-screen',
                     user ? 'lg:ml-72' : 'lg:ml-0',
                     'pt-20 px-2 pb-8 lg:px-4'
                 )}

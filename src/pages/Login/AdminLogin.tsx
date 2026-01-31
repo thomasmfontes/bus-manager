@@ -38,7 +38,7 @@ export const AdminLogin: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-soft-xl p-8 w-full max-w-md border border-gray-100 animate-scale-in">
+            <div className="bg-white rounded-2xl shadow-soft-xl p-8 w-full max-w-md border border-gray-100 fade-in duration-500">
                 <button
                     onClick={() => navigate('/login')}
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"

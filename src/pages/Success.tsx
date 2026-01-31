@@ -85,11 +85,11 @@ export default function Success() {
                         <div className="flex-1">
                             <span className="font-medium text-base block mb-3">Acompanhe seu pagamento e escolha seu assento</span>
                             <button
-                                onClick={() => navigate('/pagamento')}
+                                onClick={() => navigate('/viagens')}
                                 className="btn-base btn-primary w-full sm:w-auto text-sm py-2"
                             >
-                                <span className="text-lg">💳</span>
-                                <span>Ir para Pagamentos</span>
+                                <span className="text-lg">🗺️</span>
+                                <span>Excursões</span>
                             </button>
                         </div>
                     </li>

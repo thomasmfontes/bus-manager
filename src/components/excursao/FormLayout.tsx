@@ -34,7 +34,7 @@ export const FormLayout: React.FC<FormLayoutProps> = ({ children, className = ""
                     color: #f3f4f6;
                 }
             `}</style>
-            <section className={`card w-full max-w-3xl backdrop-blur-sm ${className}`}>
+            <section className={`card w-full max-w-3xl backdrop-blur-sm fade-in duration-500 ${className}`}>
                 {children}
             </section>
         </main>

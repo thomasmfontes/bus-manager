@@ -5,18 +5,20 @@ import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
 import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle } from 'lucide-react';
+import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { formatCurrency } from '@/utils/formatters';
 import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { UserRole } from '@/types';
 
-interface PaymentListProps {
+interface StatementProps {
     userId?: string;
     hideHeader?: boolean;
+    noAnimation?: boolean;
 }
 
-export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) => {
+export const Statement = ({ userId, hideHeader = false, noAnimation = false }: StatementProps) => {
     const { showToast } = useToast();
     const { trips, fetchViagens } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
@@ -132,13 +134,13 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
     };
 
     return (
-        <div className="space-y-6 w-full animate-in fade-in duration-500">
+        <div className={cn("space-y-6 w-full max-w-7xl mx-auto", !noAnimation && "fade-in duration-500")}>
             {/* Header */}
             {!hideHeader && (
                 <div className="space-y-1">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-lg shadow-gray-900/20">
-                            <CreditCard className="text-white" size={20} />
+                            <AiOutlineUnorderedList className="text-white" size={20} />
                         </div>
                         Extrato
                     </h1>
@@ -147,19 +149,24 @@ export const PaymentList = ({ userId, hideHeader = false }: PaymentListProps) =>
             )}
 
             {/* Filters Container */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm group">
                 <div className="flex flex-row items-center gap-2 w-full">
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="flex-1 min-w-0 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-gray-900 outline-none transition-all appearance-none text-gray-700"
+                        className="flex-1 min-w-0 h-11 px-4 bg-white border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-gray-900 outline-none transition-all appearance-none text-gray-700"
                     >
                         <option value="all">Todos os Status</option>
                         <option value="paid">Pagos</option>
                         <option value="pending">Pendentes</option>
                         <option value="failed">Falhas</option>
                     </select>
-                    <Button variant="secondary" onClick={fetchPayments} size="sm" className="shrink-0 h-[38px] px-4 font-bold">
+                    <Button
+                        variant="secondary"
+                        onClick={fetchPayments}
+                        size="sm"
+                        className="shrink-0 h-11 px-6 font-bold rounded-xl active:scale-95 transition-all"
+                    >
                         Atualizar
                     </Button>
                 </div>

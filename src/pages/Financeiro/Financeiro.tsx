@@ -3,7 +3,9 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar } from 'lucide-react';
+import { GoHistory } from 'react-icons/go';
+import { CiGlobe } from 'react-icons/ci';
 
 export const Financeiro: React.FC = () => {
     const { passengers, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
@@ -88,7 +90,7 @@ export const Financeiro: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 w-full animate-in fade-in duration-500">
+        <div className="space-y-6 w-full fade-in duration-500">
             {/* Header & Main Controls */}
             <div className="flex flex-col gap-6">
                 <div className="space-y-1">
@@ -102,13 +104,13 @@ export const Financeiro: React.FC = () => {
                 </div>
 
                 {/* Combined Filter Container (Identical to Dashboard) */}
-                <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                <div className="flex flex-col gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
                     {/* Time Filter Tabs */}
                     <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
                         {[
                             { id: 'future', label: 'Próximas', icon: Calendar },
-                            { id: 'past', label: 'Passadas', icon: ArrowRight },
-                            { id: 'all', label: 'Todas', icon: LayoutDashboard }
+                            { id: 'past', label: 'Passadas', icon: GoHistory },
+                            { id: 'all', label: 'Todas', icon: CiGlobe }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -123,8 +125,8 @@ export const Financeiro: React.FC = () => {
                                         : "text-gray-500 hover:text-gray-700"
                                 )}
                             >
-                                <tab.icon size={16} />
-                                {tab.label}
+                                <tab.icon size={18} />
+                                <span className="hidden sm:inline">{tab.label}</span>
                             </button>
                         ))}
                     </div>
@@ -137,7 +139,7 @@ export const Financeiro: React.FC = () => {
                         <select
                             value={selectedTripId}
                             onChange={(e) => setSelectedTripId(e.target.value)}
-                            className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-emerald-50/50 focus:border-emerald-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
+                            className="w-full h-11 pl-11 pr-10 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-emerald-50/50 focus:border-emerald-500 transition-all outline-none font-bold text-gray-700 appearance-none cursor-pointer text-sm"
                         >
                             <option value="all">Filtro de Viagem...</option>
 
@@ -163,7 +165,7 @@ export const Financeiro: React.FC = () => {
             </div>
 
             {/* Main Content Container */}
-            <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm w-full">
+            <div className="flex flex-col gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm w-full">
                 {/* Search and Filters */}
                 <div className="flex flex-col lg:flex-row gap-4">
                     <div className="relative flex-1">
@@ -183,7 +185,7 @@ export const Financeiro: React.FC = () => {
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full pl-4 pr-10 py-3 border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:border-gray-200 focus:ring-2 focus:ring-emerald-500 transition-all outline-none font-medium text-gray-700 dark:text-gray-300 appearance-none cursor-pointer text-sm"
+                                className="w-full h-11 pl-4 pr-10 border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:border-gray-200 focus:ring-2 focus:ring-emerald-500 transition-all outline-none font-bold text-gray-700 dark:text-gray-300 appearance-none cursor-pointer text-sm"
                             >
                                 <option value="all">TODOS OS STATUS</option>
                                 <option value="paid">PAGOS</option>

@@ -38,7 +38,7 @@ export const BusList: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 w-full">
+        <div className="space-y-6 w-full fade-in duration-500">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-gray-dark flex items-center gap-3">
                     <Bus className="text-blue-600" size={32} />

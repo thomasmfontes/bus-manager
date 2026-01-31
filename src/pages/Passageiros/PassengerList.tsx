@@ -95,7 +95,7 @@ export const PassengerList: React.FC = () => {
     );
 
     return (
-        <div className="space-y-5 w-full">
+        <div className="space-y-5 w-full fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col gap-4">
                 <div>

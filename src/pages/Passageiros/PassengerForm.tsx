@@ -89,7 +89,7 @@ export const PassengerForm: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 w-full">
+        <div className="space-y-6 w-full fade-in duration-500">
             {/* Header */}
             <div className="flex items-center gap-4">
                 <button

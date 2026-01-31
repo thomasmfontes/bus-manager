@@ -6,7 +6,12 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon, LayoutDashboard } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon, LayoutDashboard, AlertCircle, CreditCard } from 'lucide-react';
+import { GoHistory } from 'react-icons/go';
+import { CiGlobe } from 'react-icons/ci';
+import { supabase } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/Toast';
 import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/Button';
@@ -17,9 +22,13 @@ export const Dashboard: React.FC = () => {
     const { trips, fetchViagens } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
+    const navigate = useNavigate();
+    const { showToast } = useToast();
     const [selectedTripId, setSelectedTripId] = React.useState<string>('all');
     const [timeFilter, setTimeFilter] = React.useState<'future' | 'past' | 'all'>('future');
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
+    const [paymentModalTrip, setPaymentModalTrip] = React.useState<any | null>(null);
+    const [checkingPayment, setCheckingPayment] = React.useState(false);
     const [mapTarget, setMapTarget] = React.useState<{
         origin: string;
         destination: string;
@@ -34,6 +43,26 @@ export const Dashboard: React.FC = () => {
     }, [fetchOnibus, fetchViagens, fetchPassageiros]);
 
     // Filter trips and passengers based on selection
+    const getTotalSeats = (busIds?: string[]) => {
+        if (!busIds || busIds.length === 0) return 0;
+        return busIds.reduce((total, busId) => {
+            const bus = buses.find((b) => b.id === busId);
+            return total + (bus ? bus.capacidade : 0);
+        }, 0);
+    };
+
+    const getOccupiedSeats = (tripId: string) => {
+        const trip = trips.find(t => t.id === tripId);
+        if (!trip) return 0;
+
+        const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
+
+        return passengers.filter((p) => {
+            if (p.viagem_id !== tripId) return false;
+            return p.assento && p.onibus_id && activeBusIds.includes(p.onibus_id);
+        }).length;
+    };
+
     const now = new Date();
 
     // Sort all trips by date
@@ -125,6 +154,36 @@ export const Dashboard: React.FC = () => {
         return `${day} ${month} ${year}`;
     };
 
+    const handleTripClick = async (trip: any) => {
+        if (user?.role === UserRole.ADMIN) {
+            navigate(`/viagens/${trip.id}`);
+            return;
+        }
+
+        setCheckingPayment(true);
+        try {
+            const { data: results, error } = await supabase
+                .from('passageiros')
+                .select('id, pagamento')
+                .eq('viagem_id', trip.id)
+                .or(`nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}"`)
+                .in('pagamento', ['Pago', 'Realizado']);
+
+            if (error) throw error;
+
+            if (results && results.length > 0) {
+                navigate(`/viagens/${trip.id}`);
+            } else {
+                setPaymentModalTrip(trip);
+            }
+        } catch (err) {
+            console.error('Error checking payment:', err);
+            showToast('Erro ao verificar status de pagamento', 'error');
+        } finally {
+            setCheckingPayment(false);
+        }
+    };
+
     const handleOpenMap = (trip: any) => {
         if (!trip.destino) return;
         setMapTarget({
@@ -212,7 +271,7 @@ export const Dashboard: React.FC = () => {
     const displayTrips = selectedTripId === 'all' ? upcomingTrips : filteredTrips;
 
     return (
-        <div className="space-y-8 animate-fade-in w-full">
+        <div className="space-y-8 fade-in duration-500 w-full">
             {/* Registration Banner */}
             {user?.role === UserRole.PASSAGEIRO && !user.id && (
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -250,8 +309,8 @@ export const Dashboard: React.FC = () => {
                     <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
                         {[
                             { id: 'future', label: 'Próximas', icon: Calendar },
-                            { id: 'past', label: 'Passadas', icon: ArrowRight },
-                            { id: 'all', label: 'Todas', icon: LayoutDashboard }
+                            { id: 'past', label: 'Passadas', icon: GoHistory },
+                            { id: 'all', label: 'Todas', icon: CiGlobe }
                         ].map((fitlerType) => (
                             <button
                                 key={fitlerType.id}
@@ -266,8 +325,8 @@ export const Dashboard: React.FC = () => {
                                         : "text-gray-500 hover:text-gray-700"
                                 )}
                             >
-                                <fitlerType.icon size={16} />
-                                {fitlerType.label}
+                                <fitlerType.icon size={18} />
+                                <span className="hidden sm:inline">{fitlerType.label}</span>
                             </button>
                         ))}
                     </div>
@@ -375,14 +434,15 @@ export const Dashboard: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <Link
-                                    to={`/viagens/${trip.id}`}
-                                    className="px-3 sm:px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 group shrink-0 self-start sm:self-center"
+                                <button
+                                    onClick={() => handleTripClick(trip)}
+                                    disabled={checkingPayment}
+                                    className="px-3 sm:px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 group shrink-0 self-start sm:self-center disabled:opacity-50"
                                 >
                                     <span className="hidden sm:inline">Ver Mapa</span>
                                     <Eye size={20} className="sm:hidden" />
                                     <ArrowRight size={16} className="hidden sm:block transition-transform group-hover:translate-x-1" />
-                                </Link>
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -450,6 +510,108 @@ export const Dashboard: React.FC = () => {
                                 <p className="text-gray-400">Carregando mapa...</p>
                             </div>
                         )}
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal de Pagamento Obrigatório - UI Premium */}
+            <Modal
+                isOpen={paymentModalTrip !== null}
+                onClose={() => setPaymentModalTrip(null)}
+                title="Acesso Restrito"
+                size="sm"
+                footer={
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setPaymentModalTrip(null)}
+                            className="flex-1 order-2 sm:order-1"
+                        >
+                            Voltar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={() => {
+                                const tripId = paymentModalTrip?.id;
+                                setPaymentModalTrip(null);
+                                navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
+                            }}
+                            className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
+                        >
+                            <CreditCard size={18} className="mr-2" />
+                            Ir para Pagamento
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="relative -mt-2 space-y-6">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
+                            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
+                                <CreditCard size={40} className="text-white" />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
+                                <AlertCircle size={24} className="text-amber-500" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold text-gray-900">Pagamento Necessário</h3>
+                            <p className="text-gray-500 max-w-[280px]">
+                                Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.
+                            </p>
+                        </div>
+                    </div>
+
+                    {paymentModalTrip && (
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                                    <Users size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-2xl font-black text-blue-600">
+                                    {(getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id))}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Route Info Section */}
+                    {paymentModalTrip && (
+                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                    <MapPin size={16} className="text-blue-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
+                                    <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                    <MapPin size={16} className="text-green-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
+                                    <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
+                        <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                        <p className="text-sm leading-relaxed">
+                            O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
+                        </p>
                     </div>
                 </div>
             </Modal>

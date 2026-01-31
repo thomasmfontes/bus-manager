@@ -272,7 +272,7 @@ export const TripSeatMap: React.FC = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 fade-in duration-500">
             <div className="flex items-center gap-4">
                 <Link to="/viagens">
                     <Button variant="secondary">

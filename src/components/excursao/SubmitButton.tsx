@@ -1,4 +1,4 @@
-import React from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface SubmitButtonProps {
     isSubmitting: boolean;
@@ -15,11 +15,17 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
 }) => {
     return (
         <button
-            className="btn-base btn-primary w-full mt-4"
+            className="btn-base btn-primary w-full mt-4 flex items-center justify-center gap-2"
             disabled={isSubmitting || disabled}
         >
-            {isSubmitting && <span className="spinner" aria-hidden="true"></span>}
-            {isSubmitting ? loadingLabel : label}
+            {isSubmitting ? (
+                <>
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>{loadingLabel}</span>
+                </>
+            ) : (
+                label
+            )}
         </button>
     );
 };

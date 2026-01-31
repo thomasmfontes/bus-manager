@@ -11,6 +11,7 @@ import { validateForm, PassengerForm } from "../utils/validators";
 import { supabase } from "../lib/supabase";
 import { useCongregacaoStore } from "../stores/useCongregacaoStore";
 import { useInstrumentoStore } from "../stores/useInstrumentoStore";
+import { useAuthStore } from "../stores/useAuthStore";
 
 export default function ExcursaoForm() {
     const navigate = useNavigate();
@@ -281,6 +282,12 @@ export default function ExcursaoForm() {
             console.log('✅ Cadastro realizado com sucesso!');
             toast.success("Cadastro confirmado! 🎉", { id: toastId });
 
+            // Auto-login o passageiro recém criado
+            const documento = form.cpf || form.rg;
+            if (documento) {
+                await useAuthStore.getState().login('', '', documento);
+            }
+
             try {
                 localStorage.setItem('lastSubmission', JSON.stringify(form));
                 localStorage.removeItem('formDraft');
@@ -288,15 +295,14 @@ export default function ExcursaoForm() {
                 console.error('Erro ao salvar submissão:', e);
             }
 
-            // Redireciona para página de sucesso
+            // Redireciona para página de sucesso com o ID da viagem
             setTimeout(() => {
-                navigate('/success');
+                navigate(`/success${tripId ? `?v=${tripId}` : ''}`);
             }, 500);
 
         } catch (err2: any) {
             console.error(err2);
             toast.error("Erro ao enviar: " + (err2.message || String(err2)), { id: toastId });
-        } finally {
             setSubmitting(false);
         }
     }

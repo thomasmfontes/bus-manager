@@ -17,9 +17,9 @@ export const Settings: React.FC = () => {
     );
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in duration-500">
             {/* Header */}
-            <div className="animate-in">
+            <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                     <SettingsIcon className="text-gray-600 dark:text-gray-400" size={32} />
                     Configurações
@@ -84,7 +84,7 @@ export const Settings: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="animate-scale-in">
+            <div key={activeTab} className="animate-in fade-in duration-500">
                 {activeTab === 'profile' && isAdmin && <ProfileSettings />}
                 {activeTab === 'preferences' && <SystemPreferences />}
                 {activeTab === 'data' && isAdmin && <DataManagement />}

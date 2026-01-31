@@ -63,7 +63,7 @@ export const BusForm: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <h1 className="text-3xl font-bold text-gray-dark">
                 {isEditing ? 'Editar Ônibus' : 'Novo Ônibus'}
             </h1>

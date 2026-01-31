@@ -32,7 +32,9 @@
 
 @layer components {
   .transition-smooth {
-    @apply transition-all duration-150 ease-out;
+    transition-property: transform, box-shadow, border-color, background-color, opacity, color;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .shadow-soft {

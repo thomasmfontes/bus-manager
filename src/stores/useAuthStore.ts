@@ -21,7 +21,7 @@ export const useAuthStore = create<AuthState>()(
             login: async (email: string, senha: string, documento?: string) => {
                 try {
                     let role: UserRole = UserRole.USER;
-                    let passageiroId: string | undefined;
+                    let userId: string = '';
                     let userName: string = '';
 
                     // Check if trying to login with email (Admin flow)
@@ -51,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
                         }
 
                         role = UserRole.ADMIN;
+                        userId = authData.user.id;
                         userName = profile.full_name || 'Administrador';
                     }
                     // All other users MUST provide documento
@@ -70,7 +71,7 @@ export const useAuthStore = create<AuthState>()(
                             const passenger = results.find(p => !p.viagem_id) || results[0];
 
                             role = UserRole.PASSAGEIRO;
-                            passageiroId = passenger.id;
+                            userId = passenger.id;
                             userName = passenger.nome_completo;
                         } else {
                             // Not found -> Return false to trigger redirect to form
@@ -84,7 +85,7 @@ export const useAuthStore = create<AuthState>()(
                     set({
                         isAuthenticated: true,
                         user: {
-                            id: passageiroId || authData.user.id,
+                            id: userId,
                             email: email || documento || '',
                             full_name: userName,
                             role,
