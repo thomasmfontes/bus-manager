@@ -39,11 +39,16 @@ export const BusList: React.FC = () => {
 
     return (
         <div className="space-y-6 w-full fade-in duration-500">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-dark flex items-center gap-3">
-                    <Bus className="text-blue-600" size={32} />
-                    Ônibus
-                </h1>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                            <Bus className="text-white" size={20} />
+                        </div>
+                        Ônibus
+                    </h1>
+                    <p className="text-gray-500 text-sm ml-[52px]">Frota disponível e configuração de assentos.</p>
+                </div>
                 <ProtectedAction requiredPermission="create">
                     <Link to="/onibus/novo">
                         <Button>

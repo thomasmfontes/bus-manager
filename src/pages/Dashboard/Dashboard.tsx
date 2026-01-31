@@ -6,7 +6,7 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Bus, MapPin, Users, Calendar, ArrowRight, Eye, ChevronDown, Filter, Map as MapIcon, LayoutDashboard, AlertCircle, CreditCard } from 'lucide-react';
+import { Bus, MapPin, Users, Calendar, ArrowRight, ChevronDown, Filter, Map as MapIcon, LayoutDashboard, AlertCircle, CreditCard } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 import { supabase } from '@/lib/supabase';
@@ -28,7 +28,6 @@ export const Dashboard: React.FC = () => {
     const [timeFilter, setTimeFilter] = React.useState<'future' | 'past' | 'all'>('future');
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
     const [paymentModalTrip, setPaymentModalTrip] = React.useState<any | null>(null);
-    const [checkingPayment, setCheckingPayment] = React.useState(false);
     const [mapTarget, setMapTarget] = React.useState<{
         origin: string;
         destination: string;
@@ -160,13 +159,12 @@ export const Dashboard: React.FC = () => {
             return;
         }
 
-        setCheckingPayment(true);
         try {
             const { data: results, error } = await supabase
                 .from('passageiros')
                 .select('id, pagamento')
                 .eq('viagem_id', trip.id)
-                .or(`nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}"`)
+                .or(`pago_por.eq.${user?.id},nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}"`)
                 .in('pagamento', ['Pago', 'Realizado']);
 
             if (error) throw error;
@@ -179,8 +177,6 @@ export const Dashboard: React.FC = () => {
         } catch (err) {
             console.error('Error checking payment:', err);
             showToast('Erro ao verificar status de pagamento', 'error');
-        } finally {
-            setCheckingPayment(false);
         }
     };
 
@@ -294,12 +290,14 @@ export const Dashboard: React.FC = () => {
             {/* Header & Controls */}
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                            <LayoutDashboard className="text-blue-600" size={28} />
+                    <div className="space-y-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                <LayoutDashboard className="text-white" size={20} />
+                            </div>
                             Dashboard
                         </h1>
-                        <p className="text-gray-500">Visão geral do negócio</p>
+                        <p className="text-gray-500 text-sm ml-[52px]">Visão geral do negócio e métricas principais.</p>
                     </div>
                 </div>
 
@@ -409,42 +407,71 @@ export const Dashboard: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {displayTrips.map((trip) => (
-                            <div
-                                key={trip.id}
-                                className="flex items-start sm:items-center justify-between p-5 sm:p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group border border-gray-100 hover:border-gray-200 gap-4"
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <MapPin size={20} className="text-blue-600 shrink-0 mt-0.5" />
-                                        <span className="font-semibold text-gray-900 leading-snug">
-                                            {trip.nome}
-                                        </span>
+                        {displayTrips.map((trip) => {
+                            const occupied = getOccupiedSeats(trip.id);
+                            const total = getTotalSeats(trip.onibus_ids);
+                            const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
+
+                            return (
+                                <div
+                                    key={trip.id}
+                                    onClick={() => handleTripClick(trip)}
+                                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-6 bg-white rounded-[2rem] hover:shadow-xl hover:border-blue-200 transition-all group border border-gray-100 gap-6 cursor-pointer active:scale-[0.99]"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                <MapPin size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-gray-900 leading-tight">
+                                                    {trip.nome}
+                                                </h3>
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">{trip.destino}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-x-6 gap-y-3 ml-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Partida</span>
+                                                <span className="text-sm font-black text-gray-700">{formatDate(trip.data_ida)}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Frota</span>
+                                                <span className="text-sm font-black text-gray-700">
+                                                    {trip.onibus_ids?.length
+                                                        ? `${trip.onibus_ids.length} ônibus`
+                                                        : (trip.onibus_id ? '1 ônibus' : 'Pendente')}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 ml-8">
-                                        <span className="flex items-center gap-2">
-                                            <Calendar size={16} className="shrink-0" />
-                                            {formatDate(trip.data_ida)}
-                                        </span>
-                                        <span className="flex items-center gap-2">
-                                            <Bus size={16} className="shrink-0" />
-                                            {trip.onibus_ids?.length
-                                                ? `${trip.onibus_ids.length} ônibus`
-                                                : (trip.onibus_id ? '1 ônibus' : 'Nenhum ônibus')}
-                                        </span>
+
+                                    <div className="flex flex-col gap-2 w-full sm:w-48 pt-4 sm:pt-0 border-t sm:border-t-0 border-gray-50">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ocupação</span>
+                                            <div className="text-right">
+                                                <span className="text-sm font-black text-blue-600">{occupied}</span>
+                                                <span className="text-xs font-bold text-gray-300 ml-1">/ {total}</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden shadow-inner border border-gray-100/50">
+                                            <div
+                                                className={cn(
+                                                    "h-full transition-all duration-1000",
+                                                    occupancyRate > 90 ? "bg-orange-500" : "bg-blue-600"
+                                                )}
+                                                style={{ width: `${Math.min(occupancyRate, 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 group-hover:bg-blue-50 text-gray-300 group-hover:text-blue-600 transition-all">
+                                        <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => handleTripClick(trip)}
-                                    disabled={checkingPayment}
-                                    className="px-3 sm:px-4 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2 group shrink-0 self-start sm:self-center disabled:opacity-50"
-                                >
-                                    <span className="hidden sm:inline">Ver Mapa</span>
-                                    <Eye size={20} className="sm:hidden" />
-                                    <ArrowRight size={16} className="hidden sm:block transition-transform group-hover:translate-x-1" />
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </Card>

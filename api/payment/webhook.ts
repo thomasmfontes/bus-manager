@@ -72,29 +72,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Try x-openpix-signature and x-webhook-signature (as backup)
         const signature = (req.headers['x-openpix-signature'] || req.headers['x-webhook-signature']) as string;
         const secret = process.env.WOOVI_WEBHOOK_SECRET;
-        const { event, charge } = body;
 
-        // 1. Handle Woovi connectivity test (Bypass signature for tests)
-        if (event === 'teste_webhook' || body?.evento === 'teste_webhook') {
+        // Use evento (pt-br) or event (en) as Woovi sometimes varies
+        const event = body.event || body.evento;
+        const charge = body.charge || body.cobranca;
+
+        // 1. Handle Woovi connectivity test
+        if (event === 'teste_webhook') {
             console.log('✅ Connectivity Test Received');
             return res.status(200).json({ received: true, message: 'Test success' });
         }
 
         // 2. Security Check (Production Strictness)
         if (secret && !validateSignature(rawBody, signature, secret)) {
+            console.error('❌ Webhook Signature Invalid');
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        if (!event || !charge || !charge.correlationID) {
-            console.log('⚠️ Webhook ignored: Missing required fields');
-            return res.status(200).json({
-                received: true,
-                ignored: true,
-                reason: 'Missing payload data'
-            });
+        if (!event || !charge) {
+            console.log('⚠️ Webhook ignored: Missing event or charge data');
+            return res.status(200).json({ received: true, ignored: true, reason: 'Missing payload' });
         }
 
-        const correlationID = charge.correlationID;
+        // Correlation ID can be charge.correlationID or body.correlationID depending on event type
+        const correlationID = charge.correlationID || body.correlationID;
+
+        if (!correlationID) {
+            console.log('⚠️ Webhook ignored: No correlationID found in event:', event);
+            return res.status(200).json({ received: true, ignored: true, reason: 'No correlationID' });
+        }
+
         const supabaseUrl = process.env.SUPABASE_URL!;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -107,12 +114,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
         if (fetchError || !transaction) {
-            console.error('Transaction not found for correlationID:', correlationID);
+            console.error('❌ Transaction not found for correlationID:', correlationID);
             return res.status(404).json({ error: 'Transaction not found' });
         }
 
+        console.log(`📦 Processing event ${event} for transaction ${transaction.id} (Current status: ${transaction.status})`);
+
         // 3. Handle Charge Completion
-        if (event === 'OPENPIX:CHARGE_COMPLETED') {
+        if (event === 'OPENPIX:CHARGE_COMPLETED' || event === 'CHARGE_COMPLETED') {
             const { data: updated, error: updateError } = await supabase
                 .from('pagamentos')
                 .update({
@@ -150,8 +159,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 5. Handle Charge Expiration
-        if (event === 'OPENPIX:CHARGE_EXPIRED') {
-            await supabase
+        if (event === 'OPENPIX:CHARGE_EXPIRED' || event === 'CHARGE_EXPIRED') {
+            console.log(`⌛ Marking transaction ${transaction.id} as expired`);
+            const { error: expireError } = await supabase
                 .from('pagamentos')
                 .update({
                     status: 'expired',
@@ -161,13 +171,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 .eq('id', transaction.id)
                 .neq('status', 'paid');
 
+            if (expireError) {
+                console.error('Error marking as expired:', expireError);
+                return res.status(500).json({ error: 'Failed to update status' });
+            }
+
             return res.status(200).json({ success: true, status: 'expired' });
         }
 
+        console.log(`ℹ️ Webhook event ${event} received but not explicitly handled.`);
         return res.status(200).json({ received: true, ignored: true, event });
 
     } catch (error: any) {
-        console.error('Webhook Hardening Error:', error);
+        console.error('❌ Webhook Hardening Error:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }

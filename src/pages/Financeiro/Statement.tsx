@@ -49,7 +49,11 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                 .order('created_at', { ascending: false });
 
             if (filterStatus !== 'all') {
-                query = query.eq('status', filterStatus);
+                if (filterStatus === 'failed_expired') {
+                    query = query.in('status', ['failed', 'expired']);
+                } else {
+                    query = query.eq('status', filterStatus);
+                }
             }
 
             // If userId is provided, filter for that user (as included passenger)
@@ -159,7 +163,7 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                         <option value="all">Todos os Status</option>
                         <option value="paid">Pagos</option>
                         <option value="pending">Pendentes</option>
-                        <option value="failed">Falhas</option>
+                        <option value="failed_expired">Falhas / Expirados</option>
                     </select>
                     <Button
                         variant="secondary"

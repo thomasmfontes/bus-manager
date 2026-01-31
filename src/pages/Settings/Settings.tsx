@@ -19,12 +19,14 @@ export const Settings: React.FC = () => {
     return (
         <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in duration-500">
             {/* Header */}
-            <div>
+            <div className="space-y-1">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <SettingsIcon className="text-gray-600 dark:text-gray-400" size={32} />
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-900/20">
+                        <SettingsIcon className="text-white" size={20} />
+                    </div>
                     Configurações
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Gerencie as configurações do sistema</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base ml-[52px]">Preferências do sistema e perfil do usuário.</p>
             </div>
 
             {/* Tabs */}
