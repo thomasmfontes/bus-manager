@@ -705,81 +705,127 @@ export const TripPaymentCenter = () => {
                                             </div>
                                         </div>
                                     ) : paymentStatus === 'success' ? (
-                                        <div className="fade-in duration-500 py-12 text-center bg-white rounded-[2.5rem] border border-gray-100 shadow-xl">
-                                            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                                <CheckCircle2 size={48} className="text-green-600 animate-bounce" />
+                                        <div className="fade-in duration-700 text-center bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
+                                            <div className="bg-gradient-to-br from-green-500 to-emerald-600 py-16 px-8 relative overflow-hidden">
+                                                {/* Decorative background elements */}
+                                                <div className="absolute top-0 left-0 w-full h-full opacity-10">
+                                                    <div className="absolute -top-10 -left-10 w-40 h-40 bg-white rounded-full blur-3xl animate-pulse" />
+                                                    <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white rounded-full blur-3xl animate-pulse" />
+                                                </div>
+
+                                                <div className="relative z-10 w-24 h-24 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto mb-6 border border-white/30 shadow-2xl animate-scale-in">
+                                                    <CheckCircle2 size={48} className="text-white" />
+                                                </div>
+                                                <h2 className="relative z-10 text-4xl font-black text-white mb-2 tracking-tight">Sucesso!</h2>
+                                                <p className="relative z-10 text-green-50/80 font-bold uppercase tracking-[0.2em] text-xs">Pagamento Confirmado</p>
                                             </div>
-                                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Pagamento Confirmado!</h2>
-                                            <p className="text-gray-500 mb-8">O pagamento de {formatCurrency(totalAmount)} foi processado com sucesso.</p>
-                                            <div className="max-w-xs mx-auto p-4 bg-green-50 rounded-xl border border-green-100 mb-8">
-                                                <p className="text-sm text-green-800 font-medium">Os passageiros agora podem selecionar seus assentos no mapa.</p>
-                                            </div>
-                                            <div className="flex flex-col gap-3 max-w-xs mx-auto">
-                                                <Button
-                                                    onClick={() => navigate('/viagens')}
-                                                    className="w-full h-12 text-base font-bold shadow-lg shadow-blue-200"
-                                                >
-                                                    VER MAPA DE ASSENTOS
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    onClick={() => {
-                                                        setPaymentStatus('selection');
-                                                        setSelectedPassengers([]);
-                                                        setSearchQuery('');
-                                                        setSearchResults([]);
-                                                        setPixData(null);
-                                                        fetchPassageiros();
-                                                    }}
-                                                    className="w-full h-10 font-bold text-gray-500"
-                                                >
-                                                    Novo Pagamento neste Roteiro
-                                                </Button>
+
+                                            <div className="p-8 sm:p-12">
+                                                <div className="max-w-md mx-auto">
+                                                    <p className="text-gray-500 text-lg mb-8 leading-relaxed">
+                                                        O investimento de <span className="font-black text-gray-900 bg-blue-50 px-2 py-1 rounded-lg">{formatCurrency(totalAmount)}</span> foi processado com segurança.
+                                                    </p>
+
+                                                    <div className="space-y-4 mb-10">
+                                                        <div className="flex items-center gap-4 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 transition-all hover:border-blue-200 group">
+                                                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-gray-200 group-hover:scale-110 transition-transform">
+                                                                <CreditCardIcon size={24} />
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Passageiros Liberados</p>
+                                                                <p className="text-sm font-black text-gray-800">{selectedPassengers.length} {selectedPassengers.length === 1 ? 'Pessoa confirmada' : 'Pessoas confirmadas'}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="p-6 bg-blue-600/5 rounded-[2rem] border border-blue-100 flex items-start gap-4 text-left">
+                                                            <div className="p-2 bg-blue-600 text-white rounded-lg mt-0.5">
+                                                                <AlertCircle size={16} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-black text-blue-900 mb-1">Próximo Passo</p>
+                                                                <p className="text-xs text-blue-700/80 leading-relaxed font-bold">
+                                                                    Agora você e seus passageiros já podem escolher seus lugares preferidos no mapa do ônibus.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-4">
+                                                        <Button
+                                                            onClick={() => navigate(`/viagens/${trip?.id}`)}
+                                                            className="w-full h-16 text-base font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/20 bg-gray-900 hover:bg-blue-600 hover:-translate-y-1 active:scale-95 transition-all rounded-2xl"
+                                                        >
+                                                            ESCOLHER ASSENTOS
+                                                        </Button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setPaymentStatus('selection');
+                                                                setSelectedPassengers([]);
+                                                                setSearchQuery('');
+                                                                setSearchResults([]);
+                                                                setPixData(null);
+                                                                fetchPassageiros();
+                                                            }}
+                                                            className="w-full py-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em] hover:text-blue-600 transition-colors"
+                                                        >
+                                                            Novo Pagamento neste Roteiro
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="fade-in duration-300 bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden p-8">
-                                            <PixPaymentPanel
-                                                pixCode={pixData?.brCode || ""}
-                                                pixAmount={formatCurrency(totalAmount)}
-                                                qrDataUrl={pixData?.qrCodeImage || ""}
-                                                onCopy={() => {
-                                                    navigator.clipboard.writeText(pixData?.brCode || "");
-                                                    showToast('Código PIX copiado com sucesso!', 'success');
-                                                }}
-                                            />
-
-                                            <div className="flex items-center justify-center gap-2 mt-8 text-blue-600 font-bold animate-pulse">
-                                                <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                                                <span className="text-xs uppercase tracking-widest">Aguardando confirmação...</span>
-                                            </div>
-
-                                            <div className="mt-8 p-6 bg-blue-50/30 rounded-[2rem] border border-blue-100/50">
-                                                <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 ml-2">
-                                                    Identificação do Pagador
-                                                </label>
-                                                <div className="relative">
-                                                    <Input
-                                                        value={customPayerName}
-                                                        onChange={(e) => setCustomPayerName(e.target.value)}
-                                                        placeholder="Quem está pagando?"
-                                                        className="bg-white border-blue-100 focus:ring-blue-500 rounded-2xl h-12 text-sm pl-4 shadow-sm"
+                                        <div className="fade-in duration-500 bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
+                                            <div className="p-8 sm:p-12">
+                                                <div className="max-w-md mx-auto">
+                                                    <PixPaymentPanel
+                                                        pixCode={pixData?.brCode || ""}
+                                                        pixAmount={formatCurrency(totalAmount)}
+                                                        qrDataUrl={pixData?.qrCodeImage || ""}
+                                                        onCopy={() => {
+                                                            navigator.clipboard.writeText(pixData?.brCode || "");
+                                                            showToast('Código PIX copiado com sucesso!', 'success');
+                                                        }}
                                                     />
-                                                </div>
-                                                <p className="text-[10px] text-blue-400 mt-3 ml-2 font-medium">
-                                                    * O nome que aparecerá no extrato do sistema.
-                                                </p>
-                                            </div>
 
-                                            <div className="mt-8 pt-8 border-t border-gray-100">
-                                                <Button
-                                                    variant="secondary"
-                                                    className="w-full h-12 font-bold text-gray-400 hover:text-gray-600 transition-colors rounded-2xl border-dashed border-2 hover:border-gray-300"
-                                                    onClick={() => setPaymentStatus('selection')}
-                                                    disabled={isProcessing}
-                                                >
-                                                    CANCELAR E VOLTAR
-                                                </Button>
+                                                    <div className="flex items-center justify-center gap-3 py-6 text-blue-600 font-black">
+                                                        <div className="relative flex h-3 w-3">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
+                                                        </div>
+                                                        <span className="text-xs uppercase tracking-[0.2em]">Aguardando Pagamento...</span>
+                                                    </div>
+
+                                                    <div className="p-8 bg-blue-50/30 rounded-[2.5rem] border border-blue-100/50 space-y-4">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 ml-2">
+                                                                Identificação do Pagador
+                                                            </label>
+                                                            <div className="relative">
+                                                                <Input
+                                                                    value={customPayerName}
+                                                                    onChange={(e) => setCustomPayerName(e.target.value)}
+                                                                    placeholder="Quem está pagando?"
+                                                                    className="bg-white border-blue-100 focus:ring-blue-500 rounded-2xl h-14 text-sm pl-6 shadow-sm font-bold"
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-blue-400 mt-3 ml-2 font-black uppercase tracking-wider opacity-60">
+                                                                * Nome que aparecerá no extrato
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-8 pt-8 border-t border-gray-100">
+                                                        <button
+                                                            className="w-full py-4 text-xs font-black text-gray-400 uppercase tracking-[0.2em] hover:text-red-500 transition-colors flex items-center justify-center gap-2"
+                                                            onClick={() => setPaymentStatus('selection')}
+                                                            disabled={isProcessing}
+                                                        >
+                                                            <X size={14} />
+                                                            Cancelar e Voltar
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
