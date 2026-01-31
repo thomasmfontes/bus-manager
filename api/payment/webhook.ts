@@ -17,34 +17,32 @@ async function getRawBody(req: VercelRequest): Promise<string> {
 }
 
 // Validate Woovi Signature (Supports SHA256 and SHA1)
-const validateSignature = (payload: string, signature: string, secret: string) => {
-    if (!secret) return true;
+const validateSignature = (payload: string, signature: string, secretsString: string) => {
+    if (!secretsString) return true;
 
-    // 1. Try SHA256 (Modern) - Hex & Base64
-    const expected256Hex = crypto.createHmac('sha256', secret).update(payload).digest('hex');
-    const expected256Base64 = crypto.createHmac('sha256', secret).update(payload).digest('base64');
+    // Support multiple secrets separated by comma
+    const secrets = secretsString.split(',').map(s => s.trim());
 
-    // 2. Try SHA1 (Legacy/Standard for some Woovi versions) - Hex & Base64
-    const expected1Hex = crypto.createHmac('sha1', secret).update(payload).digest('hex');
-    const expected1Base64 = crypto.createHmac('sha1', secret).update(payload).digest('base64');
+    for (const secret of secrets) {
+        // 1. Try SHA256 (Modern) - Hex & Base64
+        const expected256Hex = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+        const expected256Base64 = crypto.createHmac('sha256', secret).update(payload).digest('base64');
 
-    const isValid = [
-        expected256Hex, expected256Base64,
-        expected1Hex, expected1Base64
-    ].includes(signature);
+        // 2. Try SHA1 (Legacy/Standard for some Woovi versions) - Hex & Base64
+        const expected1Hex = crypto.createHmac('sha1', secret).update(payload).digest('hex');
+        const expected1Base64 = crypto.createHmac('sha1', secret).update(payload).digest('base64');
 
-    if (!isValid) {
-        console.error('❌ Signature Mismatch Detail:');
-        console.error('Received Signature:', signature);
-        console.error('--- Calculated SHA256 ---');
-        console.error('Hex:', expected256Hex);
-        console.error('B64:', expected256Base64);
-        console.error('--- Calculated SHA1 ---');
-        console.error('Hex:', expected1Hex);
-        console.error('B64:', expected1Base64);
+        const isValid = [
+            expected256Hex, expected256Base64,
+            expected1Hex, expected1Base64
+        ].includes(signature);
+
+        if (isValid) return true;
     }
 
-    return isValid;
+    console.error('❌ Signature Mismatch with all provided secrets');
+    console.error('Received Signature:', signature);
+    return false;
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
