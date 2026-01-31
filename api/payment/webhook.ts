@@ -77,8 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const event = body.event || body.evento;
         const charge = body.charge || body.cobranca;
 
-        // 1. Handle Woovi connectivity test
-        if (event === 'teste_webhook') {
+        // 1. Handle Woovi connectivity test (Prioritize test detection)
+        if (event === 'teste_webhook' || body.evento === 'teste_webhook' || body.event === 'teste_webhook') {
             console.log('✅ Connectivity Test Received');
             return res.status(200).json({ received: true, message: 'Test success' });
         }

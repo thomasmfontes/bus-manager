@@ -64,15 +64,30 @@ export const Dashboard: React.FC = () => {
 
     const now = new Date();
 
-    // Sort all trips by date
-    const sortedTrips = [...trips].sort((a, b) =>
-        new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime()
-    );
+    // Dynamically sort trips based on the current context/filter
+    const getSortedTrips = (tripsList: any[], filter: 'future' | 'past' | 'all') => {
+        return [...tripsList].sort((a, b) => {
+            const dateA = new Date(a.data_ida).getTime();
+            const dateB = new Date(b.data_ida).getTime();
 
-    const futureTrips = sortedTrips.filter(t => new Date(t.data_ida) >= now);
-    const pastTrips = sortedTrips.filter(t => new Date(t.data_ida) < now);
+            if (filter === 'future') {
+                // Future first (ascending)
+                return dateA - dateB;
+            } else if (filter === 'past') {
+                // Most recent past first (descending)
+                return dateB - dateA;
+            } else {
+                // All: most recent first (descending)
+                return dateB - dateA;
+            }
+        });
+    };
 
-    const tripsInView = timeFilter === 'future' ? futureTrips : timeFilter === 'past' ? pastTrips : sortedTrips;
+    const futureTrips = getSortedTrips(trips.filter(t => new Date(t.data_ida) >= now), 'future');
+    const pastTrips = getSortedTrips(trips.filter(t => new Date(t.data_ida) < now), 'past');
+    const allTrips = getSortedTrips(trips, 'all');
+
+    const tripsInView = timeFilter === 'future' ? futureTrips : timeFilter === 'past' ? pastTrips : allTrips;
 
     const filteredTrips = selectedTripId === 'all'
         ? tripsInView
@@ -112,24 +127,17 @@ export const Dashboard: React.FC = () => {
     }).length;
 
     // Calculate capacity for the selected trip(s)
-    const currentCapacity = filteredTrips.reduce((acc, trip) => {
+    const currentCapacity = filteredTrips.reduce((acc: number, trip: any) => {
         const busIds = trip.onibus_ids || [];
-        const tripCapacity = busIds.reduce((busAcc, busId) => {
+        const tripCapacity = busIds.reduce((busAcc: number, busId: string) => {
             const bus = buses.find(b => b.id === busId);
             return busAcc + (bus?.capacidade || 0);
         }, 0);
         return acc + tripCapacity;
     }, 0);
 
-    const allUpcomingTrips = trips
-        .filter((trip) => {
-            if (!trip.data_ida) return false;
-            const tripDate = new Date(trip.data_ida);
-            return tripDate >= now;
-        })
-        .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime());
-
-    const upcomingTrips = allUpcomingTrips.slice(0, 5);
+    // Dashboard card displays limited set when in 'all' mode
+    const displayTrips = selectedTripId === 'all' ? tripsInView.slice(0, 10) : filteredTrips;
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -264,7 +272,6 @@ export const Dashboard: React.FC = () => {
             }
         ] : []);
 
-    const displayTrips = selectedTripId === 'all' ? upcomingTrips : filteredTrips;
 
     return (
         <div className="space-y-8 fade-in duration-500 w-full">
