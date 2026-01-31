@@ -133,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 valor_total: resolvedPassengerIds.length * trip.preco,
                 status: 'pending',
                 passageiros_ids: resolvedPassengerIds, // Use the NEW IDs
-                payer_name: payerName || 'Administrador',
+                payer_name: payerName || 'Anônimo',
                 correlation_id: internalId
             }])
             .select()
@@ -149,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             totalAmountCents,
             internalId,
             trip.nome,
-            { name: payerName || 'Administrador', email: payerEmail }
+            { name: payerName || 'Anônimo', email: payerEmail }
         );
 
         const charge = wooviResponse.charge;

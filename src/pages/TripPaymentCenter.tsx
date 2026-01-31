@@ -225,8 +225,9 @@ export const TripPaymentCenter = () => {
     } | null>(null);
 
     const togglePassengerSelection = (p: Passenger) => {
-        if (p.pagamento === 'Pago' || p.pagamento === 'Realizado') {
-            showToast('Este passageiro já está pago', 'info');
+        // Only block if they are already paid FOR THIS trip
+        if (p.viagem_id === trip?.id && (p.pagamento === 'Pago' || p.pagamento === 'Realizado')) {
+            showToast('Este passageiro já está pago neste roteiro', 'info');
             return;
         }
 
@@ -255,7 +256,7 @@ export const TripPaymentCenter = () => {
                 body: JSON.stringify({
                     passengerIds: selectedPassengers.map(p => p.id),
                     tripId: trip.id,
-                    payerName: customPayerName || user?.full_name || 'Administrador',
+                    payerName: customPayerName || user?.full_name || 'Anônimo',
                     payerEmail: user?.email,
                     payerId: user?.id
                 })

@@ -50,7 +50,7 @@ export const TripList: React.FC = () => {
                 .from('passageiros')
                 .select('id, pagamento')
                 .eq('viagem_id', trip.id)
-                .or(`nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}"`) // Email is often phone for passengers
+                .or(`nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}",pago_por.eq.${user?.id}`)
                 .in('pagamento', ['Pago', 'Realizado']);
 
             if (error) throw error;
