@@ -43,26 +43,6 @@ export default function ExcursaoForm() {
                 if (error) throw error;
                 setTrip(tripData);
 
-                // Fetch bus capacity
-                const busIds = tripData.onibus_ids || (tripData.onibus_id ? [tripData.onibus_id] : []);
-                const { data: busesData } = await supabase
-                    .from('onibus')
-                    .select('capacidade')
-                    .in('id', busIds);
-
-                const capacity = busesData?.reduce((acc, b) => acc + (b.capacidade || 0), 0) || 0;
-
-                // Fetch occupied count (confirmed payments OR assigned seats)
-                const { data: pData } = await supabase
-                    .from('passageiros')
-                    .select('id, pagamento, assento')
-                    .eq('viagem_id', tripId);
-
-                const occupied = pData?.filter(p =>
-                    (p.pagamento === 'Pago' || p.pagamento === 'Realizado') || p.assento
-                ).length || 0;
-
-                const isPast = new Date(tripData.data_ida) < new Date();
 
 
 
