@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
-import { Plus, Edit, Trash2, Bus } from 'lucide-react';
+import { Plus, Edit, Trash2, Bus as BusIcon, Hash, Users, ArrowRight } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
 
 export const BusList: React.FC = () => {
@@ -29,13 +29,6 @@ export const BusList: React.FC = () => {
         }
     };
 
-    const getLayoutDescription = (bus: any) => {
-        if (!bus.configuracaoAssentos) {
-            return 'Padrão';
-        }
-        const { rows, columns, corridorAfterColumn } = bus.configuracaoAssentos;
-        return `${rows}x${columns}${corridorAfterColumn ? ' com corredor' : ''}`;
-    };
 
     return (
         <div className="space-y-6 w-full fade-in duration-500">
@@ -43,11 +36,11 @@ export const BusList: React.FC = () => {
                 <div className="space-y-1">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                            <Bus className="text-white" size={20} />
+                            <BusIcon className="text-white" size={20} />
                         </div>
-                        Ônibus
+                        Frota de Ônibus
                     </h1>
-                    <p className="text-gray-500 text-sm ml-[52px]">Frota disponível e configuração de assentos.</p>
+                    <p className="text-gray-500 text-sm ml-[52px]">Gerencie seus veículos e configurações de assentos.</p>
                 </div>
                 <ProtectedAction requiredPermission="create">
                     <Link to="/onibus/novo">
@@ -59,106 +52,82 @@ export const BusList: React.FC = () => {
                 </ProtectedAction>
             </div>
 
-            <Card>
-                {loading ? (
-                    <p className="text-gray-500">Carregando...</p>
-                ) : buses.length === 0 ? (
-                    <div className="text-center py-8">
-                        <p className="text-gray-500 mb-4">Nenhum ônibus cadastrado</p>
-                        <Link to="/onibus/novo">
-                            <Button>Cadastrar Primeiro Ônibus</Button>
-                        </Link>
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse border border-gray-200" />
+                    ))}
+                </div>
+            ) : buses.length === 0 ? (
+                <Card className="flex flex-col items-center justify-center py-20 text-center border-dashed border-2 border-gray-200 bg-gray-50/50">
+                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm ring-4 ring-gray-100">
+                        <BusIcon size={32} className="text-gray-300" />
                     </div>
-                ) : (
-                    <>
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b">
-                                        <th className="text-left py-3 px-4">Nome</th>
-                                        <th className="text-left py-3 px-4">Placa</th>
-                                        <th className="text-left py-3 px-4">Layout</th>
-                                        <th className="text-left py-3 px-4">Total de Assentos</th>
-                                        <th className="text-right py-3 px-4">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {buses.map((bus) => (
-                                        <tr key={bus.id} className="border-b hover:bg-gray-50">
-                                            <td className="py-3 px-4 font-medium">{bus.nome}</td>
-                                            <td className="py-3 px-4">{bus.placa}</td>
-                                            <td className="py-3 px-4">{getLayoutDescription(bus)}</td>
-                                            <td className="py-3 px-4">{bus.capacidade}</td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex justify-end gap-2">
-                                                    <Link to={`/onibus/editar/${bus.id}`}>
-                                                        <button
-                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                                                            title="Editar"
-                                                        >
-                                                            <Edit size={20} />
-                                                        </button>
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => setDeleteId(bus.id)}
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                                        title="Excluir"
-                                                    >
-                                                        <Trash2 size={20} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum ônibus na frota</h3>
+                    <p className="text-gray-500 mb-8 max-w-xs">Comece cadastrando seu primeiro veículo para organizar suas viagens.</p>
+                    <Link to="/onibus/novo">
+                        <Button className="font-bold px-8">Cadastrar Primeiro Ônibus</Button>
+                    </Link>
+                </Card>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {buses.map((bus) => (
+                        <div key={bus.id} className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all duration-300 overflow-hidden flex flex-col">
+                            {/* Card Header / Image Area */}
+                            <div className="h-24 bg-gradient-to-br from-gray-50 to-gray-100/50 p-6 flex justify-between items-start border-b border-gray-100 relative">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
 
-                        {/* Mobile Card View */}
-                        <div className="md:hidden space-y-4">
-                            {buses.map((bus) => (
-                                <div key={bus.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-semibold text-lg text-gray-800">{bus.nome}</h3>
-                                            <p className="text-sm text-gray-500">{bus.placa}</p>
-                                        </div>
-                                        <div className="flex gap-1">
-                                            <Link to={`/onibus/editar/${bus.id}`}>
-                                                <button
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                                                    title="Editar"
-                                                >
-                                                    <Edit size={20} />
-                                                </button>
-                                            </Link>
-                                            <button
-                                                onClick={() => setDeleteId(bus.id)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                                title="Excluir"
-                                            >
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </div>
+                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm ring-1 ring-gray-200 group-hover:ring-orange-200 transition-all z-10">
+                                    <BusIcon size={24} className="text-orange-500" />
+                                </div>
+
+                                <div className="flex gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+                                    <Link to={`/onibus/editar/${bus.id}`}>
+                                        <button className="p-2.5 bg-white text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl shadow-sm border border-gray-100 transition-all active:scale-95" title="Editar">
+                                            <Edit size={18} />
+                                        </button>
+                                    </Link>
+                                    <button
+                                        onClick={() => setDeleteId(bus.id)}
+                                        className="p-2.5 bg-white text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl shadow-sm border border-gray-100 transition-all active:scale-95"
+                                        title="Excluir"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="p-6 space-y-5 flex-1 flex flex-col pt-4">
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 leading-tight mb-1 group-hover:text-orange-600 transition-colors">{bus.nome}</h3>
+                                    <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                        <Hash size={12} />
+                                        <span>{bus.placa}</span>
                                     </div>
+                                </div>
 
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                            <p className="text-gray-500">Layout</p>
-                                            <p className="font-medium">{getLayoutDescription(bus)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-500">Assentos</p>
-                                            <p className="font-medium">{bus.capacidade}</p>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Capacidade</p>
+                                        <div className="flex items-center gap-2">
+                                            <Users size={14} className="text-gray-400 group-hover:text-orange-500" />
+                                            <span className="text-sm font-black text-gray-900">{bus.capacidade} assentos</span>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+
+                                <div className="pt-4 mt-auto border-t border-gray-50">
+                                    <Link to={`/onibus/editar/${bus.id}`} className="flex items-center justify-between text-sm font-bold text-orange-600 group-hover:translate-x-1 transition-transform">
+                                        Configuração de Mapa
+                                        <ArrowRight size={16} />
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
-                    </>
-                )}
-            </Card>
+                    ))}
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={deleteId !== null}

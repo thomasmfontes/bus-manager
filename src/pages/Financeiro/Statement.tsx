@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle } from 'lucide-react';
+import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Calendar, Filter, ChevronDown } from 'lucide-react';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
+import { GoHistory } from 'react-icons/go';
+import { CiGlobe } from 'react-icons/ci';
 import { formatCurrency } from '@/utils/formatters';
 import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
@@ -20,10 +22,11 @@ interface StatementProps {
 
 export const Statement = ({ userId, hideHeader = false, noAnimation = false }: StatementProps) => {
     const { showToast } = useToast();
-    const { trips, fetchViagens } = useTripStore();
+    const { trips, fetchViagens, selectedTripId, setSelectedTripId } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
     const isAdmin = user?.role === UserRole.ADMIN;
+    const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('all');
 
     const [payments, setPayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,7 +40,7 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
             fetchPayments();
         };
         init();
-    }, [filterStatus, userId]);
+    }, [filterStatus, userId, selectedTripId]);
 
     const fetchPayments = async () => {
         try {
@@ -54,6 +57,11 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                 } else {
                     query = query.eq('status', filterStatus);
                 }
+            }
+
+            // Filter by trip if selected
+            if (selectedTripId) {
+                query = query.eq('viagem_id', selectedTripId);
             }
 
             // If userId is provided, filter for that user (as included passenger)
@@ -114,6 +122,32 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
         }
     };
 
+    const formatPrettyDate = (dateString: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    };
+
+    const tripsInView = useMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        return trips
+            .filter(trip => {
+                const tripDate = new Date(trip.data_ida);
+                tripDate.setHours(0, 0, 0, 0);
+
+                if (timeFilter === 'future') return tripDate >= now;
+                if (timeFilter === 'past') return tripDate < now;
+                return true;
+            })
+            .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime());
+    }, [trips, timeFilter]);
+
 
     // Helper to group payments by date
     const groupedPayments = useMemo(() => {
@@ -153,26 +187,76 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
             )}
 
             {/* Filters Container */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm group">
-                <div className="flex flex-row items-center gap-2 w-full">
-                    <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        className="flex-1 min-w-0 h-11 px-4 bg-white border border-gray-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-gray-900 outline-none transition-all appearance-none text-gray-700"
-                    >
-                        <option value="all">Todos os Status</option>
-                        <option value="paid">Pagos</option>
-                        <option value="pending">Pendentes</option>
-                        <option value="failed_expired">Falhas / Expirados</option>
-                    </select>
-                    <Button
-                        variant="secondary"
-                        onClick={fetchPayments}
-                        size="sm"
-                        className="shrink-0 h-11 px-6 font-bold rounded-xl active:scale-95 transition-all"
-                    >
-                        Atualizar
-                    </Button>
+            <div className="flex flex-col gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm group">
+                {/* Time Filter Tabs - Only for Admins */}
+                {isAdmin && !userId && (
+                    <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                        {[
+                            { id: 'future', label: 'Próximas', icon: Calendar },
+                            { id: 'past', label: 'Passadas', icon: GoHistory },
+                            { id: 'all', label: 'Todas', icon: CiGlobe }
+                        ].map((filterItem) => (
+                            <button
+                                key={filterItem.id}
+                                onClick={() => {
+                                    setTimeFilter(filterItem.id as any);
+                                    setSelectedTripId(null);
+                                }}
+                                className={cn(
+                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                    timeFilter === filterItem.id
+                                        ? "bg-white text-gray-900 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <filterItem.icon size={18} />
+                                <span className="hidden sm:inline">{filterItem.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                <div className="flex flex-col lg:flex-row items-center gap-3 w-full">
+                    {/* Status Filter */}
+                    <div className="relative w-full lg:w-48 shrink-0">
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="w-full h-11 px-4 bg-white border border-gray-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-gray-100 focus:border-gray-900 outline-none transition-all appearance-none text-gray-700 shadow-sm"
+                        >
+                            <option value="all">Filtro de Status...</option>
+                            <option value="paid">Pagos</option>
+                            <option value="pending">Pendentes</option>
+                            <option value="failed_expired">Falhas / Expirados</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <ChevronDown size={16} />
+                        </div>
+                    </div>
+
+                    {/* Integrated Trip Selector */}
+                    {isAdmin && !userId && (
+                        <div className="relative group w-full flex-1">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors pointer-events-none">
+                                <Filter size={18} />
+                            </div>
+                            <select
+                                value={selectedTripId || 'all'}
+                                onChange={(e) => setSelectedTripId(e.target.value === 'all' ? null : e.target.value)}
+                                className="w-full pl-11 pr-10 h-11 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-gray-100 focus:border-gray-900 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
+                            >
+                                <option value="all">Filtro de Viagem...</option>
+                                {tripsInView.map(trip => (
+                                    <option key={trip.id} value={trip.id}>
+                                        {trip.nome} — {formatPrettyDate(trip.data_ida)}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
+                                <ChevronDown size={18} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -19,12 +19,11 @@ import { cn } from '@/utils/cn';
 
 export const Dashboard: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
-    const { trips, fetchViagens } = useTripStore();
+    const { trips, fetchViagens, selectedTripId, setSelectedTripId } = useTripStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const [selectedTripId, setSelectedTripId] = React.useState<string>('all');
     const [timeFilter, setTimeFilter] = React.useState<'future' | 'past' | 'all'>('future');
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
     const [paymentModalTrip, setPaymentModalTrip] = React.useState<any | null>(null);
@@ -71,13 +70,10 @@ export const Dashboard: React.FC = () => {
             const dateB = new Date(b.data_ida).getTime();
 
             if (filter === 'future') {
-                // Future first (ascending)
                 return dateA - dateB;
             } else if (filter === 'past') {
-                // Most recent past first (descending)
                 return dateB - dateA;
             } else {
-                // All: most recent first (descending)
                 return dateB - dateA;
             }
         });
@@ -87,18 +83,25 @@ export const Dashboard: React.FC = () => {
     const pastTrips = getSortedTrips(trips.filter(t => new Date(t.data_ida) < now), 'past');
     const allTrips = getSortedTrips(trips, 'all');
 
-    const tripsInView = timeFilter === 'future' ? futureTrips : timeFilter === 'past' ? pastTrips : allTrips;
+    // For Passengers, force future trips only. For Admins, use the timeFilter.
+    const effectiveTimeFilter = user?.role === UserRole.ADMIN ? timeFilter : 'future';
 
-    const filteredTrips = selectedTripId === 'all'
+    const tripsInView = effectiveTimeFilter === 'future'
+        ? futureTrips
+        : effectiveTimeFilter === 'past'
+            ? pastTrips
+            : allTrips;
+
+    const filteredTrips = !selectedTripId || selectedTripId === 'all'
         ? tripsInView
         : trips.filter(t => t.id === selectedTripId);
 
-    const filteredPassengers = selectedTripId === 'all'
-        ? (timeFilter === 'all' ? passengers : passengers.filter(p => {
+    const filteredPassengers = !selectedTripId || selectedTripId === 'all'
+        ? (effectiveTimeFilter === 'all' ? passengers : passengers.filter(p => {
             const passengerTrip = trips.find(t => t.id === p.viagem_id);
             if (!passengerTrip) return false;
             const isFuture = new Date(passengerTrip.data_ida) >= now;
-            return timeFilter === 'future' ? isFuture : !isFuture;
+            return effectiveTimeFilter === 'future' ? isFuture : !isFuture;
         }))
         : passengers.filter(p => p.viagem_id === selectedTripId);
 
@@ -137,7 +140,7 @@ export const Dashboard: React.FC = () => {
     }, 0);
 
     // Dashboard card displays limited set when in 'all' mode
-    const displayTrips = selectedTripId === 'all' ? tripsInView.slice(0, 10) : filteredTrips;
+    const displayTrips = (!selectedTripId || selectedTripId === 'all') ? tripsInView.slice(0, 10) : filteredTrips;
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -172,7 +175,7 @@ export const Dashboard: React.FC = () => {
                 .from('passageiros')
                 .select('id, pagamento')
                 .eq('viagem_id', trip.id)
-                .or(`pago_por.eq.${user?.id},nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}"`)
+                .or(`pago_por.eq.${user?.id},nome_completo.eq."${user?.full_name}",cpf_rg.eq."${user?.email}"`)
                 .in('pagamento', ['Pago', 'Realizado']);
 
             if (error) throw error;
@@ -201,7 +204,7 @@ export const Dashboard: React.FC = () => {
 
 
     // Final stats array based on selection
-    const stats = selectedTripId === 'all'
+    const stats = (!selectedTripId || selectedTripId === 'all')
         ? [
             {
                 label: 'Total de Ônibus',
@@ -310,31 +313,33 @@ export const Dashboard: React.FC = () => {
 
                 {/* Unified Filter Container (Matched to User Image) */}
                 <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
-                    {/* Time Filter Tabs */}
-                    <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
-                        {[
-                            { id: 'future', label: 'Próximas', icon: Calendar },
-                            { id: 'past', label: 'Passadas', icon: GoHistory },
-                            { id: 'all', label: 'Todas', icon: CiGlobe }
-                        ].map((fitlerType) => (
-                            <button
-                                key={fitlerType.id}
-                                onClick={() => {
-                                    setTimeFilter(fitlerType.id as any);
-                                    setSelectedTripId('all');
-                                }}
-                                className={cn(
-                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                    timeFilter === fitlerType.id
-                                        ? "bg-white text-blue-600 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-700"
-                                )}
-                            >
-                                <fitlerType.icon size={18} />
-                                <span className="hidden sm:inline">{fitlerType.label}</span>
-                            </button>
-                        ))}
-                    </div>
+                    {/* Time Filter Tabs - Only for Admins */}
+                    {user?.role === UserRole.ADMIN && (
+                        <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                            {[
+                                { id: 'future', label: 'Próximas', icon: Calendar },
+                                { id: 'past', label: 'Passadas', icon: GoHistory },
+                                { id: 'all', label: 'Todas', icon: CiGlobe }
+                            ].map((filterItem) => (
+                                <button
+                                    key={filterItem.id}
+                                    onClick={() => {
+                                        setTimeFilter(filterItem.id as any);
+                                        setSelectedTripId(null);
+                                    }}
+                                    className={cn(
+                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                        timeFilter === filterItem.id
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-gray-500 hover:text-gray-700"
+                                    )}
+                                >
+                                    <filterItem.icon size={18} />
+                                    <span className="hidden sm:inline">{filterItem.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Integrated Trip Selector */}
                     <div className="relative group">
@@ -342,8 +347,8 @@ export const Dashboard: React.FC = () => {
                             <Filter size={18} />
                         </div>
                         <select
-                            value={selectedTripId}
-                            onChange={(e) => setSelectedTripId(e.target.value)}
+                            value={selectedTripId || 'all'}
+                            onChange={(e) => setSelectedTripId(e.target.value === 'all' ? null : e.target.value)}
                             className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
                         >
                             <option value="all">Filtro de Viagem...</option>
@@ -384,17 +389,17 @@ export const Dashboard: React.FC = () => {
                         <h2 className="text-xl font-semibold text-gray-900">
                             {selectedTripId !== 'all'
                                 ? 'Detalhes da Viagem'
-                                : timeFilter === 'future' ? 'Próximas Viagens'
-                                    : timeFilter === 'past' ? 'Viagens Passadas'
+                                : effectiveTimeFilter === 'future' ? 'Próximas Viagens'
+                                    : effectiveTimeFilter === 'past' ? 'Viagens Passadas'
                                         : 'Todas as Viagens'}
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">
                             {selectedTripId !== 'all'
                                 ? 'Dados específicos da viagem selecionada'
-                                : `Visualizando ${timeFilter === 'future' ? 'os próximos embarques' : 'histórico de viagens'}`}
+                                : `Visualizando ${effectiveTimeFilter === 'future' ? 'os próximos embarques' : 'histórico de viagens'}`}
                         </p>
                     </div>
-                    {selectedTripId === 'all' && (
+                    {(!selectedTripId || selectedTripId === 'all') && (
                         <Link
                             to="/viagens"
                             className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors group"
@@ -552,7 +557,7 @@ export const Dashboard: React.FC = () => {
             <Modal
                 isOpen={paymentModalTrip !== null}
                 onClose={() => setPaymentModalTrip(null)}
-                title="Acesso Restrito"
+                title={paymentModalTrip && (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) <= 0 ? "Reservas Encerradas" : "Acesso Restrito"}
                 size="sm"
                 footer={
                     <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -561,92 +566,107 @@ export const Dashboard: React.FC = () => {
                             onClick={() => setPaymentModalTrip(null)}
                             className="flex-1 order-2 sm:order-1"
                         >
-                            Voltar
+                            {paymentModalTrip && (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) <= 0 ? 'Voltar' : 'Voltar'}
                         </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                const tripId = paymentModalTrip?.id;
-                                setPaymentModalTrip(null);
-                                navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
-                            }}
-                            className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
-                        >
-                            <CreditCard size={18} className="mr-2" />
-                            Ir para Pagamento
-                        </Button>
+                        {paymentModalTrip && (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) > 0 && (
+                            <Button
+                                variant="primary"
+                                onClick={() => {
+                                    const tripId = paymentModalTrip?.id;
+                                    setPaymentModalTrip(null);
+                                    navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
+                                }}
+                                className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
+                            >
+                                <CreditCard size={18} className="mr-2" />
+                                Ir para Pagamento
+                            </Button>
+                        )}
                     </div>
                 }
             >
                 <div className="relative -mt-2 space-y-6">
-                    <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
-                            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
-                                <CreditCard size={40} className="text-white" />
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
-                                <AlertCircle size={24} className="text-amber-500" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-bold text-gray-900">Pagamento Necessário</h3>
-                            <p className="text-gray-500 max-w-[280px]">
-                                Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.
-                            </p>
-                        </div>
-                    </div>
-
-                    {paymentModalTrip && (
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                    <Users size={20} />
+                    {paymentModalTrip && (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) > 0 ? (
+                        <>
+                            <div className="flex flex-col items-center text-center space-y-4">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
+                                    <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
+                                        <CreditCard size={40} className="text-white" />
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
+                                        <AlertCircle size={24} className="text-amber-500" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
+
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-bold text-gray-900">Pagamento Necessário</h3>
+                                    <p className="text-gray-500 max-w-[280px]">
+                                        Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.
+                                    </p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="text-2xl font-black text-blue-600">
-                                    {(getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id))}
-                                </span>
+
+                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                                        <Users size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-2xl font-black text-blue-600">
+                                        {(getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id))}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Route Info Section */}
+                            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                        <MapPin size={16} className="text-blue-500" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                        <MapPin size={16} className="text-green-500" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
+                                <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                                <p className="text-sm leading-relaxed">
+                                    O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        paymentModalTrip && (
+                            <div className="flex flex-col items-center py-4 space-y-6">
+                                <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                                    <AlertCircle size={40} />
+                                </div>
+                                <div className="flex gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-800 text-center">
+                                    <p className="text-base font-bold leading-relaxed">
+                                        Reservas Encerradas: Todas as vagas para esta excursão já foram preenchidas.
+                                    </p>
+                                </div>
+                            </div>
+                        )
                     )}
-
-                    {/* Route Info Section */}
-                    {paymentModalTrip && (
-                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                    <MapPin size={16} className="text-blue-500" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
-                                    <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                    <MapPin size={16} className="text-green-500" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
-                                    <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
-                        <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                        <p className="text-sm leading-relaxed">
-                            O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
-                        </p>
-                    </div>
                 </div>
             </Modal>
         </div>

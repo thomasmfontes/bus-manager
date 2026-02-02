@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePassengerStore } from '@/stores/usePassengerStore';
+import { useTripStore } from '@/stores/useTripStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
@@ -8,9 +9,14 @@ import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
 import { Plus, Edit, Trash2, Search, Upload, Trash, Users } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { UserRole } from '@/types';
 
 export const PassengerList: React.FC = () => {
     const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
+    const { trips, selectedTripId } = useTripStore();
+    const { user } = useAuthStore();
+    const isAdmin = user?.role === UserRole.ADMIN;
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
@@ -86,7 +92,14 @@ export const PassengerList: React.FC = () => {
 
     const uniquePassengers = Array.from(uniquePassengersMap.values());
 
-    const filteredPassengers = uniquePassengers.filter(
+    const selectedTrip = trips.find(t => t.id === selectedTripId);
+
+    // Filter by trip ONLY IF NOT ADMIN
+    const filteredByTrip = (selectedTripId && !isAdmin)
+        ? uniquePassengers.filter((p: any) => p.viagem_id === selectedTripId)
+        : uniquePassengers;
+
+    const filteredPassengers = filteredByTrip.filter(
         (p: any) =>
             p.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.cpf_rg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -105,7 +118,18 @@ export const PassengerList: React.FC = () => {
                         </div>
                         Passageiros
                     </h1>
-                    <p className="text-gray-500 text-sm ml-[52px]">Cadastro e listagem de clientes e viajantes.</p>
+                    <div className="flex items-center gap-2 ml-[52px]">
+                        <p className="text-gray-500 text-sm">
+                            {(selectedTripId && !isAdmin)
+                                ? `Mostrando passageiros da viagem: `
+                                : `Cadastro e listagem de clientes e viajantes.`}
+                        </p>
+                        {(selectedTrip && !isAdmin) && (
+                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full ring-1 ring-blue-200">
+                                {selectedTrip.nome}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Action Buttons - Horizontal Layout */}

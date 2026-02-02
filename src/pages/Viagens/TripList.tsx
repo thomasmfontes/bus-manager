@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Plus, Calendar, Trash2, Users, AlertCircle, CreditCard, Bus } from 'lucide-react';
+import { MapPin, Plus, Trash2, Users, AlertCircle, CreditCard, Bus, Calendar, Filter, ChevronDown } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 import { useTripStore } from '@/stores/useTripStore';
@@ -17,7 +17,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 
 export const TripList: React.FC = () => {
-    const { trips, fetchViagens, deleteViagem, loading } = useTripStore();
+    const { trips, fetchViagens, deleteViagem, loading, selectedTripId, setSelectedTripId } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
@@ -48,7 +48,7 @@ export const TripList: React.FC = () => {
                 .from('passageiros')
                 .select('id, pagamento')
                 .eq('viagem_id', trip.id)
-                .or(`nome_completo.eq."${user?.full_name}",telefone.eq."${user?.email}",pago_por.eq.${user?.id}`)
+                .or(`nome_completo.eq."${user?.full_name}",cpf_rg.eq."${user?.email}",pago_por.eq.${user?.id}`)
                 .in('pagamento', ['Pago', 'Realizado']);
 
             if (error) throw error;
@@ -87,15 +87,10 @@ export const TripList: React.FC = () => {
     };
 
     const getOccupiedSeats = (tripId: string) => {
-        const trip = trips.find(t => t.id === tripId);
-        if (!trip) return 0;
-
-        const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
-
+        // Count confirmed payments OR assigned seats as occupied "quotas"
         return passengers.filter((p) => {
-            if (p.viagem_id !== tripId) return false;
-            // Only count if the passenger has a seat AND the assigned bus is still in the trip
-            return p.assento && p.onibus_id && activeBusIds.includes(p.onibus_id);
+            return p.viagem_id === tripId &&
+                ((p.pagamento === 'Pago' || p.pagamento === 'Realizado') || p.assento);
         }).length;
     };
 
@@ -108,15 +103,30 @@ export const TripList: React.FC = () => {
     };
 
     const now = new Date();
-    const sortedTrips = [...trips].sort((a, b) =>
-        new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime()
-    );
+    const isSoldOut = paymentModalTrip ? (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) <= 0 : false;
+    const isPastTrip = paymentModalTrip ? new Date(paymentModalTrip.data_ida) < now : false;
+    const availableSeats = paymentModalTrip ? (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) : 0;
+    const sortedTrips = [...trips].sort((a, b) => {
+        const dateA = new Date(a.data_ida).getTime();
+        const dateB = new Date(b.data_ida).getTime();
 
-    const filteredByTime = sortedTrips.filter(t => {
-        if (timeFilter === 'all') return true;
-        const isFuture = new Date(t.data_ida) >= now;
-        return timeFilter === 'future' ? isFuture : !isFuture;
+        // Use timeFilter only if admin. Otherwise always future.
+        const effectiveFilter = user?.role === UserRole.ADMIN ? timeFilter : 'future';
+
+        if (effectiveFilter === 'future') return dateA - dateB;
+        return dateB - dateA; // past or all
     });
+
+    const tripsByTime = sortedTrips.filter(t => {
+        const effectiveFilter = user?.role === UserRole.ADMIN ? timeFilter : 'future';
+        if (effectiveFilter === 'all') return true;
+        const isFuture = new Date(t.data_ida) >= now;
+        return effectiveFilter === 'future' ? isFuture : !isFuture;
+    });
+
+    const tripsInView = selectedTripId && selectedTripId !== 'all'
+        ? tripsByTime.filter(t => t.id === selectedTripId)
+        : tripsByTime;
 
     const formatDate = (dateString: string) => {
         if (!dateString) return 'Data inválida';
@@ -139,24 +149,45 @@ export const TripList: React.FC = () => {
         }
     };
 
+    const formatPrettyDate = (dateString: string) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    };
+
 
     return (
         <div className="space-y-6 w-full fade-in duration-500">
             <div className="flex flex-col gap-6">
-                <div className="space-y-1">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <MapPin className="text-white" size={20} />
-                        </div>
-                        Viagens
-                    </h1>
-                    <p className="text-gray-500 text-sm ml-[52px]">Gestão de rotas, destinos e ocupação.</p>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                <MapPin className="text-white" size={20} />
+                            </div>
+                            Viagens
+                        </h1>
+                        <p className="text-gray-500 text-sm ml-[52px]">Gestão de rotas, destinos e ocupação.</p>
+                    </div>
+
+                    <ProtectedAction requiredPermission="create">
+                        <Link to="/viagens/nova" className="w-full sm:w-auto">
+                            <Button className="w-full sm:w-auto h-11 px-6 rounded-xl shadow-blue-100 shadow-lg hover:shadow-xl transition-all">
+                                <Plus size={20} className="mr-2" />
+                                <span>Nova Viagem</span>
+                            </Button>
+                        </Link>
+                    </ProtectedAction>
                 </div>
 
-                {/* Unified Toolbar Container */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
-                        {/* Filter Tabs Block */}
+                {/* Unified Toolbar Container (Matched to Dashboard) */}
+                <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
+                    {/* Filter Tabs Block - Only for Admins */}
+                    {user?.role === UserRole.ADMIN && (
                         <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
                             {[
                                 { id: 'future', label: 'Próximas', icon: Calendar },
@@ -178,19 +209,29 @@ export const TripList: React.FC = () => {
                                 </button>
                             ))}
                         </div>
+                    )}
 
-                        <div className="hidden sm:block w-px h-8 bg-gray-200/50 mx-2" />
+                    {/* Integrated Trip Selector */}
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                            <Filter size={18} />
+                        </div>
+                        <select
+                            value={selectedTripId || 'all'}
+                            onChange={(e) => setSelectedTripId(e.target.value === 'all' ? null : e.target.value)}
+                            className="w-full pl-11 pr-10 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
+                        >
+                            <option value="all">Filtro de Viagem...</option>
+                            {tripsByTime.map(trip => (
+                                <option key={trip.id} value={trip.id}>
+                                    {trip.nome} — {formatPrettyDate(trip.data_ida)}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
+                            <ChevronDown size={18} />
+                        </div>
                     </div>
-
-                    {/* Action Button Integrated - Pushed to the right */}
-                    <ProtectedAction requiredPermission="create">
-                        <Link to="/viagens/nova" className="w-full sm:w-auto">
-                            <Button className="w-full sm:w-auto h-11 px-6 rounded-xl shadow-blue-100 shadow-lg hover:shadow-xl transition-all">
-                                <Plus size={20} className="mr-2" />
-                                <span>Nova Viagem</span>
-                            </Button>
-                        </Link>
-                    </ProtectedAction>
                 </div>
             </div>
 
@@ -222,7 +263,7 @@ export const TripList: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredByTime.map((trip) => {
+                                    {tripsInView.map((trip) => {
                                         const occupied = getOccupiedSeats(trip.id);
                                         const total = getTotalSeats(trip.onibus_ids);
                                         const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
@@ -295,7 +336,7 @@ export const TripList: React.FC = () => {
                         </div>
 
                         <div className="md:hidden space-y-4">
-                            {filteredByTime.map((trip) => {
+                            {tripsInView.map((trip) => {
                                 const occupied = getOccupiedSeats(trip.id);
                                 const total = getTotalSeats(trip.onibus_ids);
                                 const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
@@ -393,37 +434,45 @@ export const TripList: React.FC = () => {
                 message="Tem certeza que deseja excluir esta viagem? Esta ação não pode ser desfeita."
             />
 
-            {/* Modal de Pagamento Obrigatório - UI Premium */}
-            <Modal
-                isOpen={paymentModalTrip !== null}
-                onClose={() => setPaymentModalTrip(null)}
-                title="Acesso Restrito"
-                size="sm"
-                footer={
-                    <div className="flex flex-col sm:flex-row gap-3 w-full">
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPaymentModalTrip(null)}
-                            className="flex-1 order-2 sm:order-1"
-                        >
-                            Voltar para Viagens
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                const tripId = paymentModalTrip?.id;
-                                setPaymentModalTrip(null);
-                                navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
-                            }}
-                            className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
-                        >
-                            <CreditCard size={18} className="mr-2" />
-                            Ir para Pagamento
-                        </Button>
-                    </div>
-                }
-            >
-                <div className="relative -mt-2 space-y-6">
+            {/* Modal de Pagamento Obrigatório - UI Premium */ }
+    <Modal
+        isOpen={paymentModalTrip !== null}
+        onClose={() => setPaymentModalTrip(null)}
+        title={isSoldOut ? "Reservas Encerradas" : "Acesso Restrito"}
+        size="sm"
+        footer={
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+                <Button
+                    variant="secondary"
+                    onClick={() => setPaymentModalTrip(null)}
+                    className="flex-1 order-2 sm:order-1"
+                >
+                    Voltar
+                </Button>
+                {!isSoldOut && paymentModalTrip && (
+                    <Button
+                        variant="primary"
+                        disabled={isPastTrip}
+                        onClick={() => {
+                            const tripId = paymentModalTrip.id;
+                            setPaymentModalTrip(null);
+                            navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
+                        }}
+                        className={cn(
+                            "flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg",
+                            isPastTrip && "opacity-50 grayscale cursor-not-allowed"
+                        )}
+                    >
+                        <CreditCard size={18} className="mr-2" />
+                        {isPastTrip ? 'Viagem Encerrada' : 'Ir para Pagamento'}
+                    </Button>
+                )}
+            </div>
+        }
+    >
+        <div className="relative -mt-2 space-y-6">
+            {paymentModalTrip && !isSoldOut ? (
+                <>
                     {/* Header Ilustrativo */}
                     <div className="flex flex-col items-center text-center space-y-4">
                         <div className="relative">
@@ -445,58 +494,68 @@ export const TripList: React.FC = () => {
                     </div>
 
                     {/* Vagas Disponíveis Card */}
-                    {paymentModalTrip && (
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                    <Users size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
-                                </div>
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <Users size={20} />
                             </div>
-                            <div className="text-right">
-                                <span className="text-2xl font-black text-blue-600">
-                                    {(getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id))}
-                                </span>
+                            <div>
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
                             </div>
                         </div>
-                    )}
+                        <div className="text-right">
+                            <span className="text-2xl font-black text-blue-600">
+                                {availableSeats}
+                            </span>
+                        </div>
+                    </div>
 
                     {/* Route Info Section */}
-                    {paymentModalTrip && (
-                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                    <MapPin size={16} className="text-blue-500" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
-                                    <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
-                                </div>
+                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                <MapPin size={16} className="text-blue-500" />
                             </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                    <MapPin size={16} className="text-green-500" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
-                                    <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
-                                </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
+                                <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
                             </div>
                         </div>
-                    )}
 
-                    {/* Info Alert */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                <MapPin size={16} className="text-green-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
+                                <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
                         <AlertCircle size={20} className="shrink-0 mt-0.5" />
                         <p className="text-sm leading-relaxed">
                             O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
                         </p>
                     </div>
-                </div>
-            </Modal>
+                </>
+            ) : (
+                paymentModalTrip && (
+                    <div className="flex flex-col items-center py-4 space-y-6">
+                        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                            <AlertCircle size={40} />
+                        </div>
+                        <div className="flex gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-800 text-center">
+                            <p className="text-base font-bold leading-relaxed">
+                                Reservas Encerradas: Todas as vagas para esta excursão já foram preenchidas.
+                            </p>
+                        </div>
+                    </div>
+                )
+            )}
+        </div>
+    </Modal>
         </div>
     );
 };

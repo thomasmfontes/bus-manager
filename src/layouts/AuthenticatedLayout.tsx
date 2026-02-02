@@ -6,6 +6,7 @@ import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
 import { RegistrationModal } from '@/components/RegistrationModal';
+import { GlobalTripSelector } from '@/components/layout/GlobalTripSelector';
 
 export const AuthenticatedLayout: React.FC = () => {
     const { user, logout } = useAuthStore();
@@ -99,6 +100,11 @@ export const AuthenticatedLayout: React.FC = () => {
                         </h1>
                     </div>
                     <p className="text-xs text-gray-400 pl-13">Sistema de Gerenciamento</p>
+                </div>
+
+                {/* Global Trip Context Selector */}
+                <div className="mt-6">
+                    <GlobalTripSelector />
                 </div>
 
                 {/* Navigation */}

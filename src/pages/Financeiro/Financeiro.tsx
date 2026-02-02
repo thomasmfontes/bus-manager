@@ -9,10 +9,9 @@ import { CiGlobe } from 'react-icons/ci';
 
 export const Financeiro: React.FC = () => {
     const { passengers, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
-    const { trips, fetchViagens } = useTripStore();
+    const { trips, fetchViagens, selectedTripId, setSelectedTripId } = useTripStore();
     const { showToast } = useToast();
 
-    const [selectedTripId, setSelectedTripId] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
@@ -32,7 +31,7 @@ export const Financeiro: React.FC = () => {
             timeFilter === 'future' ? new Date(passengerTrip.data_ida) >= now : new Date(passengerTrip.data_ida) < now
         ));
 
-        const matchesTrip = selectedTripId === 'all' || p.viagem_id === selectedTripId;
+        const matchesTrip = (!selectedTripId || selectedTripId === 'all') || p.viagem_id === selectedTripId;
         const matchesStatus = statusFilter === 'all' ||
             (statusFilter === 'paid' && (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')) ||
             (statusFilter === 'pending' && (p.pagamento === 'pending' || p.pagamento === 'Pendente' || !p.pagamento));
@@ -116,7 +115,7 @@ export const Financeiro: React.FC = () => {
                                 key={tab.id}
                                 onClick={() => {
                                     setTimeFilter(tab.id as any);
-                                    setSelectedTripId('all');
+                                    setSelectedTripId(null);
                                 }}
                                 className={cn(
                                     "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
@@ -137,8 +136,8 @@ export const Financeiro: React.FC = () => {
                             <Filter size={18} />
                         </div>
                         <select
-                            value={selectedTripId}
-                            onChange={(e) => setSelectedTripId(e.target.value)}
+                            value={selectedTripId || 'all'}
+                            onChange={(e) => setSelectedTripId(e.target.value === 'all' ? null : e.target.value)}
                             className="w-full h-11 pl-11 pr-10 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-emerald-50/50 focus:border-emerald-500 transition-all outline-none font-bold text-gray-700 appearance-none cursor-pointer text-sm"
                         >
                             <option value="all">Filtro de Viagem...</option>

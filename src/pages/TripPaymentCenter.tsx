@@ -45,11 +45,11 @@ export const TripPaymentCenter = () => {
     const [searchResults, setSearchResults] = useState<Passenger[]>([]);
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { buses, fetchOnibus } = useBusStore();
-    const { trips: storeTrips, fetchViagens } = useTripStore();
+    const { trips: storeTrips, fetchViagens, selectedTripId, setSelectedTripId } = useTripStore();
     const [selectedPassengers, setSelectedPassengers] = useState<Passenger[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentStatus, setPaymentStatus] = useState<'selection' | 'pix' | 'success'>('selection');
-    const [selectedTripFilterId, setSelectedTripFilterId] = useState<string>('all');
+    const [selectedTripFilterId, setSelectedTripFilterId] = useState<string>(initialTripId || selectedTripId || 'all');
     const [customPayerName, setCustomPayerName] = useState('');
     const [tripPayments, setTripPayments] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState<'payment' | 'history'>('payment');
@@ -78,7 +78,7 @@ export const TripPaymentCenter = () => {
     }, [searchQuery]);
 
     // Step Management: If we have no trip selected, we start at 'trip-selection'
-    const [step, setStep] = useState<'trip-selection' | 'payment-flow'>(initialTripId ? 'payment-flow' : 'trip-selection');
+    const [step, setStep] = useState<'trip-selection' | 'payment-flow'>('trip-selection');
 
     // Fetch Trips (if needed) or the specific Trip
     useEffect(() => {
@@ -105,18 +105,53 @@ export const TripPaymentCenter = () => {
     // Memoize and format trips for display
     const trips = useMemo(() => {
         const now = new Date();
-        const baseTrips = storeTrips.filter(t => new Date(t.data_ida) >= now);
+        // The selection list only shows future trips
+        return storeTrips.filter(t => new Date(t.data_ida) >= now);
+    }, [storeTrips]);
 
+    // Initialize from URL or Global Store
+    useEffect(() => {
+        if (storeTrips.length === 0) return;
+
+        // If we have a URL param, it takes precedence for the initial load
         if (initialTripId) {
-            const selectedTrip = baseTrips.find(t => t.id === initialTripId);
+            const selectedTrip = storeTrips.find(t => t.id === initialTripId);
             if (selectedTrip) {
                 setTrip(selectedTrip);
-                setStep('payment-flow');
+                setSelectedTripId(initialTripId); // Sync global context if URL has it
+                setSelectedTripFilterId(initialTripId);
+                // Note: We stay on 'trip-selection' step as per previous logic for URL-based search
             }
+            return;
         }
 
-        return baseTrips;
+        // If no URL param, but we have a global selection, use it
+        if (selectedTripId) {
+            const globalTrip = storeTrips.find(t => t.id === selectedTripId);
+            if (globalTrip) {
+                setTrip(globalTrip);
+                setStep('payment-flow');
+                setSelectedTripFilterId(selectedTripId);
+            }
+        }
     }, [storeTrips, initialTripId]);
+
+    // Sync with Global Context changes (Reactive)
+    useEffect(() => {
+        if (selectedTripId) {
+            const globalTrip = storeTrips.find(t => t.id === selectedTripId);
+            if (globalTrip) {
+                setTrip(globalTrip);
+                setStep('payment-flow');
+                setSelectedTripFilterId(selectedTripId);
+            }
+        } else if (step === 'payment-flow') {
+            // Only reset if we were showing a specific trip flow
+            setTrip(null);
+            setStep('trip-selection');
+            setSelectedTripFilterId('all');
+        }
+    }, [selectedTripId]);
 
     const getVacancies = (tripToCalc: Trip) => {
         const busIds = tripToCalc.onibus_ids || (tripToCalc.onibus_id ? [tripToCalc.onibus_id] : []);
@@ -125,18 +160,23 @@ export const TripPaymentCenter = () => {
             return acc + (bus?.capacidade || 0);
         }, 0);
 
+        // Occupied quotas: anyone with confirmed payment OR with an assigned seat
         const occupied = passengers.filter(p =>
             p.viagem_id === tripToCalc.id &&
-            p.assento &&
-            p.onibus_id &&
-            busIds.includes(p.onibus_id)
+            ((p.pagamento === 'Pago' || p.pagamento === 'Realizado') || p.assento)
         ).length;
 
         return Math.max(0, totalCapacity - occupied);
     };
 
+    const isPastTrip = useMemo(() => {
+        if (!trip) return false;
+        return new Date(trip.data_ida) < new Date();
+    }, [trip]);
+
     const selectTrip = (t: Trip) => {
         setTrip(t);
+        setSelectedTripId(t.id); // Sync global context
         setStep('payment-flow');
     };
 
@@ -249,6 +289,16 @@ export const TripPaymentCenter = () => {
 
     const handleGeneratePayment = async () => {
         if (selectedPassengers.length === 0 || !trip) return;
+
+        if (isPastTrip) {
+            showToast('Esta viagem já foi encerrada e não permite novos pagamentos.', 'error');
+            return;
+        }
+
+        if (getVacancies(trip) < selectedPassengers.length) {
+            showToast('Não há vagas/cotas suficientes para este roteiro.', 'error');
+            return;
+        }
 
         setIsProcessing(true);
         try {
@@ -431,21 +481,52 @@ export const TripPaymentCenter = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div key="flow-header" className="flex items-center gap-4 w-full">
-                                    <button
-                                        onClick={() => setStep('trip-selection')}
-                                        className="flex items-center gap-2 h-11 px-5 text-sm font-bold text-blue-600 hover:text-blue-700 transition-all bg-white rounded-xl border border-blue-100 shadow-sm active:scale-95"
-                                    >
-                                        <ArrowLeft size={16} />
-                                        Mudar Excursão
-                                    </button>
-                                    <div className="ml-auto text-right pr-3">
-                                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest leading-none mb-1">Valor Unitário</p>
-                                        <p className="text-xl font-black text-gray-900 leading-none">{formatCurrency(trip?.preco || 0)}</p>
+                                <div key="flow-header" className="flex flex-col gap-3 w-full p-1">
+                                    {/* Line 1: Actions & Price */}
+                                    <div className="flex items-center justify-between w-full">
+                                        <button
+                                            onClick={() => {
+                                                setStep('trip-selection');
+                                                setSelectedTripId(null);
+                                                setSelectedTripFilterId('all');
+                                            }}
+                                            className="flex items-center gap-2 h-10 px-4 text-xs font-bold text-blue-600 bg-white rounded-xl border border-blue-100 shadow-sm transition-all active:scale-95"
+                                        >
+                                            <ArrowLeft size={14} />
+                                            Mudar Excursão
+                                        </button>
+
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest leading-none mb-1">Valor Unitário</p>
+                                            <p className="text-xl font-black text-gray-900 leading-none">{formatCurrency(trip?.preco || 0)}</p>
+                                        </div>
                                     </div>
+
+                                    {/* Line 2: Trip Status Card */}
+                                    {trip && (
+                                        <div className="flex items-center gap-3 px-4 py-3 bg-blue-50/80 rounded-[1.25rem] border border-blue-100/50 shadow-sm">
+                                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-blue-200 shadow-lg">
+                                                <MapPin size={16} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none mb-0.5">Pagando para:</p>
+                                                <p className="text-sm font-black text-gray-800 truncate">{trip.nome}</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
+
+                        {/* Past Trip Banner */}
+                        {step === 'payment-flow' && isPastTrip && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600">
+                                <AlertCircle size={20} />
+                                <div className="text-sm font-bold">
+                                    Esta excursão já foi realizada e por isso não aceita novos pagamentos via PIX.
+                                </div>
+                            </div>
+                        )}
 
                         {/* 3. Main Content Container - FLATTENED */}
                         <div key={step} className="w-full pt-4 fade-in duration-700">
