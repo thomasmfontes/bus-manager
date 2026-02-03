@@ -43,10 +43,10 @@ export const BusList: React.FC = () => {
                     <p className="text-gray-500 text-sm ml-[52px]">Gerencie seus veículos e configurações de assentos.</p>
                 </div>
                 <ProtectedAction requiredPermission="create">
-                    <Link to="/onibus/novo">
-                        <Button>
-                            <Plus size={20} className="md:mr-2" />
-                            <span className="hidden md:inline">Novo Ônibus</span>
+                    <Link to="/onibus/novo" className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto h-11 px-6 rounded-xl shadow-orange-100 shadow-lg hover:shadow-xl transition-all">
+                            <Plus size={20} className="mr-2" />
+                            <span>Novo Ônibus</span>
                         </Button>
                     </Link>
                 </ProtectedAction>
