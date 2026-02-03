@@ -14,9 +14,7 @@ import { UserRole } from '@/types';
 
 export const PassengerList: React.FC = () => {
     const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
-    const { trips, selectedTripId } = useTripStore();
     const { user } = useAuthStore();
-    const isAdmin = user?.role === UserRole.ADMIN;
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
@@ -24,9 +22,9 @@ export const PassengerList: React.FC = () => {
     const [csvUploaderOpen, setCsvUploaderOpen] = useState(false);
 
     useEffect(() => {
-        // Fetch passengers for the selected trip if exists, otherwise fetch all
-        fetchPassageiros(selectedTripId || undefined);
-    }, [fetchPassageiros, selectedTripId]);
+        // Fetch all passengers (Master List)
+        fetchPassageiros();
+    }, [fetchPassageiros]);
 
     const handleDelete = async (passengerId: string, enrollmentId?: string) => {
         try {
@@ -54,7 +52,7 @@ export const PassengerList: React.FC = () => {
                 await createPassageiro({
                     ...p,
                     idade: p.idade ? parseInt(p.idade) : undefined,
-                }, selectedTripId || undefined);
+                });
             }
             showToast(`${importedPassengers.length} passageiro(s) importado(s) com sucesso!`, 'success');
             setCsvUploaderOpen(false);
@@ -63,7 +61,6 @@ export const PassengerList: React.FC = () => {
         }
     };
 
-    const selectedTrip = trips.find(t => t.id === selectedTripId);
 
     const filteredPassengers = passengers.filter(
         (p: any) =>
@@ -76,7 +73,7 @@ export const PassengerList: React.FC = () => {
     );
 
     return (
-        <div className="space-y-5 w-full fade-in duration-500">
+        <div className="space-y-5 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col gap-4">
                 <div className="space-y-1">
@@ -88,15 +85,8 @@ export const PassengerList: React.FC = () => {
                     </h1>
                     <div className="flex items-center gap-2 ml-[52px]">
                         <p className="text-gray-500 text-sm">
-                            {(selectedTripId && !isAdmin)
-                                ? `Mostrando passageiros da viagem: `
-                                : `Cadastro e listagem de clientes e viajantes.`}
+                            Cadastro e listagem de clientes e viajantes.
                         </p>
-                        {(selectedTrip && !isAdmin) && (
-                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full ring-1 ring-blue-200">
-                                {selectedTrip.nome}
-                            </span>
-                        )}
                     </div>
                 </div>
 

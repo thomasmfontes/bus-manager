@@ -153,7 +153,7 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
     };
 
     return (
-        <div className={cn("space-y-6 w-full max-w-7xl mx-auto", !noAnimation && "fade-in duration-500")}>
+        <div className={cn("space-y-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8", !noAnimation && "fade-in duration-500")}>
             {/* Header */}
             {!hideHeader && (
                 <div className="space-y-1">

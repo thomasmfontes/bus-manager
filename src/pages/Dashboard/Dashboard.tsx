@@ -294,7 +294,7 @@ export const Dashboard: React.FC = () => {
 
 
     return (
-        <div className="space-y-8 fade-in duration-500 w-full">
+        <div className="space-y-8 fade-in duration-500 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Registration Banner */}
             {user?.role === UserRole.PASSAGEIRO && !user.id && (
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-6">

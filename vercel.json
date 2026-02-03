@@ -1,6 +1,8 @@
 {
     "cleanUrls": true,
     "trailingSlash": false,
+    "framework": "vite",
+    "devCommand": "npm run dev",
     "rewrites": [
         {
             "source": "/((?!api/).*)",

@@ -93,7 +93,7 @@ export const Financeiro: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 w-full fade-in duration-500">
+        <div className="space-y-6 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in duration-500">
             {/* Header & Main Controls */}
             <div className="flex flex-col gap-6">
                 <div className="space-y-1">

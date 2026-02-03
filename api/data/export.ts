@@ -19,21 +19,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Create Supabase client
         const supabaseUrl = process.env.SUPABASE_URL!;
-        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+            console.error('Missing Supabase configuration');
+            return res.status(500).json({ error: 'Server configuration error' });
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         // Verify user is authenticated
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
         if (authError || !user) {
+            console.error('Auth error:', authError);
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        // Get query parameters
-        const { fields, viagem_id } = req.query;
+        // Get query parameters (ensure they are strings)
+        const fieldsParam = Array.isArray(req.query.fields) ? req.query.fields[0] : req.query.fields;
+        const viagemIdParam = Array.isArray(req.query.viagem_id) ? req.query.viagem_id[0] : req.query.viagem_id;
 
         // Default fields if none provided
-        const selectedFields = fields ? (fields as string).split(',') : ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
+        const selectedFields = fieldsParam ? (fieldsParam as string).split(',') : ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
 
         // Map export labels back to database columns
         const columnMap: Record<string, string> = {
@@ -42,6 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             'Telefone': 'telefone',
             'Congregação': 'comum_congregacao',
             'Status': 'pagamento',
+            'Ônibus': 'onibus_info',
             'Assento': 'assento',
             'Instrumento': 'instrumento',
             'Idade': 'idade',
@@ -51,87 +60,132 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         // Start building query
-        let query = supabase
-            .from('passageiros')
-            .select('*')
-            .neq('nome_completo', 'BLOQUEADO');
+        let passengers: any[] = [];
+        let fetchError: any = null;
 
-        // Filter by trip if provided
-        if (viagem_id) {
-            query = query.eq('viagem_id', viagem_id);
+        if (viagemIdParam && viagemIdParam !== 'all') {
+            // Case 1: Filtered by Trip - Primary table is 'viagem_passageiros'
+            const { data, error } = await supabase
+                .from('viagem_passageiros')
+                .select(`
+                    pagamento,
+                    assento,
+                    valor_pago,
+                    viagem_id,
+                    onibus:onibus_id (nome, placa),
+                    passageiros!inner (*)
+                `)
+                .eq('viagem_id', (viagemIdParam as string));
+
+            if (!error && data) {
+                // Flatten and clean
+                passengers = data.map(enrollment => {
+                    const bus = (enrollment as any).onibus;
+                    const onibus_info = bus ? bus.nome : '-';
+
+                    return {
+                        ...((enrollment as any).passageiros || {}),
+                        pagamento: enrollment.pagamento,
+                        assento: enrollment.assento,
+                        valor_pago: enrollment.valor_pago,
+                        viagem_id: enrollment.viagem_id,
+                        onibus_info
+                    };
+                }).filter(p => (p as any).nome_completo !== 'BLOQUEADO');
+
+                // Sort in memory for robustness
+                passengers.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''));
+            }
+            fetchError = error;
+        } else {
+            // Case 2: Master List (Global) - Primary table is 'passageiros'
+            const { data, error } = await supabase
+                .from('passageiros')
+                .select('*')
+                .neq('nome_completo', 'BLOQUEADO')
+                .order('nome_completo');
+
+            passengers = data || [];
+            fetchError = error;
         }
 
-        const { data: passengers, error: fetchError } = await query.order('nome_completo');
-
         if (fetchError) {
-            console.error('Error fetching passengers:', fetchError);
-            return res.status(500).json({ error: 'Failed to fetch passenger data' });
+            console.error('Database error in export:', fetchError);
+            return res.status(500).json({ error: fetchError.message || 'Erro ao buscar dados no banco' });
         }
 
         // Fetch trip name if filtered
         let fileNamePrefix = 'lista-passageiros';
-        if (viagem_id) {
+        if (viagemIdParam && viagemIdParam !== 'all') {
             const { data: trip } = await supabase
                 .from('viagens')
-                .select('nome, destino')
-                .eq('id', viagem_id)
-                .single();
+                .select('nome')
+                .eq('id', (viagemIdParam as string))
+                .maybeSingle();
             if (trip) {
-                fileNamePrefix = `lista-${trip.nome.replace(/\s+/g, '-').toLowerCase()}`;
+                fileNamePrefix = `lista-${trip.nome.replace(/[^\w-]/g, '-').toLowerCase()}`;
             }
         }
 
         // Process data for export using selected fields
-        const processedPassengers = passengers?.map(p => {
+        const processedRows = (passengers || []).map(p => {
             const row: any = {};
             selectedFields.forEach(field => {
                 const dbColumn = columnMap[field];
-                const value = p[dbColumn];
+                const value = (dbColumn && p) ? p[dbColumn] : null;
 
                 if (field === 'Status') {
-                    row[field] = value === 'paid' ? 'Pago' : value === 'pending' ? 'Pendente' : value || '-';
+                    // Try to match both database and display formats
+                    const v = (value || '').toString().toLowerCase();
+                    if (v === 'paid' || v === 'pago' || v === 'realizado') row[field] = 'Pago';
+                    else if (v === 'pending' || v === 'pendente') row[field] = 'Pendente';
+                    else row[field] = value || 'Pendente';
                 } else if (field === 'Valor Pago') {
-                    row[field] = value ? `R$ ${parseFloat(value).toFixed(2)}` : 'R$ 0,00';
+                    const numValue = typeof value === 'number' ? value : parseFloat(value || '0');
+                    row[field] = `R$ ${numValue.toFixed(2)}`.replace('.', ',');
                 } else {
                     row[field] = value || '-';
                 }
             });
             return row;
-        }) || [];
+        });
+
+        console.log(`Exporting ${processedRows.length} rows with prefix ${fileNamePrefix}`);
 
         // Create workbook
         const wb = XLSX.utils.book_new();
 
-        // Create worksheet
-        let wsPassengers;
-        if (processedPassengers.length === 0) {
-            wsPassengers = XLSX.utils.aoa_to_sheet([selectedFields]);
-        } else {
-            wsPassengers = XLSX.utils.json_to_sheet(processedPassengers, { header: selectedFields });
-        }
+        // Ensure sheet is created even if no rows
+        const ws = processedRows.length > 0
+            ? XLSX.utils.json_to_sheet(processedRows, { header: selectedFields })
+            : XLSX.utils.aoa_to_sheet([selectedFields]);
 
-        // Adjust column widths based on content/headers
+        // Adjust column widths
         const wscols = selectedFields.map(field => {
             if (field === 'Nome') return { wch: 40 };
-            if (field === 'Documento') return { wch: 20 };
-            if (field === 'Congregação') return { wch: 25 };
-            return { wch: 15 };
+            if (field === 'Documento') return { wch: 18 };
+            if (field === 'Telefone') return { wch: 15 };
+            return { wch: 12 };
         });
-        wsPassengers['!cols'] = wscols;
+        ws['!cols'] = wscols;
 
-        XLSX.utils.book_append_sheet(wb, wsPassengers, "Passageiros");
+        XLSX.utils.book_append_sheet(wb, ws, "Passageiros");
 
         // Generate Excel file
-        const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        // Using 'base64' then converting to Buffer is the safest way for serverless environments
+        const excelB64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        const finalBuffer = Buffer.from(excelB64, 'base64');
 
-        // Set headers for file download
-        const date = new Date().toISOString().split('T')[0];
-        const fileName = `${fileNamePrefix}-${date}.xlsx`;
+        // Set headers for safely downloading binary data
+        const dateString = new Date().toISOString().split('T')[0];
+        const fileName = `${fileNamePrefix}-${dateString}.xlsx`;
+
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        res.setHeader('Content-Length', excelBuffer.length);
+        res.setHeader('Content-Length', finalBuffer.length);
+        res.setHeader('Cache-Control', 'no-cache');
 
-        return res.status(200).send(excelBuffer);
+        return res.status(200).send(finalBuffer);
 
     } catch (error: any) {
         console.error('Unexpected error:', error);
