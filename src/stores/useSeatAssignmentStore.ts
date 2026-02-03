@@ -6,7 +6,7 @@ interface SeatAssignmentState {
     loading: boolean;
     getAssentosPorViagem: (viagemId: string) => Promise<Passenger[]>;
     atribuirAssento: (passageiroId: string, assento: string, viagemId: string, onibusId?: string) => Promise<void>;
-    liberarAssento: (passageiroId: string) => Promise<void>;
+    liberarAssento: (passageiroId: string, enrollmentId?: string) => Promise<void>;
     bloquearAssento: (assentoCodigo: string, viagemId: string, onibusId: string) => Promise<void>;
 }
 
@@ -17,12 +17,26 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     getAssentosPorViagem: async (viagemId: string) => {
         try {
             const { data, error } = await supabase
-                .from('passageiros')
-                .select('*')
+                .from('viagem_passageiros')
+                .select('*, passageiro:passageiros(*)')
                 .eq('viagem_id', viagemId);
 
             if (error) throw error;
-            return data || [];
+
+            // Map to the Passenger type with enrollment for UI compatibility
+            return (data || []).map(enrollment => ({
+                ...(enrollment.passageiro as any),
+                enrollment: {
+                    id: enrollment.id,
+                    passageiro_id: enrollment.passageiro_id,
+                    viagem_id: enrollment.viagem_id,
+                    onibus_id: enrollment.onibus_id,
+                    assento: enrollment.assento,
+                    pagamento: enrollment.pagamento,
+                    valor_pago: enrollment.valor_pago,
+                    pago_por: enrollment.pago_por,
+                }
+            }));
         } catch (error) {
             console.error('Error fetching assentos:', error);
             return [];
@@ -32,58 +46,37 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     atribuirAssento: async (passageiroId: string, assento: string, viagemId: string, onibusId?: string) => {
         set({ loading: true });
         try {
-            // 1. Get existing passenger data to determine if we update or clone
-            const { data: passenger, error: getError } = await supabase
-                .from('passageiros')
-                .select('*')
-                .eq('id', passageiroId)
-                .single();
-
-            if (getError) throw getError;
-
-            // 2. Identify if this passenger is already assigned to THIS trip
-            // (could be the same record or another clone with same identity)
-            const { data: existingInTrip, error: existingError } = await supabase
-                .from('passageiros')
+            // Check if enrollment already exists for this trip
+            const { data: enrollment, error: eError } = await supabase
+                .from('viagem_passageiros')
                 .select('id')
+                .eq('passageiro_id', passageiroId)
                 .eq('viagem_id', viagemId)
-                .eq('nome_completo', passenger.nome_completo)
-                .eq('cpf_rg', passenger.cpf_rg || '')
                 .maybeSingle();
 
-            if (existingError) console.error('Error checking existing clone:', existingError);
+            if (eError) throw eError;
 
-            const targetPassengerId = existingInTrip?.id || (passenger.viagem_id === viagemId ? passageiroId : null);
-
-            if (targetPassengerId) {
-                console.log('🔄 Atualizando registro existente na viagem:', passenger.nome_completo);
+            if (enrollment) {
+                // Update existing enrollment
                 const { error: updateError } = await supabase
-                    .from('passageiros')
+                    .from('viagem_passageiros')
                     .update({
                         onibus_id: onibusId,
                         assento: assento
                     })
-                    .eq('id', targetPassengerId);
+                    .eq('id', enrollment.id);
 
                 if (updateError) throw updateError;
             } else {
-                console.log('🚌 Criando clone para viagem:', passenger.nome_completo);
+                // Create new enrollment for this trip
                 const { error: insertError } = await supabase
-                    .from('passageiros')
+                    .from('viagem_passageiros')
                     .insert([{
-                        nome_completo: passenger.nome_completo,
-                        cpf_rg: passenger.cpf_rg,
-                        telefone: passenger.telefone,
-                        comum_congregacao: passenger.comum_congregacao,
-                        instrumento: passenger.instrumento,
-                        idade: passenger.idade,
-                        estado_civil: passenger.estado_civil,
-                        auxiliar: passenger.auxiliar,
-                        pagamento: 'pending',
-                        valor_pago: 0,
+                        passageiro_id: passageiroId,
                         viagem_id: viagemId,
                         onibus_id: onibusId,
-                        assento: assento
+                        assento: assento,
+                        pagamento: 'Pendente'
                     }]);
 
                 if (insertError) throw insertError;
@@ -97,16 +90,26 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
         }
     },
 
-    // Libera o assento de um passageiro
-    liberarAssento: async (passageiroId: string) => {
+    // Libera o assento de um passageiro (remove o assento da inscrição)
+    liberarAssento: async (passageiroId: string, enrollmentId?: string) => {
         set({ loading: true });
         try {
-            const { error } = await supabase
-                .from('passageiros')
-                .update({ assento: null, onibus_id: null })
-                .eq('id', passageiroId);
-
-            if (error) throw error;
+            if (enrollmentId) {
+                const { error } = await supabase
+                    .from('viagem_passageiros')
+                    .update({ assento: null, onibus_id: null })
+                    .eq('id', enrollmentId);
+                if (error) throw error;
+            } else {
+                // Legacy: update all enrollments for this passenger? 
+                // No, just find the first one with a seat or something
+                // For safety, let's keep it as identity-based if no enrollmentId is passed
+                const { error } = await supabase
+                    .from('viagem_passageiros')
+                    .update({ assento: null, onibus_id: null })
+                    .eq('passageiro_id', passageiroId);
+                if (error) throw error;
+            }
             set({ loading: false });
         } catch (error) {
             console.error('Error releasing seat:', error);
@@ -114,21 +117,42 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
             throw error;
         }
     },
-    // Bloqueia um assento
+
+    // Bloqueia um assento (cria inscrição para a identidade 'BLOQUEADO')
     bloquearAssento: async (assentoCodigo: string, viagemId: string, onibusId: string) => {
         set({ loading: true });
         try {
-            // Create a blocked seat entry by inserting a special passenger record
-            const { error } = await supabase
+            // 1. Find the 'BLOQUEADO' identity
+            let { data: blockedIdentity, error: findError } = await supabase
                 .from('passageiros')
-                .insert({
+                .select('id')
+                .eq('nome_completo', 'BLOQUEADO')
+                .maybeSingle();
+
+            if (findError) throw findError;
+
+            if (!blockedIdentity) {
+                const { data: newIdentity, error: createError } = await supabase
+                    .from('passageiros')
+                    .insert([{
+                        nome_completo: 'BLOQUEADO',
+                        cpf_rg: 'BLOCKED'
+                    }])
+                    .select()
+                    .single();
+                if (createError) throw createError;
+                blockedIdentity = newIdentity;
+            }
+
+            // 2. Create enrollment for 'BLOQUEADO' in this trip
+            const { error } = await supabase
+                .from('viagem_passageiros')
+                .insert([{
+                    passageiro_id: blockedIdentity!.id,
                     viagem_id: viagemId,
                     onibus_id: onibusId,
-                    assento: assentoCodigo,
-                    nome_completo: 'BLOQUEADO',
-                    cpf_rg: 'BLOCKED',
-                    telefone: ''
-                });
+                    assento: assentoCodigo
+                }]);
 
             if (error) throw error;
             set({ loading: false });

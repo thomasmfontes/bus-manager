@@ -50,14 +50,17 @@ export const Dashboard: React.FC = () => {
     };
 
     const getOccupiedSeats = (tripId: string) => {
+        const { enrollments, passengers } = usePassengerStore.getState();
         const trip = trips.find(t => t.id === tripId);
         if (!trip) return 0;
 
+        const blockedIdentityId = passengers.find(p => p.nome_completo === 'BLOQUEADO')?.id;
         const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
 
-        return passengers.filter((p) => {
-            if (p.viagem_id !== tripId) return false;
-            return p.assento && p.onibus_id && activeBusIds.includes(p.onibus_id);
+        return enrollments.filter((e) => {
+            if (e.viagem_id !== tripId) return false;
+            if (blockedIdentityId && e.passageiro_id === blockedIdentityId) return false;
+            return e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id);
         }).length;
     };
 
@@ -98,36 +101,50 @@ export const Dashboard: React.FC = () => {
 
     const filteredPassengers = !selectedTripId || selectedTripId === 'all'
         ? (effectiveTimeFilter === 'all' ? passengers : passengers.filter(p => {
-            const passengerTrip = trips.find(t => t.id === p.viagem_id);
+            if (!p.enrollment) return false;
+            const passengerTrip = trips.find(t => t.id === p.enrollment?.viagem_id);
             if (!passengerTrip) return false;
             const isFuture = new Date(passengerTrip.data_ida) >= now;
             return effectiveTimeFilter === 'future' ? isFuture : !isFuture;
         }))
-        : passengers.filter(p => p.viagem_id === selectedTripId);
+        : passengers.filter(p => p.enrollment?.viagem_id === selectedTripId);
 
     // Calculate stats
     const totalBuses = buses.length;
     const totalTrips = trips.length;
-    // Calculate total unique passengers (identities)
+    // Calculate total unique passengers (identities) - exclude the technical "BLOQUEADO" identity
     const uniquePassengerIdentities = new Set(
-        passengers.map(p => `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`)
+        passengers
+            .filter(p => p.nome_completo !== 'BLOQUEADO')
+            .map(p => `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`)
     );
     const totalPassengers = uniquePassengerIdentities.size;
 
-    // Count passengers with assigned seats in the filtered group (apenas este card será filtrado)
-    // Refined to ensure seat is in one of the trip's actual buses (fallback for legacy/dirty data)
-    const occupiedSeats = filteredPassengers.filter((p) => {
-        if (!p.assento || !p.viagem_id || !p.onibus_id) return false;
+    // Count passengers with assigned seats in the filtered group (exclude BLOQUEADO)
+    const blockedIdentityId = passengers.find(p => p.nome_completo === 'BLOQUEADO')?.id;
 
-        // Find the specific trip for this passenger to verify the bus is still valid for that trip
-        const passengerTrip = trips.find(t => t.id === p.viagem_id);
-        if (!passengerTrip) return false;
+    const occupiedSeats = (!selectedTripId || selectedTripId === 'all')
+        ? usePassengerStore.getState().enrollments.filter(e => {
+            if (!e.assento || !e.viagem_id || !e.onibus_id) return false;
+            // Exclude blocks from occupancy count
+            if (blockedIdentityId && e.passageiro_id === blockedIdentityId) return false;
 
-        const activeBusIds = passengerTrip.onibus_ids || (passengerTrip.onibus_id ? [passengerTrip.onibus_id] : []);
+            const trip = trips.find(t => t.id === e.viagem_id);
+            if (!trip) return false;
+            const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
+            return activeBusIds.includes(e.onibus_id);
+        }).length
+        : filteredPassengers.filter((p) => {
+            if (p.nome_completo === 'BLOQUEADO') return false;
+            const e = p.enrollment;
+            if (!e || !e.assento || !e.viagem_id || !e.onibus_id) return false;
 
-        // Only count if the passenger's assigned bus is currently linked to their trip
-        return activeBusIds.includes(p.onibus_id);
-    }).length;
+            const passengerTrip = trips.find(t => t.id === e.viagem_id);
+            if (!passengerTrip) return false;
+
+            const activeBusIds = passengerTrip.onibus_ids || (passengerTrip.onibus_id ? [passengerTrip.onibus_id] : []);
+            return activeBusIds.includes(e.onibus_id);
+        }).length;
 
     // Calculate capacity for the selected trip(s)
     const currentCapacity = filteredTrips.reduce((acc: number, trip: any) => {
@@ -172,10 +189,10 @@ export const Dashboard: React.FC = () => {
 
         try {
             const { data: results, error } = await supabase
-                .from('passageiros')
+                .from('viagem_passageiros')
                 .select('id, pagamento')
                 .eq('viagem_id', trip.id)
-                .or(`pago_por.eq.${user?.id},nome_completo.eq."${user?.full_name}",cpf_rg.eq."${user?.email}"`)
+                .or(`pago_por.eq.${user?.id},passageiro_id.eq.${user?.id}`)
                 .in('pagamento', ['Pago', 'Realizado']);
 
             if (error) throw error;

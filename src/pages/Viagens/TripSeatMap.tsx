@@ -19,9 +19,8 @@ export const TripSeatMap: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { trips, fetchViagens } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
-    const { passengers, fetchPassageiros } = usePassengerStore();
+    const { passengers, enrollments, fetchPassageiros } = usePassengerStore();
     const {
-        getAssentosPorViagem,
         atribuirAssento,
         liberarAssento,
         bloquearAssento,
@@ -34,7 +33,6 @@ export const TripSeatMap: React.FC = () => {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [selectedPassengerId, setSelectedPassengerId] = useState('');
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
-    const [tripPassengers, setTripPassengers] = useState<any[]>([]);
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -42,22 +40,6 @@ export const TripSeatMap: React.FC = () => {
         fetchOnibus();
         fetchPassageiros();
     }, [fetchViagens, fetchOnibus, fetchPassageiros]);
-
-    const loadAssignments = async () => {
-        if (id) {
-            try {
-                const data = await getAssentosPorViagem(id);
-                setTripPassengers(data);
-            } catch (error) {
-                console.error('Error loading assignments:', error);
-                showToast('Erro ao carregar assentos', 'error');
-            }
-        }
-    };
-
-    useEffect(() => {
-        loadAssignments();
-    }, [id, getAssentosPorViagem]);
 
     const trip = trips.find((t) => t.id === id);
 
@@ -77,22 +59,50 @@ export const TripSeatMap: React.FC = () => {
 
     const currentBus = tripBuses.find(b => b.id === selectedBusId) || tripBuses[0] || null;
 
-    // Map passengers to SeatAssignments for the SeatMap component
-    // Only show assignments for the currently selected bus AND passengers with seats
-    const assignments = tripPassengers
-        .filter(p => p.assento) // Only include passengers with assigned seats
-        .filter(p => !p.onibus_id || p.onibus_id === currentBus?.id) // Filter by bus if passenger has bus assignment
-        .map(p => ({
-            viagemId: p.viagem_id,
-            onibusId: p.onibus_id || trip?.onibus_id || currentBus?.id || '',
-            assentoCodigo: p.assento,
-            passageiroId: p.id,
-            status: p.nome_completo === 'BLOQUEADO' ? SeatStatus.BLOQUEADO : SeatStatus.OCUPADO
-        }));
+    // Identify the "BLOQUEADO" identity ID
+    const blockedIdentityId = useMemo(() => {
+        return passengers.find(p => p.nome_completo === 'BLOQUEADO')?.id;
+    }, [passengers]);
+
+    // Map global enrollments to SeatAssignments for the SeatMap component
+    const assignments = useMemo(() => {
+        if (!id || !currentBus) return [];
+
+        const targetTripId = id.trim().toLowerCase();
+        const targetBusId = currentBus.id.trim().toLowerCase();
+        const blockedId = blockedIdentityId?.trim().toLowerCase();
+
+        return enrollments
+            .filter(e => {
+                // Robust Trip ID check
+                const eTripId = (e.viagem_id || '').toString().trim().toLowerCase();
+                if (eTripId !== targetTripId) return false;
+
+                // Must have a seat
+                if (!e.assento) return false;
+
+                // Robust Bus ID check (matches if same bus or if no bus specified)
+                const eBusId = (e.onibus_id || '').toString().trim().toLowerCase();
+                return !eBusId || eBusId === targetBusId;
+            })
+            .map(e => {
+                const pId = (e.passageiro_id || '').toString().trim().toLowerCase();
+                const isBlocked = blockedId && pId === blockedId;
+
+                return {
+                    viagemId: e.viagem_id,
+                    onibusId: e.onibus_id || currentBus.id,
+                    assentoCodigo: String(e.assento),
+                    passageiroId: e.passageiro_id,
+                    status: isBlocked ? SeatStatus.BLOQUEADO : SeatStatus.OCUPADO
+                };
+            });
+    }, [enrollments, id, currentBus, blockedIdentityId]);
 
     const handleSeatClick = (seatCode: string) => {
         setSelectedSeat(seatCode);
-        const assignment = assignments.find((a) => a.assentoCodigo === seatCode);
+        const seatStr = String(seatCode);
+        const assignment = assignments.find((a) => String(a.assentoCodigo) === seatStr);
 
         if (!assignment) {
             // Empty seat - show assign or block options
@@ -113,7 +123,8 @@ export const TripSeatMap: React.FC = () => {
         }
 
         const passenger = passengers.find(p => p.id === selectedPassengerId);
-        if (user?.role !== UserRole.ADMIN && passenger && passenger.pagamento !== 'Pago' && passenger.pagamento !== 'Realizado') {
+        const hasPaid = passenger?.enrollment?.pagamento === 'Pago' || passenger?.enrollment?.pagamento === 'Realizado';
+        if (user?.role !== UserRole.ADMIN && passenger && !hasPaid) {
             showToast('Apenas passageiros com pagamento CONFIRMADO podem reservar assento', 'warning');
             return;
         }
@@ -133,30 +144,30 @@ export const TripSeatMap: React.FC = () => {
             setSelectedSeat(null);
             setSelectedPassengerId('');
 
-            console.log('✅ Recarregando assentos...');
-            await loadAssignments(); // Reload assignments
-            await fetchPassageiros(); // Refresh global passengers list for the dropdown
-            console.log('✅ Assentos e passageiros recarregados');
+            await fetchPassageiros();
         } catch (error) {
-            console.error('❌ Erro ao atribuir:', error);
             showToast('Erro ao atribuir assento', 'error');
         }
     };
 
     const handleReleaseSeat = async () => {
-        if (!selectedSeat) return;
+        if (!selectedSeat || !id) return;
 
-        // Find passenger for this seat
-        const passenger = tripPassengers.find(p => p.assento === selectedSeat && (!p.onibus_id || p.onibus_id === currentBus?.id));
-        if (!passenger) return;
+        const seatStr = String(selectedSeat);
+        // Find enrollment for this seat in this trip and bus
+        const enrollment = enrollments.find(e =>
+            e.viagem_id?.toLowerCase() === id.toLowerCase() &&
+            String(e.assento) === seatStr &&
+            (!e.onibus_id || e.onibus_id.toLowerCase() === currentBus?.id.toLowerCase())
+        );
+        if (!enrollment) return;
 
         try {
-            await liberarAssento(passenger.id);
+            await liberarAssento(enrollment.passageiro_id, enrollment.id);
             showToast('Assento liberado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
-            loadAssignments(); // Reload assignments
-            fetchPassageiros(); // Refresh global passengers list for the dropdown
+            await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
         }
@@ -173,8 +184,7 @@ export const TripSeatMap: React.FC = () => {
             showToast('Assento bloqueado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
-            loadAssignments(); // Reload assignments
-            fetchPassageiros(); // Refresh global passengers list for the dropdown
+            await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao bloquear assento', 'error');
         }
@@ -201,20 +211,23 @@ export const TripSeatMap: React.FC = () => {
         // 1. Group by identity (Name + CPF)
         const identityMap = new Map<string, any>();
         passengers.forEach(p => {
+            // Skip the special 'BLOQUEADO' identity for selection
+            if (p.nome_completo === 'BLOQUEADO') return;
+
             const key = `${p.nome_completo.toLowerCase().trim()}-${clean(p.cpf_rg || '')}`;
             const existing = identityMap.get(key);
 
-            // Priority 1: Match for THIS trip (Highest)
-            if (p.viagem_id === id) {
-                identityMap.set(key, p);
+            // Find enrollment for THIS trip in the global list
+            const currentTripEnroll = (enrollments || []).find(e =>
+                e.passageiro_id === p.id &&
+                e.viagem_id?.toLowerCase() === id?.toLowerCase()
+            );
+
+            // Priority: if they have an enrollment for THIS trip, that's the version we want
+            if (currentTripEnroll) {
+                identityMap.set(key, { ...p, enrollment: currentTripEnroll });
             }
-            // Priority 2: Master record (No trip assigned)
-            else if (!p.viagem_id) {
-                if (!existing || existing.viagem_id !== id) {
-                    identityMap.set(key, p);
-                }
-            }
-            // Priority 3: Record from ANY other trip (Lowest)
+            // Otherwise, keep the first one we find (master or other trip) as a baseline
             else if (!existing) {
                 identityMap.set(key, p);
             }
@@ -222,17 +235,19 @@ export const TripSeatMap: React.FC = () => {
 
         const filtered = Array.from(identityMap.values())
             .filter(p => {
-                // Not already assigned to a seat in this trip (or globally if it's the trip record)
-                if (p.viagem_id === id && p.assento) return false;
+                const enrollment = p.enrollment;
 
-                // Admin can see all passengers
+                // Not already assigned to a seat in this trip
+                if (enrollment?.viagem_id?.toLowerCase() === id?.toLowerCase() && enrollment?.assento) return false;
+
+                // Admin can see all passengers 
                 if (user?.role === UserRole.ADMIN) return true;
 
                 // For regular users:
                 // Must be in this trip
-                if (p.viagem_id !== id) return false;
+                if (enrollment?.viagem_id?.toLowerCase() !== id?.toLowerCase()) return false;
                 // Must have paid
-                const hasPaid = p.pagamento === 'Pago' || p.pagamento === 'Realizado';
+                const hasPaid = enrollment?.pagamento === 'Pago' || enrollment?.pagamento === 'Realizado';
                 if (!hasPaid) return false;
 
                 const userDoc = user?.email ? clean(user.email) : '';
@@ -240,7 +255,7 @@ export const TripSeatMap: React.FC = () => {
 
                 // Only themselves or people they paid for
                 const isMe = p.id === user?.id || (userDoc && userDoc === passengerDoc);
-                const iPaidForThem = user?.id && p.pago_por === user.id;
+                const iPaidForThem = user?.id && enrollment?.pago_por === user.id;
 
                 return isMe || iPaidForThem;
             })
@@ -253,14 +268,14 @@ export const TripSeatMap: React.FC = () => {
                 label: `${p.nome_completo} (${p.cpf_rg || 'Sem documento'})`,
             })),
         ];
-    }, [passengers, id, user]);
+    }, [passengers, enrollments, id, user]);
 
     const currentAssignment = selectedSeat
         ? assignments.find((a) => a.assentoCodigo === selectedSeat)
         : null;
 
     const currentPassenger = currentAssignment?.passageiroId
-        ? tripPassengers.find((p) => p.id === currentAssignment.passageiroId)
+        ? passengers.find((p) => p.id === currentAssignment.passageiroId)
         : null;
 
     if (!trip) {
@@ -337,7 +352,7 @@ export const TripSeatMap: React.FC = () => {
                 isOpen={editModalOpen}
                 onClose={() => setEditModalOpen(false)}
                 trip={trip}
-                onSuccess={loadAssignments}
+                onSuccess={() => id && fetchPassageiros(id)}
             />
 
             {/* Bus Selector Tabs */}

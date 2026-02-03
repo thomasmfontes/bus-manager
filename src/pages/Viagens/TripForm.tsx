@@ -160,10 +160,17 @@ export const TripForm: React.FC = () => {
 
 
                     {(() => {
-                        const busIdsUsedInTrips = new Set(
-                            trips.flatMap(t => t.onibus_ids || (t.onibus_id ? [t.onibus_id] : []))
+                        const now = new Date();
+                        const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+                        // Only consider buses "occupied" if the trip is active (departed < 24h ago or in future)
+                        const occupiedBusIds = new Set(
+                            trips
+                                .filter(t => new Date(t.data_ida) >= twentyFourHoursAgo)
+                                .flatMap(t => t.onibus_ids || (t.onibus_id ? [t.onibus_id] : []))
                         );
-                        const availableBuses = buses.filter(b => !busIdsUsedInTrips.has(b.id));
+
+                        const availableBuses = buses.filter(b => !occupiedBusIds.has(b.id));
 
                         return availableBuses.length === 0 ? (
                             <div className="p-8 bg-orange-50/50 border-2 border-dashed border-orange-200 rounded-2xl text-center space-y-4">

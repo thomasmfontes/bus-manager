@@ -1,0 +1,9 @@
+--- CHECKING ENROLLMENTS ---
+Found 5 enrollments.
+Trip: 52fc850c-befc-4bf3-bf9d-13874c46c35b | Seat: 1 | Passenger: Thomas Mineu Fontes
+Trip: 52fc850c-befc-4bf3-bf9d-13874c46c35b | Seat: 2 | Passenger: Thomas Mineu Fontes
+Trip: 52fc850c-befc-4bf3-bf9d-13874c46c35b | Seat: 47 | Passenger: BLOQUEADO
+Trip: 52fc850c-befc-4bf3-bf9d-13874c46c35b | Seat: 48 | Passenger: BLOQUEADO
+Trip: 8c4cf170-b100-4c9a-8869-4a533b8a22a1 | Seat: 1 | Passenger: BLOQUEADO
+
+BLOQUEADO identity: {"id":"200e8a4e-571f-4f3b-a2f6-f4720e5c303e","nome_completo":"BLOQUEADO"}

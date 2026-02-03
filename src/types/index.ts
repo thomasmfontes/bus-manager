@@ -51,22 +51,32 @@ export interface TripBus {
     created_at?: string;
 }
 
-// Passenger types
+// Passenger Identity (Master Record)
 export interface Passenger {
     id: string;
-    data?: string;
     nome_completo: string;
     cpf_rg: string;
-    instrumento?: string;
+    telefone?: string;
     comum_congregacao?: string;
     estado_civil?: string;
-    auxiliar?: string;
     idade?: number;
-    telefone?: string;
-    pagamento?: string;
-    viagem_id?: string;
+    instrumento?: string;
+    auxiliar?: string;
+    created_at?: string;
+    updated_at?: string;
+
+    // Virtual fields / Join results (for backward compatibility in UI)
+    enrollment?: TripEnrollment;
+}
+
+// Trip Enrollment (Relationship between Passenger and Trip)
+export interface TripEnrollment {
+    id: string;
+    passageiro_id: string;
+    viagem_id: string;
     onibus_id?: string;
     assento?: string;
+    pagamento?: string;
     valor_pago?: number;
     pago_por?: string;
     created_at?: string;

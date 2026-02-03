@@ -162,8 +162,8 @@ export const TripPaymentCenter = () => {
 
         // Occupied quotas: anyone with confirmed payment OR with an assigned seat
         const occupied = passengers.filter(p =>
-            p.viagem_id === tripToCalc.id &&
-            ((p.pagamento === 'Pago' || p.pagamento === 'Realizado') || p.assento)
+            p.enrollment?.viagem_id === tripToCalc.id &&
+            ((p.enrollment?.pagamento === 'Pago' || p.enrollment?.pagamento === 'Realizado') || p.enrollment?.assento)
         ).length;
 
         return Math.max(0, totalCapacity - occupied);
@@ -243,10 +243,10 @@ export const TripPaymentCenter = () => {
             const existing = identityMap.get(identityKey);
 
             // 1. If it's for the CURRENT trip, it ALWAYS wins
-            if (trip && p.viagem_id === trip.id) {
+            if (trip && p.enrollment?.viagem_id === trip.id) {
                 identityMap.set(identityKey, p);
             }
-            // 2. If nothing exists yet, accept it (prefer Master record logic if needed, but simple valid record is fine for search)
+            // 2. If nothing exists yet, accept it
             else if (!existing) {
                 identityMap.set(identityKey, p);
             }
@@ -268,7 +268,7 @@ export const TripPaymentCenter = () => {
 
     const togglePassengerSelection = (p: Passenger) => {
         // Only block if they are already paid FOR THIS trip
-        if (p.viagem_id === trip?.id && (p.pagamento === 'Pago' || p.pagamento === 'Realizado')) {
+        if (p.enrollment?.viagem_id === trip?.id && (p.enrollment?.pagamento === 'Pago' || p.enrollment?.pagamento === 'Realizado')) {
             showToast('Este passageiro já está pago neste roteiro', 'info');
             return;
         }

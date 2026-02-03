@@ -45,10 +45,10 @@ export const TripList: React.FC = () => {
         try {
             // Check if there's a confirmed payment for this passenger in this trip
             const { data: results, error } = await supabase
-                .from('passageiros')
+                .from('viagem_passageiros')
                 .select('id, pagamento')
                 .eq('viagem_id', trip.id)
-                .or(`nome_completo.eq."${user?.full_name}",cpf_rg.eq."${user?.email}",pago_por.eq.${user?.id}`)
+                .or(`passageiro_id.eq.${user?.id},pago_por.eq.${user?.id}`)
                 .in('pagamento', ['Pago', 'Realizado']);
 
             if (error) throw error;
@@ -87,10 +87,17 @@ export const TripList: React.FC = () => {
     };
 
     const getOccupiedSeats = (tripId: string) => {
+        const { enrollments, passengers } = usePassengerStore.getState();
+        const blockedIdentityId = passengers.find(p => p.nome_completo === 'BLOQUEADO')?.id;
+
         // Count confirmed payments OR assigned seats as occupied "quotas"
-        return passengers.filter((p) => {
-            return p.viagem_id === tripId &&
-                ((p.pagamento === 'Pago' || p.pagamento === 'Realizado') || p.assento);
+        // EXCLUDING internal blocks from the occupancy count
+        return enrollments.filter((e) => {
+            if (e.viagem_id !== tripId) return false;
+            // Exclude blocks
+            if (blockedIdentityId && e.passageiro_id === blockedIdentityId) return false;
+
+            return (e.pagamento === 'Pago' || e.pagamento === 'Realizado') || e.assento;
         }).length;
     };
 
@@ -434,128 +441,128 @@ export const TripList: React.FC = () => {
                 message="Tem certeza que deseja excluir esta viagem? Esta ação não pode ser desfeita."
             />
 
-            {/* Modal de Pagamento Obrigatório - UI Premium */ }
-    <Modal
-        isOpen={paymentModalTrip !== null}
-        onClose={() => setPaymentModalTrip(null)}
-        title={isSoldOut ? "Reservas Encerradas" : "Acesso Restrito"}
-        size="sm"
-        footer={
-            <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <Button
-                    variant="secondary"
-                    onClick={() => setPaymentModalTrip(null)}
-                    className="flex-1 order-2 sm:order-1"
-                >
-                    Voltar
-                </Button>
-                {!isSoldOut && paymentModalTrip && (
-                    <Button
-                        variant="primary"
-                        disabled={isPastTrip}
-                        onClick={() => {
-                            const tripId = paymentModalTrip.id;
-                            setPaymentModalTrip(null);
-                            navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
-                        }}
-                        className={cn(
-                            "flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg",
-                            isPastTrip && "opacity-50 grayscale cursor-not-allowed"
+            {/* Modal de Pagamento Obrigatório - UI Premium */}
+            <Modal
+                isOpen={paymentModalTrip !== null}
+                onClose={() => setPaymentModalTrip(null)}
+                title={isSoldOut ? "Reservas Encerradas" : "Acesso Restrito"}
+                size="sm"
+                footer={
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setPaymentModalTrip(null)}
+                            className="flex-1 order-2 sm:order-1"
+                        >
+                            Voltar
+                        </Button>
+                        {!isSoldOut && paymentModalTrip && (
+                            <Button
+                                variant="primary"
+                                disabled={isPastTrip}
+                                onClick={() => {
+                                    const tripId = paymentModalTrip.id;
+                                    setPaymentModalTrip(null);
+                                    navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
+                                }}
+                                className={cn(
+                                    "flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg",
+                                    isPastTrip && "opacity-50 grayscale cursor-not-allowed"
+                                )}
+                            >
+                                <CreditCard size={18} className="mr-2" />
+                                {isPastTrip ? 'Viagem Encerrada' : 'Ir para Pagamento'}
+                            </Button>
                         )}
-                    >
-                        <CreditCard size={18} className="mr-2" />
-                        {isPastTrip ? 'Viagem Encerrada' : 'Ir para Pagamento'}
-                    </Button>
-                )}
-            </div>
-        }
-    >
-        <div className="relative -mt-2 space-y-6">
-            {paymentModalTrip && !isSoldOut ? (
-                <>
-                    {/* Header Ilustrativo */}
-                    <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
-                            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
-                                <CreditCard size={40} className="text-white" />
-                            </div>
-                            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
-                                <AlertCircle size={24} className="text-amber-500" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-bold text-gray-900">Pagamento Necessário</h3>
-                            <p className="text-gray-500 max-w-[280px]">
-                                Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.
-                            </p>
-                        </div>
                     </div>
+                }
+            >
+                <div className="relative -mt-2 space-y-6">
+                    {paymentModalTrip && !isSoldOut ? (
+                        <>
+                            {/* Header Ilustrativo */}
+                            <div className="flex flex-col items-center text-center space-y-4">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
+                                    <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
+                                        <CreditCard size={40} className="text-white" />
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
+                                        <AlertCircle size={24} className="text-amber-500" />
+                                    </div>
+                                </div>
 
-                    {/* Vagas Disponíveis Card */}
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                <Users size={20} />
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-bold text-gray-900">Pagamento Necessário</h3>
+                                    <p className="text-gray-500 max-w-[280px]">
+                                        Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-2xl font-black text-blue-600">
-                                {availableSeats}
-                            </span>
-                        </div>
-                    </div>
 
-                    {/* Route Info Section */}
-                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                <MapPin size={16} className="text-blue-500" />
+                            {/* Vagas Disponíveis Card */}
+                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                                        <Users size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-2xl font-black text-blue-600">
+                                        {availableSeats}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
-                                <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
-                            </div>
-                        </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                <MapPin size={16} className="text-green-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
-                                <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
-                            </div>
-                        </div>
-                    </div>
+                            {/* Route Info Section */}
+                            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                        <MapPin size={16} className="text-blue-500" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
+                                    </div>
+                                </div>
 
-                    <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
-                        <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                        <p className="text-sm leading-relaxed">
-                            O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
-                        </p>
-                    </div>
-                </>
-            ) : (
-                paymentModalTrip && (
-                    <div className="flex flex-col items-center py-4 space-y-6">
-                        <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                            <AlertCircle size={40} />
-                        </div>
-                        <div className="flex gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-800 text-center">
-                            <p className="text-base font-bold leading-relaxed">
-                                Reservas Encerradas: Todas as vagas para esta excursão já foram preenchidas.
-                            </p>
-                        </div>
-                    </div>
-                )
-            )}
-        </div>
-    </Modal>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                        <MapPin size={16} className="text-green-500" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
+                                <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                                <p className="text-sm leading-relaxed">
+                                    O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        paymentModalTrip && (
+                            <div className="flex flex-col items-center py-4 space-y-6">
+                                <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                                    <AlertCircle size={40} />
+                                </div>
+                                <div className="flex gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-800 text-center">
+                                    <p className="text-base font-bold leading-relaxed">
+                                        Reservas Encerradas: Todas as vagas para esta excursão já foram preenchidas.
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 };

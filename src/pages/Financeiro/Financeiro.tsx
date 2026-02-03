@@ -21,30 +21,34 @@ export const Financeiro: React.FC = () => {
         fetchViagens();
     }, [fetchPassageiros, fetchViagens]);
 
-    // Only show passengers that are assigned to a trip
-    const tripPassengers = passengers.filter(p => p.viagem_id !== null && p.assento !== null);
+    // Only show passengers that are assigned to a trip in an enrollment - EXCLUDE BLOQUEADO technical user
+    const tripPassengers = passengers.filter(p => {
+        const e = p.enrollment;
+        return p.nome_completo !== 'BLOQUEADO' && e && e.viagem_id && e.assento;
+    });
     const now = new Date();
 
     const filteredPassengers = tripPassengers.filter(p => {
-        const passengerTrip = trips.find(t => t.id === p.viagem_id);
+        const e = p.enrollment!; // We know it exists from the filter above
+        const passengerTrip = trips.find(t => t.id === e.viagem_id);
         const matchesTime = timeFilter === 'all' || (passengerTrip && (
             timeFilter === 'future' ? new Date(passengerTrip.data_ida) >= now : new Date(passengerTrip.data_ida) < now
         ));
 
-        const matchesTrip = (!selectedTripId || selectedTripId === 'all') || p.viagem_id === selectedTripId;
+        const matchesTrip = (!selectedTripId || selectedTripId === 'all') || e.viagem_id === selectedTripId;
         const matchesStatus = statusFilter === 'all' ||
-            (statusFilter === 'paid' && (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')) ||
-            (statusFilter === 'pending' && (p.pagamento === 'pending' || p.pagamento === 'Pendente' || !p.pagamento));
+            (statusFilter === 'paid' && (e.pagamento === 'paid' || e.pagamento === 'Realizado' || e.pagamento === 'Pago')) ||
+            (statusFilter === 'pending' && (e.pagamento === 'pending' || e.pagamento === 'Pendente' || !e.pagamento));
         const matchesSearch = p.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (p.assento || '').toLowerCase().includes(searchTerm.toLowerCase());
+            (String(e.assento) || '').toLowerCase().includes(searchTerm.toLowerCase());
 
         return matchesTime && matchesTrip && matchesStatus && matchesSearch;
     });
 
     const groupedPassengers = trips
         .map(trip => {
-            const passengersInTrip = filteredPassengers.filter(p => p.viagem_id === trip.id);
-            const totalArrecadado = passengersInTrip.reduce((sum, p) => sum + (p.valor_pago || 0), 0);
+            const passengersInTrip = filteredPassengers.filter(p => p.enrollment?.viagem_id === trip.id);
+            const totalArrecadado = passengersInTrip.reduce((sum, p) => sum + (p.enrollment?.valor_pago || 0), 0);
             const totalMeta = (trip as any).meta_financeira || (passengersInTrip.length * (trip.preco || 0));
             return {
                 trip,
@@ -60,14 +64,14 @@ export const Financeiro: React.FC = () => {
             const passenger = passengers.find(p => p.id === id);
             if (!passenger) return;
 
-            const trip = trips.find(t => t.id === passenger.viagem_id);
+            const trip = trips.find(t => t.id === passenger.enrollment?.viagem_id);
             const tripPreco = trip?.preco || 0;
 
             const isPaid = newStatus === 'paid' || newStatus === 'Realizado' || newStatus === 'Pago';
             const statusToSave = isPaid ? 'Pago' : 'Pendente';
             const valor_pago = isPaid ? tripPreco : 0;
 
-            await updatePassageiro(id, {
+            await updatePassageiro(id, {}, passenger.enrollment?.id, {
                 pagamento: statusToSave as any,
                 valor_pago
             });
@@ -262,39 +266,43 @@ export const Financeiro: React.FC = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                        {group.passengers.map((p: any) => (
-                                            <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
-                                                <td className="px-6 py-5">
-                                                    <div className="font-semibold text-gray-900">{p.nome_completo}</div>
-                                                </td>
-                                                <td className="px-6 py-5 text-center font-mono text-gray-600 font-bold">{p.assento || '-'}</td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <span className={cn(
-                                                        "font-mono font-bold",
-                                                        (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? "text-emerald-600" : "text-gray-400"
-                                                    )}>
-                                                        R$ {p.valor_pago?.toFixed(2) || '0,00'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-5 text-right pr-8">
-                                                    <button
-                                                        onClick={() => {
-                                                            const currentStatus = p.pagamento || 'Pendente';
-                                                            const isCurrentlyPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
-                                                            const newStatus = isCurrentlyPaid ? 'Pendente' : 'Pago';
-                                                            handleUpdateStatus(p.id, newStatus);
-                                                        }}
-                                                        className={cn(
-                                                            "px-4 py-1.5 rounded-full text-xs font-bold border-none outline-none ring-1 transition-all min-w-[100px] hover:scale-105 active:scale-95",
-                                                            (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 ring-emerald-200 hover:from-emerald-200 hover:to-emerald-100 shadow-sm" :
-                                                                "bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 ring-amber-200 hover:from-amber-200 hover:to-amber-100 shadow-sm"
-                                                        )}
-                                                    >
-                                                        {(p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? 'PAGO' : 'PENDENTE'}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {group.passengers.map((p: any) => {
+                                            const e = p.enrollment;
+                                            const currentStatus = e?.pagamento || 'Pendente';
+                                            const isPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
+
+                                            return (
+                                                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
+                                                    <td className="px-6 py-5">
+                                                        <div className="font-semibold text-gray-900">{p.nome_completo}</div>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center font-mono text-gray-600 font-bold">{e?.assento || '-'}</td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <span className={cn(
+                                                            "font-mono font-bold",
+                                                            isPaid ? "text-emerald-600" : "text-gray-400"
+                                                        )}>
+                                                            R$ {e?.valor_pago?.toFixed(2) || '0,00'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-right pr-8">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newStatus = isPaid ? 'Pendente' : 'Pago';
+                                                                handleUpdateStatus(p.id, newStatus);
+                                                            }}
+                                                            className={cn(
+                                                                "px-4 py-1.5 rounded-full text-xs font-bold border-none outline-none ring-1 transition-all min-w-[100px] hover:scale-105 active:scale-95",
+                                                                isPaid ? "bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 ring-emerald-200 hover:from-emerald-200 hover:to-emerald-100 shadow-sm" :
+                                                                    "bg-gradient-to-r from-amber-100 to-amber-50 text-amber-700 ring-amber-200 hover:from-amber-200 hover:to-amber-100 shadow-sm"
+                                                            )}
+                                                        >
+                                                            {isPaid ? 'PAGO' : 'PENDENTE'}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </React.Fragment>
                                 ))}
                             </tbody>
@@ -335,65 +343,64 @@ export const Financeiro: React.FC = () => {
 
                                     {/* Mobile Passenger List */}
                                     <div className="space-y-2">
-                                        {group.passengers.map((p: any) => (
-                                            <div
-                                                key={p.id}
-                                                className={cn(
-                                                    "relative overflow-hidden bg-white rounded-2xl border transition-all p-4 space-y-3",
-                                                    (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')
-                                                        ? "border-emerald-100 shadow-sm"
-                                                        : "border-gray-100 shadow-sm"
-                                                )}
-                                            >
-                                                {/* Left Status Bar */}
-                                                <div className={cn(
-                                                    "absolute left-0 top-0 bottom-0 w-1",
-                                                    (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? "bg-emerald-500" : "bg-amber-400"
-                                                )} />
+                                        {group.passengers.map((p: any) => {
+                                            const e = p.enrollment;
+                                            const currentStatus = e?.pagamento || 'Pendente';
+                                            const isPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
 
-                                                <div className="flex justify-between items-start">
-                                                    <div className="space-y-1">
-                                                        <div className="font-black text-gray-900 leading-tight text-sm uppercase tracking-tight">
-                                                            {p.nome_completo}
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Assento:</span>
-                                                            <span className="text-[10px] font-black text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
-                                                                #{p.assento || 'N/A'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-4 pt-2 border-t border-gray-50">
+                                            return (
+                                                <div
+                                                    key={p.id}
+                                                    className={cn(
+                                                        "relative overflow-hidden bg-white rounded-2xl border transition-all p-4 space-y-3",
+                                                        isPaid ? "border-emerald-100 shadow-sm" : "border-gray-100 shadow-sm"
+                                                    )}
+                                                >
+                                                    {/* Left Status Bar */}
                                                     <div className={cn(
-                                                        "font-mono font-black text-xs px-3 py-2 rounded-xl border flex-shrink-0",
-                                                        (p.pagamento === 'paid' || p.pagamento === 'Realizado')
-                                                            ? "text-emerald-700 bg-emerald-50 border-emerald-100"
-                                                            : "text-gray-400 bg-gray-50 border-gray-100"
-                                                    )}>
-                                                        R$ {p.valor_pago?.toFixed(2) || '0,00'}
+                                                        "absolute left-0 top-0 bottom-0 w-1",
+                                                        isPaid ? "bg-emerald-500" : "bg-amber-400"
+                                                    )} />
+
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="space-y-1">
+                                                            <div className="font-black text-gray-900 leading-tight text-sm uppercase tracking-tight">
+                                                                {p.nome_completo}
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Assento:</span>
+                                                                <span className="text-[10px] font-black text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+                                                                    #{e?.assento || 'N/A'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
-                                                    <button
-                                                        onClick={() => {
-                                                            const currentStatus = p.pagamento || 'Pendente';
-                                                            const isCurrentlyPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
-                                                            const newStatus = isCurrentlyPaid ? 'Pendente' : 'Pago';
-                                                            handleUpdateStatus(p.id, newStatus);
-                                                        }}
-                                                        className={cn(
-                                                            "px-6 py-2 rounded-xl text-[10px] font-black border-none outline-none ring-1 transition-all uppercase tracking-widest flex-1 max-w-[140px] text-center ml-auto",
-                                                            (p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago')
-                                                                ? "bg-emerald-100 text-emerald-700 ring-emerald-200 active:bg-emerald-200"
-                                                                : "bg-amber-100 text-amber-700 ring-amber-200 active:bg-amber-200"
-                                                        )}
-                                                    >
-                                                        {(p.pagamento === 'paid' || p.pagamento === 'Realizado' || p.pagamento === 'Pago') ? 'PAGO' : 'PENDENTE'}
-                                                    </button>
+                                                    <div className="flex items-center gap-4 pt-2 border-t border-gray-50">
+                                                        <div className={cn(
+                                                            "font-mono font-black text-xs px-3 py-2 rounded-xl border flex-shrink-0",
+                                                            isPaid ? "text-emerald-700 bg-emerald-50 border-emerald-100" : "text-gray-400 bg-gray-50 border-gray-100"
+                                                        )}>
+                                                            R$ {e?.valor_pago?.toFixed(2) || '0,00'}
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                const newStatus = isPaid ? 'Pendente' : 'Pago';
+                                                                handleUpdateStatus(p.id, newStatus);
+                                                            }}
+                                                            className={cn(
+                                                                "px-6 py-2 rounded-xl text-[10px] font-black border-none outline-none ring-1 transition-all uppercase tracking-widest flex-1 max-w-[140px] text-center ml-auto",
+                                                                isPaid ? "bg-emerald-100 text-emerald-700 ring-emerald-200 active:bg-emerald-200" :
+                                                                    "bg-amber-100 text-amber-700 ring-amber-200 active:bg-amber-200"
+                                                            )}
+                                                        >
+                                                            {isPaid ? 'PAGO' : 'PENDENTE'}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}

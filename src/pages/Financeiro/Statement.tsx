@@ -65,38 +65,20 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
 
             // If userId is provided, filter for that user (as included passenger)
             if (userId) {
-                // 1. First find the CPF/RG for this userId
-                const { data: userData } = await supabase
-                    .from('passageiros')
-                    .select('cpf_rg')
-                    .eq('id', userId)
-                    .single();
+                // 1. Find all passenger IDs they PAID for (from enrollments)
+                const { data: enrollments } = await supabase
+                    .from('viagem_passageiros')
+                    .select('passageiro_id')
+                    .eq('pago_por', userId);
 
-                if (userData?.cpf_rg) {
-                    // 2. Find all IDs associated with this identity:
-                    // - Their own records (shared CPF/RG)
-                    // - Records they PAID for (pago_por)
-                    const { data: related } = await supabase
-                        .from('passageiros')
-                        .select('id')
-                        .or(`cpf_rg.eq."${userData.cpf_rg}",pago_por.eq.${userId}`);
+                const paidPassengerIds = (enrollments || []).map(e => e.passageiro_id);
 
-                    const allUserIds = related?.map(r => r.id) || [userId];
+                // 3. Collect all related identity IDs
+                // - Their own ID
+                // - Any IDs they paid for
+                const allRelatedIds = [...new Set([userId, ...paidPassengerIds])];
 
-                    // 3. Find any payments that include ANY of these IDs in the passageiros_ids array
-                    query = query.overlaps('passageiros_ids', allUserIds);
-                } else {
-                    // Fallback: If CPF not found, at least try to find things paid by this userId
-                    const { data: related } = await supabase
-                        .from('passageiros')
-                        .select('id')
-                        .eq('pago_por', userId);
-
-                    const paidIds = related?.map(r => r.id) || [];
-                    const allUserIds = [...new Set([userId, ...paidIds])];
-
-                    query = query.overlaps('passageiros_ids', allUserIds);
-                }
+                query = query.overlaps('passageiros_ids', allRelatedIds);
             }
 
             const { data, error } = await query;

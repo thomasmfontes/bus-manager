@@ -262,35 +262,84 @@ export default function ExcursaoForm() {
         const toastId = toast.loading("Enviando…");
 
         try {
-            console.log('💾 Enviando para Supabase...');
-            // Enviar para Supabase
-            const { error } = await supabase
+            console.log('💾 Processando cadastro...');
+            const documento = form.cpf || form.rg;
+
+            // 1. Find or Create Identity
+            let { data: identity, error: findError } = await supabase
                 .from('passageiros')
-                .insert([
-                    {
+                .select('id')
+                .eq('cpf_rg', documento)
+                .maybeSingle();
+
+            if (findError) throw findError;
+
+            let passengerId;
+            if (identity) {
+                passengerId = identity.id;
+                console.log('👤 Passageiro já cadastrado, atualizando dados mestres...');
+                // Update identity info
+                await supabase.from('passageiros').update({
+                    nome_completo: form.fullName,
+                    comum_congregacao: form.congregation,
+                    estado_civil: form.maritalStatus,
+                    idade: form.age ? parseInt(form.age) : null,
+                    telefone: form.phone,
+                    instrumento: form.instrument,
+                    auxiliar: form.auxiliar,
+                }).eq('id', passengerId);
+            } else {
+                console.log('🆕 Criando novo registro de passageiro...');
+                const { data: newIdentity, error: createError } = await supabase
+                    .from('passageiros')
+                    .insert([{
                         nome_completo: form.fullName,
-                        cpf_rg: form.cpf || form.rg,
+                        cpf_rg: documento,
                         comum_congregacao: form.congregation,
                         estado_civil: form.maritalStatus,
                         idade: form.age ? parseInt(form.age) : null,
                         telefone: form.phone,
                         instrumento: form.instrument,
                         auxiliar: form.auxiliar,
-                        pagamento: 'Pendente',
-                        viagem_id: tripId || null,
-                    }
-                ]);
-
-            if (error) {
-                console.error('❌ Erro do Supabase:', error);
-                throw error;
+                    }])
+                    .select()
+                    .single();
+                if (createError) throw createError;
+                passengerId = newIdentity.id;
             }
+
+            // 2. Create Enrollment in the current trip
+            if (tripId) {
+                console.log('Ticket: Conferindo inscrição na viagem...');
+                const { data: existingEnroll, error: enrollFindError } = await supabase
+                    .from('viagem_passageiros')
+                    .select('id')
+                    .eq('passageiro_id', passengerId)
+                    .eq('viagem_id', tripId)
+                    .maybeSingle();
+
+                if (enrollFindError) throw enrollFindError;
+
+                if (!existingEnroll) {
+                    console.log('🎟️ Criando nova inscrição para a viagem...');
+                    const { error: enrollError } = await supabase
+                        .from('viagem_passageiros')
+                        .insert([{
+                            passageiro_id: passengerId,
+                            viagem_id: tripId,
+                            pagamento: 'Pendente',
+                        }]);
+                    if (enrollError) throw enrollError;
+                } else {
+                    console.log('🎟️ Passageiro já está inscrito nesta viagem.');
+                }
+            }
+
 
             console.log('✅ Cadastro realizado com sucesso!');
             toast.success("Cadastro confirmado! 🎉", { id: toastId });
 
             // Auto-login o passageiro recém criado
-            const documento = form.cpf || form.rg;
             if (documento) {
                 await useAuthStore.getState().login('', '', documento);
             }

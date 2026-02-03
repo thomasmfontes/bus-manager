@@ -137,15 +137,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json({ message: 'Already processed or no change required' });
             }
 
-            // 4. Update linked passengers status
+            // 4. Update linked enrollments status
             const individualValue = (transaction.valor_total || 0) / (transaction.passageiros_ids?.length || 1);
             const { error: pUpdateError } = await supabase
-                .from('passageiros')
+                .from('viagem_passageiros')
                 .update({
                     pagamento: 'Pago',
                     valor_pago: individualValue
                 })
-                .in('id', transaction.passageiros_ids)
+                .in('passageiro_id', transaction.passageiros_ids)
                 .eq('viagem_id', transaction.viagem_id);
 
             if (pUpdateError) {

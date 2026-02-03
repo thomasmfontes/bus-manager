@@ -1,110 +1,203 @@
 import { create } from 'zustand';
-import { Passenger } from '@/types';
+import { Passenger, TripEnrollment } from '@/types';
 import { supabase } from '@/lib/supabase';
 
 interface PassengerState {
     passengers: Passenger[];
+    enrollments: TripEnrollment[];
     loading: boolean;
-    fetchPassageiros: () => Promise<void>;
-    createPassageiro: (passenger: Omit<Passenger, 'id'>) => Promise<void>;
-    updatePassageiro: (id: string, passenger: Partial<Passenger>) => Promise<void>;
-    deletePassageiro: (id: string) => Promise<void>;
+    fetchPassageiros: (viagemId?: string) => Promise<void>;
+    createPassageiro: (passenger: Omit<Passenger, 'id'>, viagemId?: string, enrollmentData?: Partial<TripEnrollment>) => Promise<void>;
+    updatePassageiro: (id: string, passenger: Partial<Passenger>, enrollmentId?: string, enrollmentData?: Partial<TripEnrollment>) => Promise<void>;
+    deletePassageiro: (id: string, enrollmentId?: string) => Promise<void>;
     deleteAllPassageiros: () => Promise<void>;
 }
 
 export const usePassengerStore = create<PassengerState>((set, get) => ({
     passengers: [],
+    enrollments: [],
     loading: false,
-    fetchPassageiros: async () => {
+    fetchPassageiros: async (viagemId?: string) => {
         set({ loading: true });
         try {
-            const { data, error } = await supabase
-                .from('passageiros')
+            // 1. Fetch ALL Enrollments (for global counts like occupied seats)
+            const { data: allEnrollments, error: enrollError } = await supabase
+                .from('viagem_passageiros')
                 .select('*')
-                .neq('nome_completo', 'BLOQUEADO')
-                .order('nome_completo', { ascending: true });
+                .order('created_at', { ascending: false });
 
+            if (enrollError) throw enrollError;
+
+            // 2. Fetch Passengers
+            let query = supabase
+                .from('passageiros')
+                .select(`
+                    *,
+                    enrollment:viagem_passageiros (*)
+                `);
+
+            if (viagemId) {
+                const cleanViagemId = viagemId.toLowerCase();
+                // Return passengers in THIS trip OR the "BLOQUEADO" identity
+                const travelerIds = (allEnrollments || [])
+                    .filter((e: TripEnrollment) => e.viagem_id?.toLowerCase() === cleanViagemId)
+                    .map(e => e.passageiro_id);
+
+                // Find the BLOQUEADO identity ID if not already there
+                const { data: blockedData } = await supabase
+                    .from('passageiros')
+                    .select('id')
+                    .eq('nome_completo', 'BLOQUEADO')
+                    .maybeSingle();
+
+                if (blockedData && !travelerIds.includes(blockedData.id)) {
+                    travelerIds.push(blockedData.id);
+                }
+
+                query = query.in('id', travelerIds);
+            }
+
+            const { data, error } = await query.order('nome_completo', { ascending: true });
             if (error) throw error;
 
-            set({ passengers: data || [], loading: false });
+            // Map and Flatten
+            const mappedPassengers = (data || []).map(p => {
+                // If filtered by trip, take exactly THAT enrollment
+                // If global, take the latest one (or first)
+                const enrolls = Array.isArray(p.enrollment) ? p.enrollment : (p.enrollment ? [p.enrollment] : []);
+                const relevantEnroll = viagemId
+                    ? enrolls.find((e: TripEnrollment) => e.viagem_id?.toLowerCase() === viagemId.toLowerCase())
+                    : enrolls[0];
+
+                return {
+                    ...p,
+                    enrollment: relevantEnroll
+                };
+            });
+
+            set({
+                passengers: mappedPassengers,
+                enrollments: (allEnrollments || []),
+                loading: false
+            });
         } catch (error) {
             console.error('Error fetching passageiros:', error);
             set({ loading: false });
         }
     },
-    createPassageiro: async (passenger) => {
+    createPassageiro: async (passenger, viagemId, enrollmentData) => {
         set({ loading: true });
         try {
-            const { data, error } = await supabase
+            // 1. Find or Create Identity
+            let { data: identity, error: findError } = await supabase
                 .from('passageiros')
-                .insert([{
-                    nome_completo: passenger.nome_completo,
-                    cpf_rg: passenger.cpf_rg,
-                    instrumento: passenger.instrumento,
-                    comum_congregacao: passenger.comum_congregacao,
-                    estado_civil: passenger.estado_civil,
-                    auxiliar: passenger.auxiliar,
-                    idade: passenger.idade,
-                    telefone: passenger.telefone,
-                    pagamento: passenger.pagamento || 'pending',
-                    viagem_id: passenger.viagem_id,
-                    assento: passenger.assento,
-                    valor_pago: passenger.valor_pago || 0,
-                }])
-                .select()
-                .single();
+                .select('*')
+                .eq('cpf_rg', passenger.cpf_rg)
+                .maybeSingle();
 
-            if (error) throw error;
+            if (findError) throw findError;
 
-            set({ passengers: [...get().passengers, data], loading: false });
+            if (!identity) {
+                const { data: newIdentity, error: createError } = await supabase
+                    .from('passageiros')
+                    .insert([{
+                        nome_completo: passenger.nome_completo,
+                        cpf_rg: passenger.cpf_rg,
+                        telefone: passenger.telefone,
+                        comum_congregacao: passenger.comum_congregacao,
+                        estado_civil: passenger.estado_civil,
+                        idade: passenger.idade,
+                        instrumento: passenger.instrumento,
+                        auxiliar: passenger.auxiliar,
+                    }])
+                    .select()
+                    .single();
+
+                if (createError) throw createError;
+                identity = newIdentity;
+            } else {
+                // Simple update of master info if changed
+                await supabase.from('passageiros').update({
+                    telefone: passenger.telefone || identity.telefone,
+                    comum_congregacao: passenger.comum_congregacao || identity.comum_congregacao,
+                    instrumento: passenger.instrumento || identity.instrumento,
+                }).eq('id', identity.id);
+            }
+
+            // 2. Create Enrollment if viagemId is provided
+            if (viagemId) {
+                const { error: enrollError } = await supabase
+                    .from('viagem_passageiros')
+                    .insert([{
+                        passageiro_id: identity!.id,
+                        viagem_id: viagemId,
+                        onibus_id: enrollmentData?.onibus_id,
+                        assento: enrollmentData?.assento,
+                        pagamento: enrollmentData?.pagamento || 'Pendente',
+                        valor_pago: enrollmentData?.valor_pago || 0,
+                        pago_por: enrollmentData?.pago_por,
+                    }]);
+
+                if (enrollError) throw enrollError;
+            }
+
+            await get().fetchPassageiros(viagemId);
         } catch (error) {
             console.error('Error creating passageiro:', error);
-            set({ loading: false });
             throw error;
+        } finally {
+            set({ loading: false });
         }
     },
-    updatePassageiro: async (id, passenger) => {
+    updatePassageiro: async (id, passenger, enrollmentId, enrollmentData) => {
         set({ loading: true });
         try {
-            const updates: any = {};
-            if (passenger.nome_completo) updates.nome_completo = passenger.nome_completo;
-            if (passenger.cpf_rg) updates.cpf_rg = passenger.cpf_rg;
-            if (passenger.instrumento !== undefined) updates.instrumento = passenger.instrumento;
-            if (passenger.comum_congregacao !== undefined) updates.comum_congregacao = passenger.comum_congregacao;
-            if (passenger.estado_civil !== undefined) updates.estado_civil = passenger.estado_civil;
-            if (passenger.auxiliar !== undefined) updates.auxiliar = passenger.auxiliar;
-            if (passenger.idade !== undefined) updates.idade = passenger.idade;
-            if (passenger.telefone !== undefined) updates.telefone = passenger.telefone;
-            if (passenger.pagamento !== undefined) updates.pagamento = passenger.pagamento;
-            if (passenger.viagem_id !== undefined) updates.viagem_id = passenger.viagem_id;
-            if (passenger.assento !== undefined) updates.assento = passenger.assento;
-            if (passenger.valor_pago !== undefined) updates.valor_pago = passenger.valor_pago;
+            // 1. Update Identity
+            if (Object.keys(passenger).length > 0) {
+                const { error: identityError } = await supabase
+                    .from('passageiros')
+                    .update(passenger)
+                    .eq('id', id);
+                if (identityError) throw identityError;
+            }
 
-            const { data, error } = await supabase
-                .from('passageiros')
-                .update(updates)
-                .eq('id', id)
-                .select()
-                .single();
+            // 2. Update Enrollment
+            if (enrollmentId && enrollmentData && Object.keys(enrollmentData).length > 0) {
+                const { error: enrollError } = await supabase
+                    .from('viagem_passageiros')
+                    .update(enrollmentData)
+                    .eq('id', enrollmentId);
+                if (enrollError) throw enrollError;
+            }
 
-            if (error) throw error;
-
-            set({
-                passengers: get().passengers.map((p) => (p.id === id ? data : p)),
-                loading: false,
-            });
+            // Refresh local state (this is less efficient but safer for complex joins)
+            // Determine which viagem we are currently viewing or just refresh all
+            const firstEnrollment = get().passengers.find(p => p.id === id)?.enrollment;
+            await get().fetchPassageiros(firstEnrollment?.viagem_id);
         } catch (error) {
             console.error('Error updating passageiro:', error);
-            set({ loading: false });
             throw error;
+        } finally {
+            set({ loading: false });
         }
     },
-    deletePassageiro: async (id) => {
+    deletePassageiro: async (id, enrollmentId) => {
         set({ loading: true });
         try {
-            const { error } = await supabase.from('passageiros').delete().eq('id', id);
-            if (error) throw error;
-            set({ passengers: get().passengers.filter((p) => p.id !== id), loading: false });
+            if (enrollmentId) {
+                // Just delete the enrollment for this trip
+                const { error } = await supabase.from('viagem_passageiros').delete().eq('id', enrollmentId);
+                if (error) throw error;
+            } else {
+                // Delete the entire identity (and by cascade, all enrollments)
+                const { error } = await supabase.from('passageiros').delete().eq('id', id);
+                if (error) throw error;
+            }
+
+            set({
+                passengers: get().passengers.filter((p) => enrollmentId ? p.enrollment?.id !== enrollmentId : p.id !== id),
+                loading: false
+            });
         } catch (error) {
             console.error('Error deleting passageiro:', error);
             set({ loading: false });

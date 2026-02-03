@@ -24,18 +24,17 @@ export const PassengerList: React.FC = () => {
     const [csvUploaderOpen, setCsvUploaderOpen] = useState(false);
 
     useEffect(() => {
-        fetchPassageiros();
-    }, [fetchPassageiros]);
+        // Fetch passengers for the selected trip if exists, otherwise fetch all
+        fetchPassageiros(selectedTripId || undefined);
+    }, [fetchPassageiros, selectedTripId]);
 
-    const handleDelete = async () => {
-        if (!deleteId) return;
-
+    const handleDelete = async (passengerId: string, enrollmentId?: string) => {
         try {
-            await deletePassageiro(deleteId);
-            showToast('Passageiro excluído com sucesso!', 'success');
+            await deletePassageiro(passengerId, enrollmentId);
+            showToast(enrollmentId ? 'Inscrição removida com sucesso!' : 'Passageiro excluído com sucesso!', 'success');
             setDeleteId(null);
         } catch (error) {
-            showToast('Erro ao excluir passageiro', 'error');
+            showToast('Erro ao excluir', 'error');
         }
     };
 
@@ -49,23 +48,13 @@ export const PassengerList: React.FC = () => {
         }
     };
 
-    const handleCsvImport = async (importedPassengers: {
-        nome_completo: string;
-        cpf_rg: string;
-        telefone: string;
-        comum_congregacao?: string;
-        idade?: string;
-        estado_civil?: string;
-        instrumento?: string;
-        auxiliar?: string;
-        pagamento?: string;
-    }[]) => {
+    const handleCsvImport = async (importedPassengers: any[]) => {
         try {
-            for (const passenger of importedPassengers) {
+            for (const p of importedPassengers) {
                 await createPassageiro({
-                    ...passenger,
-                    idade: passenger.idade ? parseInt(passenger.idade) : undefined,
-                });
+                    ...p,
+                    idade: p.idade ? parseInt(p.idade) : undefined,
+                }, selectedTripId || undefined);
             }
             showToast(`${importedPassengers.length} passageiro(s) importado(s) com sucesso!`, 'success');
             setCsvUploaderOpen(false);
@@ -74,37 +63,16 @@ export const PassengerList: React.FC = () => {
         }
     };
 
-    // Group by name and doc to show unique identities
-    const uniquePassengersMap = new Map();
-    passengers
-        .sort((a, b) => {
-            // Priority 1: Master record (no viagem_id)
-            if (a.viagem_id === null && b.viagem_id !== null) return -1;
-            if (a.viagem_id !== null && b.viagem_id === null) return 1;
-            return 0;
-        })
-        .forEach(p => {
-            const key = `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`;
-            if (!uniquePassengersMap.has(key)) {
-                uniquePassengersMap.set(key, p);
-            }
-        });
-
-    const uniquePassengers = Array.from(uniquePassengersMap.values());
-
     const selectedTrip = trips.find(t => t.id === selectedTripId);
 
-    // Filter by trip ONLY IF NOT ADMIN
-    const filteredByTrip = (selectedTripId && !isAdmin)
-        ? uniquePassengers.filter((p: any) => p.viagem_id === selectedTripId)
-        : uniquePassengers;
-
-    const filteredPassengers = filteredByTrip.filter(
+    const filteredPassengers = passengers.filter(
         (p: any) =>
-            p.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.cpf_rg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.telefone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.comum_congregacao?.toLowerCase().includes(searchTerm.toLowerCase())
+            p.nome_completo !== 'BLOQUEADO' && (
+                p.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.cpf_rg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.telefone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.comum_congregacao?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
     );
 
     return (

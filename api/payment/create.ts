@@ -63,57 +63,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(404).json({ error: 'Trip not found' });
         }
 
-        // 2. Resolve Passenger IDs (Clone Master records if necessary)
-        // This ensures every ID in the payment belongs specifically to this trip
+        // 2. Resolve Enrollments (Ensure every passenger is linked to this trip)
         const resolvedPassengerIds: string[] = [];
 
         for (const pid of passengerIds) {
-            const { data: p } = await supabase.from('passageiros').select('*').eq('id', pid).single();
-            if (!p) continue;
+            // Check if enrollment already exists for this trip
+            const { data: enrollment, error: eError } = await supabase
+                .from('viagem_passageiros')
+                .select('id')
+                .eq('passageiro_id', pid)
+                .eq('viagem_id', tripId)
+                .maybeSingle();
 
-            if (p.viagem_id === tripId) {
-                // Already in the trip, keep it
-                resolvedPassengerIds.push(p.id);
-            } else {
-                // Master record or from another trip, clone it for THIS trip
-                const { data: clone, error: cErr } = await supabase
-                    .from('passageiros')
+            if (eError) {
+                console.error('Error checking enrollment:', eError);
+                continue;
+            }
+
+            if (!enrollment) {
+                // Create enrollment for this trip
+                const { error: enrollError } = await supabase
+                    .from('viagem_passageiros')
                     .insert([{
-                        nome_completo: p.nome_completo,
-                        cpf_rg: p.cpf_rg,
-                        telefone: p.telefone,
-                        instrumento: p.instrumento,
-                        comum_congregacao: p.comum_congregacao,
-                        estado_civil: p.estado_civil,
-                        auxiliar: p.auxiliar,
-                        idade: p.idade,
+                        passageiro_id: pid,
                         viagem_id: tripId,
-                        pagamento: 'Pendente' // Initial state
-                    }])
-                    .select()
-                    .single();
+                        pagamento: 'Pendente',
+                        pago_por: payerId || null
+                    }]);
 
-                if (cErr) {
-                    console.error('Error cloning passenger:', cErr);
+                if (enrollError) {
+                    console.error('Error creating enrollment during payment:', enrollError);
                     continue;
                 }
-                resolvedPassengerIds.push(clone.id);
+            } else if (payerId) {
+                // Update existing enrollment with payer link
+                await supabase
+                    .from('viagem_passageiros')
+                    .update({ pago_por: payerId })
+                    .eq('id', enrollment.id);
             }
-        }
 
-        // 3. Stamp "pago_por" on all resolved passengers to link them to the payer
-        if (payerId) {
-            const { error: stampError } = await supabase
-                .from('passageiros')
-                .update({
-                    pago_por: payerId
-                })
-                .in('id', resolvedPassengerIds);
-
-            if (stampError) {
-                console.error('Error stamping payer link:', stampError);
-                // We continue, but this is why the seat map wouldn't show them
-            }
+            resolvedPassengerIds.push(pid);
         }
 
         if (resolvedPassengerIds.length === 0) {
