@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePassengerStore } from '@/stores/usePassengerStore';
-import { useTripStore } from '@/stores/useTripStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/Modal';
@@ -9,12 +8,9 @@ import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
 import { Plus, Edit, Trash2, Search, Upload, Trash, Users } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
-import { useAuthStore } from '@/stores/useAuthStore';
-import { UserRole } from '@/types';
 
 export const PassengerList: React.FC = () => {
     const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
-    const { user } = useAuthStore();
     const { showToast } = useToast();
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
