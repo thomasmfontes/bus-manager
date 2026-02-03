@@ -278,7 +278,7 @@ export const PassengerList: React.FC = () => {
             <ConfirmModal
                 isOpen={deleteId !== null}
                 onClose={() => setDeleteId(null)}
-                onConfirm={handleDelete}
+                onConfirm={() => deleteId && handleDelete(deleteId)}
                 title="Confirmar Exclusão"
                 message="Tem certeza que deseja excluir este passageiro? Esta ação não pode ser desfeita."
             />

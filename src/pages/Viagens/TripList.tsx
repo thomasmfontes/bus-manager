@@ -19,7 +19,7 @@ import { Card } from '@/components/ui/Card';
 export const TripList: React.FC = () => {
     const { trips, fetchViagens, deleteViagem, loading, selectedTripId, setSelectedTripId } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
-    const { passengers, fetchPassageiros } = usePassengerStore();
+    const { fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
     const { showToast } = useToast();
     const navigate = useNavigate();
