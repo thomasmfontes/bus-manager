@@ -23,6 +23,7 @@ export const useAuthStore = create<AuthState>()(
                     let role: UserRole = UserRole.USER;
                     let userId: string = '';
                     let userName: string = '';
+                    let avatarUrl: string | undefined = undefined;
 
                     // Check if trying to login with email (Admin flow)
                     if (email && senha) {
@@ -40,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
                         // Check if user has admin role in profiles
                         const { data: profile, error: profileError } = await supabase
                             .from('profiles')
-                            .select('role, full_name')
+                            .select('role, full_name, avatar_url')
                             .eq('id', authData.user.id)
                             .single();
 
@@ -53,6 +54,7 @@ export const useAuthStore = create<AuthState>()(
                         role = UserRole.ADMIN;
                         userId = authData.user.id;
                         userName = profile.full_name || 'Administrador';
+                        avatarUrl = (profile as any).avatar_url;
                     }
                     // All other users MUST provide documento
                     else if (documento) {
@@ -95,6 +97,7 @@ export const useAuthStore = create<AuthState>()(
                             id: userId,
                             email: email || documento || '',
                             full_name: userName,
+                            avatar_url: avatarUrl,
                             role,
                         },
                     });

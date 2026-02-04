@@ -62,28 +62,34 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
-            <div className="fixed bottom-4 right-4 z-50 space-y-3 max-w-md">
+            <div className={cn(
+                "fixed z-[100] flex flex-col gap-3 pointer-events-none",
+                "bottom-4 inset-x-4 sm:bottom-6 sm:right-6 sm:left-auto sm:max-w-md",
+                "transition-all duration-300"
+            )}>
                 {toasts.map((toast) => (
                     <div
                         key={toast.id}
                         className={cn(
-                            'flex items-start gap-3 px-4 py-3 rounded-xl shadow-soft-lg border',
-                            'animate-in fade-in slide-in-from-right-5',
-                            'transition-all duration-200',
+                            'flex items-start gap-4 px-5 py-4 rounded-2xl shadow-xl border pointer-events-auto',
+                            'backdrop-blur-md bg-white/95',
+                            'animate-in fade-in slide-in-from-bottom-5 sm:slide-in-from-right-5',
+                            'transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]',
                             getToastStyles(toast.type)
                         )}
                     >
                         <div className="flex-shrink-0 mt-0.5">
                             {getIcon(toast.type)}
                         </div>
-                        <p className="flex-1 text-sm font-medium leading-relaxed">
+                        <p className="flex-1 text-[15px] font-bold leading-tight">
                             {toast.message}
                         </p>
                         <button
                             onClick={() => removeToast(toast.id)}
-                            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors rounded p-0.5 hover:bg-white/50"
+                            className="flex-shrink-0 text-gray-400 hover:text-gray-900 transition-colors rounded-full p-1 hover:bg-gray-100"
+                            aria-label="Fechar"
                         >
-                            <X size={16} />
+                            <X size={18} />
                         </button>
                     </div>
                 ))}

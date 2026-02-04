@@ -68,6 +68,20 @@ export const AuthenticatedLayout: React.FC = () => {
                     )}
                     <span className="font-bold text-gray-900 dark:text-white text-lg">Bus Manager</span>
                 </div>
+
+                {user && (
+                    <Link to="/settings" className="lg:hidden">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-md ring-2 ring-gray-100 overflow-hidden">
+                            {user.avatar_url ? (
+                                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-white font-bold text-xs">
+                                    {user.email?.charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                    </Link>
+                )}
             </div>
 
             {/* Overlay */}
@@ -149,10 +163,14 @@ export const AuthenticatedLayout: React.FC = () => {
                 {/* User Section */}
                 <div className="p-4 border-t border-gray-700/50 bg-gray-800/50">
                     <div className="flex items-center gap-3 px-3 py-3 mb-3 rounded-xl bg-gray-700/30">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg ring-2 ring-gray-600">
-                            <span className="text-white font-bold text-sm">
-                                {user?.email?.charAt(0).toUpperCase()}
-                            </span>
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg ring-2 ring-gray-600 overflow-hidden">
+                            {user?.avatar_url ? (
+                                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-white font-bold text-sm">
+                                    {user?.email?.charAt(0).toUpperCase()}
+                                </span>
+                            )}
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-white truncate">{user?.email}</p>

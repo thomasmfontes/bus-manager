@@ -11,6 +11,7 @@ interface AdminProfile {
     id: string;
     email: string;
     full_name: string;
+    avatar_url?: string;
     role: string;
     created_at: string;
 }
@@ -199,8 +200,12 @@ export const AdminList: React.FC = () => {
                             {admins.map((admin) => (
                                 <div key={admin.id} className="flex items-center justify-between p-3 sm:p-4 bg-white hover:bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-all group">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base shrink-0 shadow-sm">
-                                            {admin.full_name?.charAt(0) || admin.email.charAt(0).toUpperCase()}
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base shrink-0 shadow-sm overflow-hidden border-2 border-white ring-1 ring-gray-100">
+                                            {admin.avatar_url ? (
+                                                <img src={admin.avatar_url} alt={admin.full_name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                admin.full_name?.charAt(0) || admin.email.charAt(0).toUpperCase()
+                                            )}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="font-semibold text-gray-900 truncate">{admin.full_name || 'Sem nome'}</p>
