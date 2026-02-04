@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
-import { Save, X, Plus, AlertCircle } from 'lucide-react';
+import { X, Plus, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export const TripForm: React.FC = () => {
     const navigate = useNavigate();
@@ -82,13 +82,31 @@ export const TripForm: React.FC = () => {
 
     return (
         <div className="space-y-6 fade-in duration-500 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-            <h1 className="text-3xl font-bold text-gray-dark">Nova Viagem</h1>
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={() => navigate('/viagens')}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all shadow-sm group"
+                    aria-label="Voltar"
+                >
+                    <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                </button>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                        Nova Viagem
+                    </h1>
+                    <p className="text-gray-500 text-sm">
+                        Cadastre um novo itinerário e organize os passageiros
+                    </p>
+                </div>
+            </div>
 
             <Card>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
                             label="Nome da Viagem (Origem)"
+                            labelClassName="font-bold ml-1"
                             value={formData.nome}
                             onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                             placeholder="Ex: Excursão Aparecida"
@@ -97,6 +115,7 @@ export const TripForm: React.FC = () => {
 
                         <Input
                             label="Destino"
+                            labelClassName="font-bold ml-1"
                             value={formData.destino}
                             onChange={(e) => setFormData({ ...formData, destino: e.target.value })}
                             placeholder="Ex: Aparecida do Norte"
@@ -108,6 +127,7 @@ export const TripForm: React.FC = () => {
                         <Input
                             type="datetime-local"
                             label="Data de Ida"
+                            labelClassName="font-bold ml-1"
                             value={formData.data_ida}
                             onChange={(e) => setFormData({ ...formData, data_ida: e.target.value })}
                             required
@@ -115,6 +135,7 @@ export const TripForm: React.FC = () => {
                         <Input
                             type="datetime-local"
                             label="Data de Volta (Opcional)"
+                            labelClassName="font-bold ml-1"
                             value={formData.data_volta}
                             onChange={(e) => setFormData({ ...formData, data_volta: e.target.value })}
                         />
@@ -123,12 +144,14 @@ export const TripForm: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
                             label="Endereço de Saída Precisão (Opcional)"
+                            labelClassName="font-bold ml-1"
                             value={formData.origem_endereco}
                             onChange={(e) => setFormData({ ...formData, origem_endereco: e.target.value })}
                             placeholder="Ex: Rua X, 123, Bairro, Cidade, SP"
                         />
                         <Input
                             label="Endereço de Destino Precisão (Opcional)"
+                            labelClassName="font-bold ml-1"
                             value={formData.destino_endereco}
                             onChange={(e) => setFormData({ ...formData, destino_endereco: e.target.value })}
                             placeholder="Ex: Av. Y, 456, Centro, Cidade, UF"
@@ -139,6 +162,7 @@ export const TripForm: React.FC = () => {
                         <Input
                             type="number"
                             label="Preço por Pessoa"
+                            labelClassName="font-bold ml-1"
                             value={formData.preco}
                             onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : '' })}
                             placeholder="0.00"
@@ -149,6 +173,7 @@ export const TripForm: React.FC = () => {
                         <Input
                             type="number"
                             label="Meta Financeira Total (Opcional)"
+                            labelClassName="font-bold ml-1"
                             value={formData.meta_financeira}
                             onChange={(e) => setFormData({ ...formData, meta_financeira: e.target.value ? parseFloat(e.target.value) : '' })}
                             placeholder="Ex: 2500.00"
@@ -200,28 +225,30 @@ export const TripForm: React.FC = () => {
                                 selectedBusIds={formData.onibus_ids}
                                 onChange={(busIds) => setFormData({ ...formData, onibus_ids: busIds })}
                                 label="Ônibus"
+                                labelClassName="font-bold ml-1"
                                 required
                             />
                         );
                     })()}
 
-                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-100">
+                    <div className="flex flex-col-reverse sm:flex-row gap-4 pt-6 mt-4 border-t border-gray-100">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/viagens')}
-                            className="w-full sm:flex-1 py-3 text-base"
+                            className="h-12 flex-1 rounded-xl shadow-sm hover:shadow-md transition-all font-bold"
                         >
                             <X size={20} className="mr-2" />
                             Cancelar
                         </Button>
                         <Button
                             type="submit"
+                            variant="primary"
                             isLoading={loading}
-                            className="w-full sm:flex-1 py-3 text-base shadow-lg shadow-blue-200"
+                            className="h-12 flex-[2] rounded-xl shadow-lg transition-all font-bold"
                         >
-                            <Save size={20} className="mr-2" />
-                            {loading ? 'Salvando...' : 'Salvar Viagem'}
+                            <Plus size={20} className="mr-2" />
+                            {loading ? 'Salvando...' : 'Cadastrar Viagem'}
                         </Button>
                     </div>
                 </form>

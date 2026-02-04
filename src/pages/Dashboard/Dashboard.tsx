@@ -644,7 +644,7 @@ export const Dashboard: React.FC = () => {
                             <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                        <MapPin size={16} className="text-blue-500" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
@@ -663,12 +663,6 @@ export const Dashboard: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
-                                <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                                <p className="text-sm leading-relaxed">
-                                    O mapa de assentos será liberado **imediatamente** após a confirmação do seu pagamento via Pix.
-                                </p>
-                            </div>
                         </>
                     ) : (
                         paymentModalTrip && (

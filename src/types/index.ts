@@ -60,6 +60,7 @@ export interface Passenger {
     comum_congregacao?: string;
     estado_civil?: string;
     idade?: number;
+    data_nascimento?: string;
     instrumento?: string;
     auxiliar?: string;
     created_at?: string;

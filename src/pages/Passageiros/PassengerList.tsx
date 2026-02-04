@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { CsvUploader } from '@/components/passengers/CsvUploader';
 import { Plus, Edit, Trash2, Search, Upload, Trash, Users } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
+import { calculateAge } from '@/utils/formatters';
 
 export const PassengerList: React.FC = () => {
     const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
@@ -86,44 +87,52 @@ export const PassengerList: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Action Buttons - Horizontal Layout */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {/* Action Buttons - Premium Layout */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                     <ProtectedAction requiredPermission="create">
-                        <Link to="/passageiros/novo">
-                            <Button size="sm" className="whitespace-nowrap">
-                                <Plus size={18} className="sm:mr-1.5" />
-                                <span className="hidden sm:inline">Novo</span>
+                        <Link
+                            to="/passageiros/novo"
+                            className="w-full sm:w-auto rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all block"
+                        >
+                            <Button
+                                variant="primary"
+                                tabIndex={-1}
+                                className="w-full sm:w-auto h-11 px-6 rounded-xl shadow-lg whitespace-nowrap"
+                            >
+                                <Plus size={20} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Novo Passageiro</span>
+                                <span className="sm:hidden">Novo</span>
                             </Button>
                         </Link>
                     </ProtectedAction>
 
-                    <ProtectedAction requiredPermission="create">
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setCsvUploaderOpen(true)}
-                            className="whitespace-nowrap"
-                        >
-                            <Upload size={18} className="sm:mr-1.5" />
-                            <span className="hidden sm:inline">CSV</span>
-                        </Button>
-                    </ProtectedAction>
-
-
-
-                    {passengers.length > 0 && (
-                        <ProtectedAction requiredPermission="delete">
+                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto sm:ml-auto">
+                        <ProtectedAction requiredPermission="create">
                             <Button
-                                size="sm"
-                                variant="danger"
-                                onClick={() => setShowDeleteAllModal(true)}
-                                className="whitespace-nowrap ml-auto"
+                                variant="secondary"
+                                onClick={() => setCsvUploaderOpen(true)}
+                                className="h-11 px-4 sm:px-6 rounded-xl shadow-sm hover:shadow-md transition-all whitespace-nowrap flex-1 sm:flex-none justify-center"
                             >
-                                <Trash size={18} className="sm:mr-1.5" />
-                                <span className="hidden sm:inline">Limpar</span>
+                                <Upload size={18} className="sm:mr-2" />
+                                <span className="hidden sm:inline">Importar CSV</span>
+                                <span className="sm:hidden">CSV</span>
                             </Button>
                         </ProtectedAction>
-                    )}
+
+                        {passengers.length > 0 && (
+                            <ProtectedAction requiredPermission="delete">
+                                <Button
+                                    variant="danger"
+                                    onClick={() => setShowDeleteAllModal(true)}
+                                    className="h-11 px-4 sm:px-6 rounded-xl shadow-lg transition-all whitespace-nowrap flex-1 sm:flex-none justify-center"
+                                >
+                                    <Trash size={18} className="sm:mr-2" />
+                                    <span className="hidden sm:inline">Limpar Lista</span>
+                                    <span className="sm:hidden">Limpar</span>
+                                </Button>
+                            </ProtectedAction>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -197,11 +206,17 @@ export const PassengerList: React.FC = () => {
                                             <td className="text-gray-600">{passenger.cpf_rg}</td>
                                             <td className="text-gray-600">{passenger.telefone}</td>
                                             <td className="text-gray-600">{passenger.comum_congregacao || '-'}</td>
-                                            <td className="text-gray-600">{passenger.idade || '-'}</td>
+                                            <td className="text-gray-600">
+                                                {calculateAge(passenger.data_nascimento) || passenger.idade || '-'}
+                                            </td>
                                             <td>
                                                 <div className="flex justify-end gap-2">
-                                                    <Link to={`/passageiros/editar/${passenger.id}`}>
+                                                    <Link
+                                                        to={`/passageiros/editar/${passenger.id}`}
+                                                        className="rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                                    >
                                                         <button
+                                                            tabIndex={-1}
                                                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                             title="Editar"
                                                         >
@@ -233,8 +248,12 @@ export const PassengerList: React.FC = () => {
                                             <p className="text-sm text-gray-500 mt-0.5">{passenger.cpf_rg}</p>
                                         </div>
                                         <div className="flex gap-1">
-                                            <Link to={`/passageiros/editar/${passenger.id}`}>
+                                            <Link
+                                                to={`/passageiros/editar/${passenger.id}`}
+                                                className="rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
                                                 <button
+                                                    tabIndex={-1}
                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                     title="Editar"
                                                 >

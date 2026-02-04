@@ -10,7 +10,8 @@ export interface PassengerForm {
     rg: string;
     congregation: string;
     maritalStatus: string;
-    age: string;
+    age: string; // Keeps this for backward compatibility in the form state handling if needed
+    birthDate: string;
     phone: string;
     instrument: string;
     auxiliar: string;
@@ -75,11 +76,16 @@ export function isValidPhone(phone: string): boolean {
 }
 
 /**
- * Valida idade
+ * Valida se é uma data de nascimento válida
  */
-export function isValidAge(age: string | number): boolean {
-    const num = parseInt(String(age), 10);
-    return !isNaN(num) && num > 0 && num < 150;
+export function isValidBirthDate(date: string): boolean {
+    if (!date) return false;
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return false;
+
+    const today = new Date();
+    // No birth date in the future, and not older than 120 years
+    return d <= today && d.getFullYear() > (today.getFullYear() - 120);
 }
 
 /**
@@ -107,6 +113,7 @@ export const errorMessages = {
     rg: 'RG inválido',
     phone: 'Telefone inválido',
     age: 'Idade inválida',
+    birthDate: 'Data de nascimento inválida',
     fullName: 'Digite nome e sobrenome',
     doc: 'Digite um CPF ou RG válido',
 };
@@ -151,11 +158,11 @@ export function validateForm(form: PassengerForm): ValidationResult {
         errors.auxiliar = errorMessages.required;
     }
 
-    // Idade
-    if (!isRequired(form.age)) {
-        errors.age = errorMessages.required;
-    } else if (!isValidAge(form.age)) {
-        errors.age = errorMessages.age;
+    // Data de Nascimento
+    if (!isRequired(form.birthDate)) {
+        errors.birthDate = errorMessages.required;
+    } else if (!isValidBirthDate(form.birthDate)) {
+        errors.birthDate = errorMessages.birthDate;
     }
 
     // Telefone

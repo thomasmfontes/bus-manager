@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBusStore } from '@/stores/useBusStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { TripEditModal } from '@/components/viagens/TripEditModal';
 
 export const TripSeatMap: React.FC = () => {
+    const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     const { trips, fetchViagens } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
@@ -288,14 +289,23 @@ export const TripSeatMap: React.FC = () => {
 
     return (
         <div className="space-y-6 fade-in duration-500 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full text-gray-900">
+            {/* Header */}
             <div className="flex items-center gap-4">
-                <Link to="/viagens">
-                    <Button variant="secondary">
-                        <ArrowLeft size={20} className="mr-2" />
-                        Voltar
-                    </Button>
-                </Link>
-                <h1 className="text-3xl font-bold text-gray-dark">Mapa de Assentos</h1>
+                <button
+                    onClick={() => navigate('/viagens')}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all shadow-sm group"
+                    aria-label="Voltar"
+                >
+                    <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+                </button>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                        Mapa de Assentos
+                    </h1>
+                    <p className="text-gray-500 text-sm">
+                        Visualize e gerencie a ocupação dos ônibus para esta viagem
+                    </p>
+                </div>
             </div>
 
             {/* Trip info */}

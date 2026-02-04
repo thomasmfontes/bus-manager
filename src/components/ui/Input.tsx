@@ -3,6 +3,7 @@ import { cn } from '@/utils/cn';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
+    labelClassName?: string;
     error?: string;
     helperText?: string;
     icon?: React.ReactNode;
@@ -10,6 +11,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input: React.FC<InputProps> = ({
     label,
+    labelClassName,
     error,
     helperText,
     icon,
@@ -24,7 +26,7 @@ export const Input: React.FC<InputProps> = ({
             {label && (
                 <label
                     htmlFor={inputId}
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className={cn("block text-sm font-medium text-gray-700 mb-2", labelClassName)}
                 >
                     {label}
                 </label>

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { X, UserPlus, UserCircle, ArrowLeft } from 'lucide-react';
+import { calculateAge } from '@/utils/formatters';
 
 export const PassengerForm: React.FC = () => {
     const navigate = useNavigate();
@@ -34,6 +35,7 @@ export const PassengerForm: React.FC = () => {
         telefone: '',
         comum_congregacao: '',
         idade: '',
+        data_nascimento: '',
         estado_civil: '',
         instrumento: '',
         auxiliar: '',
@@ -58,6 +60,7 @@ export const PassengerForm: React.FC = () => {
                     telefone: passenger.telefone || '',
                     comum_congregacao: passenger.comum_congregacao || '',
                     idade: passenger.idade ? passenger.idade.toString() : '',
+                    data_nascimento: passenger.data_nascimento || '',
                     estado_civil: passenger.estado_civil || '',
                     instrumento: passenger.instrumento || '',
                     auxiliar: passenger.auxiliar || '',
@@ -70,9 +73,10 @@ export const PassengerForm: React.FC = () => {
         e.preventDefault();
 
         try {
+            const calculatedAge = formData.data_nascimento ? calculateAge(formData.data_nascimento) : (formData.idade ? parseInt(formData.idade) : undefined);
             const passengerData = {
                 ...formData,
-                idade: formData.idade ? parseInt(formData.idade) : undefined,
+                idade: calculatedAge ?? undefined,
             };
 
             if (isEditing && id) {
@@ -94,16 +98,16 @@ export const PassengerForm: React.FC = () => {
             <div className="flex items-center gap-4">
                 <button
                     onClick={() => navigate('/passageiros')}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all shadow-sm group"
                     aria-label="Voltar"
                 >
-                    <ArrowLeft size={20} className="text-gray-600" />
+                    <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
                 </button>
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
+                <div className="flex flex-col">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
                         {isEditing ? 'Editar Passageiro' : 'Novo Passageiro'}
                     </h1>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-gray-500 text-sm">
                         {isEditing ? 'Atualize as informações do passageiro' : 'Cadastre um novo passageiro no sistema'}
                     </p>
                 </div>
@@ -114,6 +118,7 @@ export const PassengerForm: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <Input
                             label="Nome Completo"
+                            labelClassName="font-bold ml-1"
                             value={formData.nome_completo}
                             onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
                             placeholder="Ex: João Silva"
@@ -122,6 +127,7 @@ export const PassengerForm: React.FC = () => {
 
                         <Input
                             label="CPF ou RG"
+                            labelClassName="font-bold ml-1"
                             value={formData.cpf_rg}
                             onChange={(e) => setFormData({ ...formData, cpf_rg: e.target.value })}
                             placeholder="Ex: 123.456.789-00"
@@ -130,20 +136,21 @@ export const PassengerForm: React.FC = () => {
 
                         <Input
                             label="Telefone"
+                            labelClassName="font-bold ml-1"
                             value={formData.telefone}
                             onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                             placeholder="Ex: (11) 98765-4321"
                             required
                         />
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-gray-700 ml-1">
                                 Congregação
                             </label>
                             <select
                                 value={formData.comum_congregacao}
                                 onChange={(e) => setFormData({ ...formData, comum_congregacao: e.target.value })}
-                                className="input-base"
+                                className="w-full h-[46px] px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer text-sm font-medium text-gray-700"
                             >
                                 <option value="">Selecione...</option>
                                 {congregacoes.map((cong) => (
@@ -155,20 +162,21 @@ export const PassengerForm: React.FC = () => {
                         </div>
 
                         <Input
-                            label="Idade"
-                            value={formData.idade}
-                            onChange={(e) => setFormData({ ...formData, idade: e.target.value })}
-                            placeholder="Ex: 25"
+                            label="Data de Nascimento"
+                            labelClassName="font-bold ml-1"
+                            type="date"
+                            value={formData.data_nascimento}
+                            onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
                         />
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-gray-700 ml-1">
                                 Estado Civil
                             </label>
                             <select
                                 value={formData.estado_civil}
                                 onChange={(e) => setFormData({ ...formData, estado_civil: e.target.value })}
-                                className="input-base"
+                                className="w-full h-[46px] px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer text-sm font-medium text-gray-700"
                             >
                                 <option value="">Selecione...</option>
                                 <option value="Solteiro(a)">Solteiro(a)</option>
@@ -176,14 +184,14 @@ export const PassengerForm: React.FC = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-gray-700 ml-1">
                                 Instrumento
                             </label>
                             <select
                                 value={formData.instrumento}
                                 onChange={(e) => setFormData({ ...formData, instrumento: e.target.value })}
-                                className="input-base"
+                                className="w-full h-[46px] px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer text-sm font-medium text-gray-700"
                             >
                                 <option value="">Selecione...</option>
                                 <option value="Não toco">Não toco</option>
@@ -204,14 +212,14 @@ export const PassengerForm: React.FC = () => {
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-bold text-gray-700 ml-1">
                                 Auxiliar
                             </label>
                             <select
                                 value={formData.auxiliar}
                                 onChange={(e) => setFormData({ ...formData, auxiliar: e.target.value })}
-                                className="input-base"
+                                className="w-full h-[46px] px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer text-sm font-medium text-gray-700"
                             >
                                 <option value="">Selecione...</option>
                                 <option value="Sim">Sim</option>
@@ -220,23 +228,24 @@ export const PassengerForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-100">
+                    <div className="flex flex-col-reverse sm:flex-row gap-4 pt-6 mt-4 border-t border-gray-100">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => navigate('/passageiros')}
-                            className="w-full sm:flex-1 py-3 text-base"
+                            className="h-12 flex-1 rounded-xl shadow-sm hover:shadow-md transition-all font-bold"
                         >
                             <X size={20} className="mr-2" />
                             Cancelar
                         </Button>
                         <Button
                             type="submit"
+                            variant="primary"
                             isLoading={loading}
-                            className="w-full sm:flex-1 py-3 text-base shadow-lg shadow-blue-200"
+                            className="h-12 flex-[2] rounded-xl shadow-lg transition-all font-bold"
                         >
                             {isEditing ? <UserCircle size={20} className="mr-2" /> : <UserPlus size={20} className="mr-2" />}
-                            {loading ? (isEditing ? 'Atualizando...' : 'Salvando...') : (isEditing ? 'Atualizar Passageiro' : 'Salvar Passageiro')}
+                            {loading ? (isEditing ? 'Atualizando...' : 'Salvando...') : (isEditing ? 'Atualizar Dados' : 'Cadastrar Passageiro')}
                         </Button>
                     </div>
                 </form>

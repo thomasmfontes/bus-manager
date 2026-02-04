@@ -6,7 +6,7 @@ import { PassengerFormFields } from "../components/excursao/PassengerFormFields"
 import { FormLayout } from "../components/excursao/FormLayout";
 import { FormHeader } from "../components/excursao/FormHeader";
 import { SubmitButton } from "../components/excursao/SubmitButton";
-import { maskCPF, maskRG, maskPhone, maskNumber, onlyDigits } from "../utils/formatters";
+import { maskCPF, maskRG, maskPhone, maskNumber, onlyDigits, calculateAge } from "../utils/formatters";
 import { validateForm, PassengerForm } from "../utils/validators";
 import { supabase } from "../lib/supabase";
 import { useCongregacaoStore } from "../stores/useCongregacaoStore";
@@ -68,6 +68,7 @@ export default function ExcursaoForm() {
         congregation: "",
         maritalStatus: "",
         age: "",
+        birthDate: "",
         phone: "",
         instrument: "",
         auxiliar: "",
@@ -283,7 +284,8 @@ export default function ExcursaoForm() {
                     nome_completo: form.fullName,
                     comum_congregacao: form.congregation,
                     estado_civil: form.maritalStatus,
-                    idade: form.age ? parseInt(form.age) : null,
+                    idade: calculateAge(form.birthDate),
+                    data_nascimento: form.birthDate,
                     telefone: form.phone,
                     instrumento: form.instrument,
                     auxiliar: form.auxiliar,
@@ -297,7 +299,8 @@ export default function ExcursaoForm() {
                         cpf_rg: documento,
                         comum_congregacao: form.congregation,
                         estado_civil: form.maritalStatus,
-                        idade: form.age ? parseInt(form.age) : null,
+                        idade: calculateAge(form.birthDate),
+                        data_nascimento: form.birthDate,
                         telefone: form.phone,
                         instrumento: form.instrument,
                         auxiliar: form.auxiliar,

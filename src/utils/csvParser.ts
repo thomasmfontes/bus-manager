@@ -4,6 +4,7 @@ export interface CsvRow {
     telefone: string;
     comum_congregacao?: string;
     idade?: string;
+    data_nascimento?: string;
     estado_civil?: string;
     instrumento?: string;
     auxiliar?: string;
@@ -53,6 +54,9 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
     const idadeIndex = headers.findIndex(h =>
         h.includes('idade') || h.includes('age')
     );
+    const nascimentoIndex = headers.findIndex(h =>
+        h.includes('nasc') || h.includes('birth') || h.includes('data') && h.includes('nasc')
+    );
     const estadoCivilIndex = headers.findIndex(h =>
         h.includes('estado') && h.includes('civil') || h.includes('marital')
     );
@@ -82,6 +86,7 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
         const telefone = telefoneIndex >= 0 ? (columns[telefoneIndex]?.trim() || '') : '';
         const congregacao = congregacaoIndex >= 0 ? (columns[congregacaoIndex]?.trim() || undefined) : undefined;
         const idade = idadeIndex >= 0 ? (columns[idadeIndex]?.trim() || undefined) : undefined;
+        const nascimento = nascimentoIndex >= 0 ? (columns[nascimentoIndex]?.trim() || undefined) : undefined;
         const estadoCivil = estadoCivilIndex >= 0 ? (columns[estadoCivilIndex]?.trim() || undefined) : undefined;
         const instrumento = instrumentoIndex >= 0 ? (columns[instrumentoIndex]?.trim() || undefined) : undefined;
         const auxiliar = auxiliarIndex >= 0 ? (columns[auxiliarIndex]?.trim() || undefined) : undefined;
@@ -112,6 +117,7 @@ export function parsePassengerCsv(csvContent: string): CsvParseResult {
                 telefone,
                 comum_congregacao: congregacao,
                 idade,
+                data_nascimento: nascimento,
                 estado_civil: estadoCivil,
                 instrumento,
                 auxiliar,

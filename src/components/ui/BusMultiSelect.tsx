@@ -1,12 +1,14 @@
 import React from 'react';
 import { Bus } from '@/types';
 import { Check } from 'lucide-react';
+import { cn } from '@/utils/cn';
 
 interface BusMultiSelectProps {
     buses: Bus[];
     selectedBusIds: string[];
     onChange: (busIds: string[]) => void;
     label?: string;
+    labelClassName?: string;
     required?: boolean;
 }
 
@@ -15,6 +17,7 @@ export const BusMultiSelect: React.FC<BusMultiSelectProps> = ({
     selectedBusIds,
     onChange,
     label = 'Ônibus',
+    labelClassName,
     required = false,
 }) => {
     const toggleBus = (busId: string) => {
@@ -27,7 +30,7 @@ export const BusMultiSelect: React.FC<BusMultiSelectProps> = ({
 
     return (
         <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className={cn("block text-sm font-medium text-gray-700", labelClassName)}>
                 {label} {required && <span className="text-red-500">*</span>}
             </label>
 

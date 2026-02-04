@@ -128,14 +128,13 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
             />
 
             <FormField
-                label="Idade"
-                name="age"
-                value={form.age}
+                label="Data de Nascimento"
+                name="birthDate"
+                type="date"
+                value={form.birthDate}
                 onChange={onChange}
                 required
-                inputMode="numeric"
-                placeholder="Ex.: 17"
-                error={errors.age}
+                error={errors.birthDate}
                 showErrorText={false}
             />
 

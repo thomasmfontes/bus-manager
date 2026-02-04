@@ -116,3 +116,29 @@ export function capitalize(str: string): string {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }
+
+/**
+ * Calcula a idade com base na data de nascimento
+ */
+export function calculateAge(birthDate: string | Date | undefined | null): number | null {
+    if (!birthDate) return null;
+
+    try {
+        const today = new Date();
+        const birth = new Date(birthDate);
+
+        // Basic validation for invalid date
+        if (isNaN(birth.getTime())) return null;
+
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+
+        return age;
+    } catch {
+        return null;
+    }
+}

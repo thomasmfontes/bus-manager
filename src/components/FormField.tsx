@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface FormFieldProps {
     label: string;
     name: string;
-    type?: 'text' | 'select' | 'textarea' | 'email' | 'tel' | 'number' | 'password';
+    type?: 'text' | 'select' | 'textarea' | 'email' | 'tel' | 'number' | 'password' | 'date';
     value: string | number;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
     error?: string;

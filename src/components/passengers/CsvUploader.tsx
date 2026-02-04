@@ -140,6 +140,8 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ isOpen, onClose, onImp
                                 <span className="px-2 py-1 bg-white rounded-md border border-gray-200">Nome</span>
                                 <span className="px-2 py-1 bg-white rounded-md border border-gray-200">Documento</span>
                                 <span className="px-2 py-1 bg-white rounded-md border border-gray-200">Telefone</span>
+                                <span className="px-2 py-1 bg-white rounded-md border border-gray-200">Nascimento</span>
+                                <span className="px-2 py-1 bg-white rounded-md border border-gray-200">Idade</span>
                                 <span className="px-2 py-1 bg-white rounded-md border border-gray-200">...</span>
                             </div>
 

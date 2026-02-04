@@ -60,15 +60,22 @@ export const useAuthStore = create<AuthState>()(
                         const cleanDoc = documento.replace(/\D/g, '');
 
                         // Try to find in passageiros - fetch all and prioritize Master
+                        // Try to find in passageiros
+                        // We check both raw input and clean numeric version against the database
+                        // To be ultra-safe, we also check if the database has the formatted version 
+                        // by checking against the masked versions.
+                        const { maskCPF, maskRG } = await import('@/utils/formatters');
+                        const maskedCPF = maskCPF(documento);
+                        const maskedRG = maskRG(documento);
+
                         const { data: results } = await supabase
                             .from('passageiros')
-                            .select('id, cpf_rg, nome_completo, viagem_id')
-                            .or(`cpf_rg.eq.${documento},cpf_rg.eq.${cleanDoc}`);
+                            .select('id, cpf_rg, nome_completo')
+                            .or(`cpf_rg.eq."${documento}",cpf_rg.eq."${cleanDoc}",cpf_rg.eq."${maskedCPF}",cpf_rg.eq."${maskedRG}"`);
 
                         if (results && results.length > 0) {
-                            // Prioritize the Master record (where viagem_id is null)
-                            // If no master record exists (rare), take the first trip record found
-                            const passenger = results.find(p => !p.viagem_id) || results[0];
+                            // Since normalization, there is only one record per passenger in this table
+                            const passenger = results[0];
 
                             role = UserRole.PASSAGEIRO;
                             userId = passenger.id;

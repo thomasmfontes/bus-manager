@@ -531,7 +531,7 @@ export const TripPaymentCenter = () => {
                         {/* 3. Main Content Container - FLATTENED */}
                         <div key={step} className="w-full pt-4 fade-in duration-700">
                             {step === 'trip-selection' ? (
-                                <div className="overflow-hidden">
+                                <div>
                                     {trips.filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId).length === 0 ? (
                                         <div className="p-12 text-center text-gray-500">
                                             <div className="flex flex-col items-center gap-4">
@@ -543,7 +543,7 @@ export const TripPaymentCenter = () => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div key={selectedTripFilterId} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4 fade-in duration-700">
+                                        <div key={selectedTripFilterId} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 pt-4 pb-12 fade-in duration-700">
                                             {trips
                                                 .filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId)
                                                 .map(t => (
@@ -555,7 +555,7 @@ export const TripPaymentCenter = () => {
                                                             else showToast('Lotação Esgotada para este roteiro', 'warning');
                                                         }}
                                                         className={cn(
-                                                            "group relative bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/40 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
+                                                            "group relative bg-white rounded-[2.5rem] border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
                                                             getVacancies(t) <= 0 && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0"
                                                         )}
                                                     >
@@ -647,7 +647,7 @@ export const TripPaymentCenter = () => {
                             ) : (
                                 <div className="space-y-6">
                                     {paymentStatus === 'selection' ? (
-                                        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden">
+                                        <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden">
                                             <div className="p-6 border-b border-gray-100 bg-white/50 backdrop-blur-md">
                                                 <div className="relative group">
                                                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
@@ -726,7 +726,7 @@ export const TripPaymentCenter = () => {
                                                         : "max-h-0 opacity-0 mt-0 mb-0 pointer-events-none"
                                                 )}
                                             >
-                                                <div className="rounded-[2.5rem] border border-blue-100 shadow-2xl shadow-blue-500/10 bg-white">
+                                                <div className="rounded-[2.5rem] border border-blue-100 bg-white">
                                                     <div className="p-6 sm:p-10 border-b border-blue-50 bg-gradient-to-br from-blue-50/40 to-indigo-50/40 relative overflow-hidden">
                                                         <div className="absolute top-0 right-0 w-40 h-40 bg-blue-100/30 rounded-full blur-3xl -mr-20 -mt-20" />
                                                         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
