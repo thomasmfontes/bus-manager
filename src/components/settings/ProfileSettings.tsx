@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { User, Lock, Save, Camera } from 'lucide-react';
 import { UserRole } from '@/types';
 import { cn } from '@/utils/cn';
+import { ImageCropper } from '@/components/ui/ImageCropper';
 
 export const ProfileSettings: React.FC = () => {
     const { user } = useAuthStore();
@@ -20,6 +21,9 @@ export const ProfileSettings: React.FC = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loadingPassword, setLoadingPassword] = useState(false);
+
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [showCropper, setShowCropper] = useState(false);
 
     useEffect(() => {
         if (user?.full_name) {
@@ -96,23 +100,38 @@ export const ProfileSettings: React.FC = () => {
             return;
         }
 
-        if (file.size > 2 * 1024 * 1024) { // 2MB
-            showToast('A imagem deve ter no máximo 2MB.', 'error');
+        if (file.size > 5 * 1024 * 1024) { // Increase to 5MB before crop
+            showToast('A imagem original deve ter no máximo 5MB.', 'error');
             return;
         }
 
+        const reader = new FileReader();
+        reader.onload = () => {
+            setSelectedImage(reader.result as string);
+            setShowCropper(true);
+        };
+        reader.readAsDataURL(file);
+
+        // Reset input
+        e.target.value = '';
+    };
+
+    const onCropComplete = async (croppedBlob: Blob) => {
+        setShowCropper(false);
         setUploadingAvatar(true);
         try {
             const { data: { user: authUser } } = await supabase.auth.getUser();
             if (!authUser) throw new Error('Usuário não autenticado');
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${authUser.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const fileName = `${authUser.id}-${Math.random().toString(36).substring(2)}.jpg`;
             const filePath = `avatars/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file);
+                .upload(filePath, croppedBlob, {
+                    contentType: 'image/jpeg',
+                    upsert: true
+                });
 
             if (uploadError) throw uploadError;
 
@@ -122,12 +141,13 @@ export const ProfileSettings: React.FC = () => {
                 .getPublicUrl(filePath);
 
             setAvatarUrl(publicUrl);
-            showToast('Foto selecionada! Clique em Salvar para confirmar.', 'info');
+            showToast('Foto ajustada com sucesso! Clique em Salvar para confirmar.', 'info');
         } catch (error) {
             console.error('Error uploading avatar:', error);
-            showToast('Erro ao fazer upload da foto', 'error');
+            showToast('Erro ao processar imagem cortada', 'error');
         } finally {
             setUploadingAvatar(false);
+            setSelectedImage(null);
         }
     };
 
@@ -192,7 +212,7 @@ export const ProfileSettings: React.FC = () => {
                             <input
                                 type="file"
                                 accept="image/*"
-                                capture="user"   // frontal
+                                capture="user"
                                 className="hidden"
                                 onChange={handleAvatarUpload}
                             />
@@ -291,6 +311,17 @@ export const ProfileSettings: React.FC = () => {
                     </div>
                 </form>
             </Card>
+
+            {showCropper && selectedImage && (
+                <ImageCropper
+                    image={selectedImage}
+                    onCropComplete={onCropComplete}
+                    onCancel={() => {
+                        setShowCropper(false);
+                        setSelectedImage(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
