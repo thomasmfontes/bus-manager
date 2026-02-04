@@ -14,6 +14,7 @@ export const AuthenticatedLayout: React.FC = () => {
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
 
 
@@ -72,8 +73,13 @@ export const AuthenticatedLayout: React.FC = () => {
                 {user && (
                     <Link to="/settings" className="lg:hidden">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-md ring-2 ring-gray-100 overflow-hidden">
-                            {user.avatar_url ? (
-                                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                            {user.avatar_url && user.avatar_url.trim() !== '' && !avatarError ? (
+                                <img
+                                    src={user.avatar_url}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={() => setAvatarError(true)}
+                                />
                             ) : (
                                 <span className="text-white font-bold text-xs">
                                     {user.email?.charAt(0).toUpperCase()}
@@ -164,8 +170,13 @@ export const AuthenticatedLayout: React.FC = () => {
                 <div className="p-4 border-t border-gray-700/50 bg-gray-800/50">
                     <div className="flex items-center gap-3 px-3 py-3 mb-3 rounded-xl bg-gray-700/30">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg ring-2 ring-gray-600 overflow-hidden">
-                            {user?.avatar_url ? (
-                                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                            {user?.avatar_url && user.avatar_url.trim() !== '' && !avatarError ? (
+                                <img
+                                    src={user.avatar_url}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={() => setAvatarError(true)}
+                                />
                             ) : (
                                 <span className="text-white font-bold text-sm">
                                     {user?.email?.charAt(0).toUpperCase()}

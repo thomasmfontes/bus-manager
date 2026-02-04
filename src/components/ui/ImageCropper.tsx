@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Cropper, { Area, Point } from 'react-easy-crop';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
@@ -15,6 +15,15 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({ image, onCropComplet
     const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+    // Lock body scroll when cropper is open
+    useEffect(() => {
+        const originalStyle = window.getComputedStyle(document.body).overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = originalStyle;
+        };
+    }, []);
 
     const onCropChange = (crop: Point) => {
         setCrop(crop);

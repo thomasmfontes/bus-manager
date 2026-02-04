@@ -32,20 +32,8 @@ export const ProfileSettings: React.FC = () => {
         if (user?.avatar_url) {
             setAvatarUrl(user.avatar_url);
         }
-        fetchProfile();
     }, [user]);
 
-    const fetchProfile = async () => {
-        try {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser?.user_metadata) {
-                setFullName(authUser.user_metadata.full_name || '');
-                setAvatarUrl(authUser.user_metadata.avatar_url || null);
-            }
-        } catch (error) {
-            console.error('Error fetching profile:', error);
-        }
-    };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,10 +108,16 @@ export const ProfileSettings: React.FC = () => {
         setShowCropper(false);
         setUploadingAvatar(true);
         try {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (!authUser) throw new Error('Usuário não autenticado');
+            if (!user?.id) {
+                showToast('Usuário não autenticado no sistema.', 'error');
+                return;
+            }
 
-            const fileName = `${authUser.id}-${Math.random().toString(36).substring(2)}.jpg`;
+            // Create immediate local preview
+            const previewUrl = URL.createObjectURL(croppedBlob);
+            setAvatarUrl(previewUrl);
+
+            const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.jpg`;
             const filePath = `avatars/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
@@ -140,6 +134,7 @@ export const ProfileSettings: React.FC = () => {
                 .from('avatars')
                 .getPublicUrl(filePath);
 
+            // Update state with final URL (replaces blob URL)
             setAvatarUrl(publicUrl);
             showToast('Foto ajustada com sucesso! Clique em Salvar para confirmar.', 'info');
         } catch (error) {
@@ -193,30 +188,39 @@ export const ProfileSettings: React.FC = () => {
             <Card className="hover:shadow-soft-lg transition-all">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8 group">
                     <div className="relative">
-                        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl group-hover:shadow-blue-200 transition-all flex items-center justify-center border-4 border-white ring-1 ring-gray-100">
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                                <User className="text-white w-14 h-14" />
-                            )}
+                        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl group-hover:shadow-blue-200 transition-all flex items-center justify-center border-4 border-white ring-1 ring-gray-100 relative">
+                            <div className={cn("w-full h-full flex items-center justify-center transition-opacity duration-300", uploadingAvatar ? "opacity-30" : "opacity-100")}>
+                                {avatarUrl && avatarUrl.trim() !== '' ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        onError={() => setAvatarUrl(null)}
+                                    />
+                                ) : (
+                                    <User size={56} className="text-white fill-white/10" strokeWidth={1.5} />
+                                )}
+                            </div>
 
                             {uploadingAvatar && (
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
-                                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="absolute inset-0 bg-white/40 backdrop-blur-[4px] flex items-center justify-center rounded-full transition-all z-20">
+                                    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-sm" />
                                 </div>
                             )}
                         </div>
 
-                        <label className="absolute bottom-0 right-0 p-3 bg-blue-600 rounded-full shadow-lg border-2 border-white text-white hover:bg-blue-700 cursor-pointer transition-all hover:scale-110 active:scale-95 touch-manipulation">
-                            <Camera size={20} />
-                            <input
-                                type="file"
-                                accept="image/*"
-                                capture="user"
-                                className="hidden"
-                                onChange={handleAvatarUpload}
-                            />
-                        </label>
+                        {!uploadingAvatar && (
+                            <label className="absolute bottom-0 right-0 p-3 bg-blue-600 rounded-full shadow-lg border-2 border-white text-white hover:bg-blue-700 cursor-pointer transition-all hover:scale-110 active:scale-95 touch-manipulation z-30">
+                                <Camera size={20} />
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="user"
+                                    className="hidden"
+                                    onChange={handleAvatarUpload}
+                                />
+                            </label>
+                        )}
                     </div>
 
                     <div className="text-center sm:text-left min-w-0 flex-1 pt-2">

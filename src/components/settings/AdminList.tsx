@@ -25,6 +25,7 @@ export const AdminList: React.FC = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [adminToConfirmDelete, setAdminToConfirmDelete] = useState<{ id: string, email: string } | null>(null);
+    const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
     const { showToast } = useToast();
 
     const fetchAdmins = async () => {
@@ -135,6 +136,14 @@ export const AdminList: React.FC = () => {
         }
     };
 
+    const handleImageError = (id: string) => {
+        setBrokenImages(prev => {
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+    };
+
     return (
         <div className="space-y-4 sm:space-y-6">
             <Card className="hover:shadow-soft-lg transition-all">
@@ -201,8 +210,13 @@ export const AdminList: React.FC = () => {
                                 <div key={admin.id} className="flex items-center justify-between p-3 sm:p-4 bg-white hover:bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-all group">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base shrink-0 shadow-sm overflow-hidden border-2 border-white ring-1 ring-gray-100">
-                                            {admin.avatar_url ? (
-                                                <img src={admin.avatar_url} alt={admin.full_name} className="w-full h-full object-cover" />
+                                            {admin.avatar_url && admin.avatar_url.trim() !== '' && !brokenImages.has(admin.id) ? (
+                                                <img
+                                                    src={admin.avatar_url}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                    onError={() => handleImageError(admin.id)}
+                                                />
                                             ) : (
                                                 admin.full_name?.charAt(0) || admin.email.charAt(0).toUpperCase()
                                             )}
