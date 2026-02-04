@@ -75,7 +75,7 @@ export const BusList: React.FC = () => {
                         <div key={bus.id} className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all duration-300 overflow-hidden flex flex-col">
                             {/* Card Header / Image Area */}
                             <div className="h-24 bg-gradient-to-br from-gray-50 to-gray-100/50 p-6 flex justify-between items-start border-b border-gray-100 relative">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+
 
                                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm ring-1 ring-gray-200 group-hover:ring-orange-200 transition-all z-10">
                                     <BusIcon size={24} className="text-orange-500" />
