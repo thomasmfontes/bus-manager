@@ -192,9 +192,9 @@ export const ProfileSettings: React.FC = () => {
                             <input
                                 type="file"
                                 accept="image/*"
+                                capture="user"   // frontal
                                 className="hidden"
                                 onChange={handleAvatarUpload}
-                                disabled={uploadingAvatar}
                             />
                         </label>
                     </div>
