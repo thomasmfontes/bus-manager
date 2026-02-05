@@ -14,7 +14,7 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 
 export const AuthenticatedLayout: React.FC = () => {
     const { user, logout } = useAuthStore();
-    const { selectedTripId, setIsContextModalOpen } = useTripStore();
+    const { selectedTripId, setIsContextModalOpen, hasPromptedContext, setHasPromptedContext } = useTripStore();
     const { fetchPassageiros } = usePassengerStore();
     const navigate = useNavigate();
     const location = useLocation();
@@ -24,14 +24,18 @@ export const AuthenticatedLayout: React.FC = () => {
     const [avatarError, setAvatarError] = useState(false);
 
     useEffect(() => {
-        // Auto-open trip context modal if no trip is selected
+        // Auto-open trip context modal if no trip is selected AND we haven't prompted yet in this session
         const timer = setTimeout(() => {
-            if (user && !selectedTripId) {
+            if (user && !selectedTripId && !hasPromptedContext) {
                 setIsContextModalOpen(true);
+                setHasPromptedContext(true);
+            } else if (user && selectedTripId) {
+                // If a trip is already selected (e.g. from persistence), mark as prompted
+                setHasPromptedContext(true);
             }
         }, 800);
         return () => clearTimeout(timer);
-    }, [user, selectedTripId, setIsContextModalOpen]);
+    }, [user, selectedTripId, hasPromptedContext, setIsContextModalOpen, setHasPromptedContext]);
 
     useEffect(() => {
         // Check for missing birth date if user is a passenger
@@ -63,6 +67,7 @@ export const AuthenticatedLayout: React.FC = () => {
 
     const handleLogout = () => {
         logout();
+        setHasPromptedContext(false);
         navigate('/login');
     };
 

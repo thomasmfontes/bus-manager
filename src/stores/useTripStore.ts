@@ -7,10 +7,12 @@ interface TripState {
     trips: Trip[];
     selectedTripId: string | null;
     isContextModalOpen: boolean;
+    hasPromptedContext: boolean;
     loading: boolean;
     fetchViagens: () => Promise<void>;
     setSelectedTripId: (id: string | null) => void;
     setIsContextModalOpen: (open: boolean) => void;
+    setHasPromptedContext: (val: boolean) => void;
     createViagem: (trip: Omit<Trip, 'id'>) => Promise<void>;
     updateViagem: (id: string, trip: Partial<Trip>) => Promise<void>;
     deleteViagem: (id: string) => Promise<void>;
@@ -22,9 +24,11 @@ export const useTripStore = create<TripState>()(
             trips: [],
             selectedTripId: null,
             isContextModalOpen: false,
+            hasPromptedContext: false,
             loading: false,
             setSelectedTripId: (id: string | null) => set({ selectedTripId: id }),
             setIsContextModalOpen: (open: boolean) => set({ isContextModalOpen: open }),
+            setHasPromptedContext: (val: boolean) => set({ hasPromptedContext: val }),
             fetchViagens: async () => {
                 set({ loading: true });
                 try {
@@ -273,7 +277,10 @@ export const useTripStore = create<TripState>()(
         }),
         {
             name: 'trip-storage',
-            partialize: (state) => ({ selectedTripId: state.selectedTripId }),
+            partialize: (state) => ({
+                selectedTripId: state.selectedTripId,
+                hasPromptedContext: state.hasPromptedContext
+            }),
         }
     )
 );
