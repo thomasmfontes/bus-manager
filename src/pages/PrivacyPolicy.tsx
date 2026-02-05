@@ -27,7 +27,7 @@ export const PrivacyPolicy: React.FC = () => {
                         <section className="mb-10">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">1. Introdução</h2>
                             <p>
-                                O **Bus Manager** está comprometido com a proteção de seus dados pessoais. Esta Política de Privacidade descreve como coletamos, usamos, processamos e protegemos suas informações de acordo com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
+                                O <strong>Bus Manager</strong> está comprometido com a proteção de seus dados pessoais. Esta Política de Privacidade descreve como coletamos, usamos, processamos e protegemos suas informações de acordo com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
                             </p>
                         </section>
 
@@ -35,10 +35,10 @@ export const PrivacyPolicy: React.FC = () => {
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">2. Dados que Coletamos</h2>
                             <p>Para a organização de viagens e conformidade com exigências de seguros e transportes, coletamos:</p>
                             <ul className="list-disc pl-5 space-y-2">
-                                <li>**Identificação**: Nome completo, CPF, RG e Data de Nascimento.</li>
-                                <li>**Contato**: Número de telefone (WhatsApp) e endereço de e-mail.</li>
-                                <li>**Logística**: Congregação/Igreja e instrumento musical (para viajantes específicos).</li>
-                                <li>**Pagamento**: Histórico de transações e comprovantes enviados.</li>
+                                <li><strong>Identificação</strong>: Nome completo, CPF, RG e Data de Nascimento.</li>
+                                <li><strong>Contato</strong>: Número de telefone (WhatsApp) e endereço de e-mail.</li>
+                                <li><strong>Logística</strong>: Congregação/Igreja e instrumento musical (para viajantes específicos).</li>
+                                <li><strong>Pagamento</strong>: Histórico de transações e comprovantes enviados.</li>
                             </ul>
                         </section>
 
@@ -61,7 +61,7 @@ export const PrivacyPolicy: React.FC = () => {
                                 <li>Confirmação da existência de tratamento.</li>
                                 <li>Acesso aos seus dados.</li>
                                 <li>Correção de dados incompletos ou inexatos.</li>
-                                <li>**Eliminação dos dados** (após o cumprimento das obrigações legais de transporte).</li>
+                                <li><strong>Eliminação dos dados</strong> (após o cumprimento das obrigações legais de transporte).</li>
                                 <li>Revogação do consentimento.</li>
                             </ul>
                         </section>

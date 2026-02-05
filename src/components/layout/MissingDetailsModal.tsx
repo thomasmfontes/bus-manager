@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { PrivacyPolicyModal, TermsOfUseModal } from './LegalModals';
 
 interface MissingDetailsModalProps {
     isOpen: boolean;
@@ -17,9 +18,11 @@ export const MissingDetailsModal: React.FC<MissingDetailsModalProps> = ({ isOpen
     const [birthDate, setBirthDate] = useState('');
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
 
     // Initial load: populate data if available
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen && passengerId) {
             const passenger = usePassengerStore.getState().passengers.find(p => p.id === passengerId);
             if (passenger?.data_nascimento) {
@@ -92,7 +95,7 @@ export const MissingDetailsModal: React.FC<MissingDetailsModalProps> = ({ isOpen
                         <div className="space-y-1">
                             <h4 className="font-bold text-blue-900 dark:text-blue-100 text-sm">Atualização obrigatória</h4>
                             <p className="text-xs text-blue-700/80 dark:text-blue-300/80 leading-relaxed">
-                                Precisamos da sua **ata de nascimento** e do seu **consentimento** para completar seu perfil e garantir seu seguro viagem.
+                                Precisamos da sua <strong>data de nascimento</strong> e do seu <strong>consentimento</strong> para completar seu perfil e garantir seu seguro viagem.
                             </p>
                         </div>
                     </div>
@@ -137,7 +140,23 @@ export const MissingDetailsModal: React.FC<MissingDetailsModalProps> = ({ isOpen
                                 </svg>
                             </div>
                             <span className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
-                                Estou de acordo com a <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Política de Privacidade</a> e os <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Termos de Uso</a>.
+                                Estou de acordo com a{' '}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }}
+                                    className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                                >
+                                    Política de Privacidade
+                                </button>
+                                {' '}e os{' '}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); setShowTerms(true); }}
+                                    className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                                >
+                                    Termos de Uso
+                                </button>
+                                .
                             </span>
                         </label>
                     </div>
@@ -154,6 +173,9 @@ export const MissingDetailsModal: React.FC<MissingDetailsModalProps> = ({ isOpen
                     </Button>
                 </form>
             </div>
+
+            <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+            <TermsOfUseModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
         </Modal>
     );
 };

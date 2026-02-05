@@ -6,12 +6,15 @@ import { useToast } from '@/components/ui/Toast';
 import { supabase } from '@/lib/supabase';
 import { Shield, Trash2, Eye, FileLock2, AlertTriangle } from 'lucide-react';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { PrivacyPolicyModal, TermsOfUseModal } from '../layout/LegalModals';
 
 export const PrivacySettings: React.FC = () => {
     const { user, logout } = useAuthStore();
     const { showToast } = useToast();
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
 
     const handleDeleteData = async () => {
         if (!user?.id) return;
@@ -77,7 +80,13 @@ export const PrivacySettings: React.FC = () => {
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                             Seus dados são usados exclusivamente para a logística de transporte e seguros obrigatórios.
                         </p>
-                        <a href="/privacy" target="_blank" className="text-blue-600 dark:text-blue-400 text-xs font-bold hover:underline mt-auto">Ler Política de Privacidade →</a>
+                        <button
+                            type="button"
+                            onClick={() => setShowPrivacy(true)}
+                            className="text-blue-600 dark:text-blue-400 text-xs font-bold hover:underline mt-auto text-left"
+                        >
+                            Ler Política de Privacidade →
+                        </button>
                     </div>
 
                     <div className="p-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 flex flex-col gap-3 group hover:border-purple-200 transition-all">
@@ -88,7 +97,13 @@ export const PrivacySettings: React.FC = () => {
                         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                             Utilizamos criptografia e protocolos de segurança modernos para garantir a integridade das suas informações.
                         </p>
-                        <a href="/terms" target="_blank" className="text-purple-600 dark:text-purple-400 text-xs font-bold hover:underline mt-auto">Ler Termos de Uso →</a>
+                        <button
+                            type="button"
+                            onClick={() => setShowTerms(true)}
+                            className="text-purple-600 dark:text-purple-400 text-xs font-bold hover:underline mt-auto text-left"
+                        >
+                            Ler Termos de Uso →
+                        </button>
                     </div>
                 </div>
 
@@ -101,7 +116,7 @@ export const PrivacySettings: React.FC = () => {
                             <div className="flex-1">
                                 <h4 className="text-red-900 dark:text-red-200 font-bold text-sm">Direito ao Esquecimento</h4>
                                 <p className="text-xs text-red-700 dark:text-red-400/80 mt-1 leading-relaxed">
-                                    Você pode excluir seus dados permanentemente do nosso sistema. Esta ação removerá seu perfil e todo o histórico de viagens. **Esta ação não pode ser desfeita.**
+                                    Você pode excluir seus dados permanentemente do nosso sistema. Esta ação removerá seu perfil e todo o histórico de viagens. <strong>Esta ação não pode ser desfeita.</strong>
                                 </p>
                                 <Button
                                     variant="danger"
@@ -126,6 +141,9 @@ export const PrivacySettings: React.FC = () => {
                 title="Excluir Permanentemente?"
                 message="Tem certeza que deseja excluir todos os seus dados? Você perderá acesso à plataforma e seu histórico de viagens será removido. Esta ação é irreversível."
             />
+
+            <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+            <TermsOfUseModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
         </div>
     );
 };

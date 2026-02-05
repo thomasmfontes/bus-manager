@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FormField from '../FormField';
 import { PassengerForm } from '../../utils/validators';
+import { PrivacyPolicyModal, TermsOfUseModal } from '../layout/LegalModals';
 
 interface PassengerFormFieldsProps {
     form: PassengerForm;
@@ -21,6 +22,9 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
     congregationSelect,
     instrumentSelect,
 }) => {
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
@@ -180,7 +184,23 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                         </svg>
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400 leading-snug">
-                        Estou de acordo com a <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Política de Privacidade</a> e os <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Termos de Uso</a> deste sistema.
+                        Estou de acordo com a{' '}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setShowPrivacy(true); }}
+                            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                        >
+                            Política de Privacidade
+                        </button>
+                        {' '}e os{' '}
+                        <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setShowTerms(true); }}
+                            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                        >
+                            Termos de Uso
+                        </button>
+                        {' '}deste sistema.
                     </span>
                 </label>
                 {errors.acceptedTerms && (
@@ -189,6 +209,9 @@ export const PassengerFormFields: React.FC<PassengerFormFieldsProps> = ({
                     </p>
                 )}
             </div>
+
+            <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+            <TermsOfUseModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
         </div>
     );
 };

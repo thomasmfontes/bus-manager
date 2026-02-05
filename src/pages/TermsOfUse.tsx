@@ -27,7 +27,7 @@ export const TermsOfUse: React.FC = () => {
                         <section className="mb-10">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">1. Aceitação dos Termos</h2>
                             <p>
-                                Ao se cadastrar em uma viagem através do **Bus Manager**, você concorda integralmente com estes Termos de Uso. Este serviço é destinado exclusivamente à organização de logística de viagens coletivas.
+                                Ao se cadastrar em uma viagem através do <strong>Bus Manager</strong>, você concorda integralmente com estes Termos de Uso. Este serviço é destinado exclusivamente à organização de logística de viagens coletivas.
                             </p>
                         </section>
 
@@ -58,7 +58,7 @@ export const TermsOfUse: React.FC = () => {
                         <section className="mb-10">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">5. Uso de Dados Pessoais</h2>
                             <p>
-                                O uso de seus dados segue estritamente o disposto em nossa **Política de Privacidade**. Seus dados serão compartilhados com empresas de transporte e seguradoras apenas na medida do necessário para a execução da viagem.
+                                O uso de seus dados segue estritamente o disposto em nossa <strong>Política de Privacidade</strong>. Seus dados serão compartilhados com empresas de transporte e seguradoras apenas na medida do necessário para a execução da viagem.
                             </p>
                         </section>
 
