@@ -1,16 +1,17 @@
 {
-    "cleanUrls": true,
-    "trailingSlash": false,
     "framework": "vite",
     "devCommand": "npm run dev",
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/:path*",
-            "destination": "/api/:path*"
+            "handle": "filesystem"
         },
         {
-            "source": "/:path*",
-            "destination": "/index.html"
+            "src": "/api/(.*)",
+            "dest": "/api/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
         }
     ]
 }
