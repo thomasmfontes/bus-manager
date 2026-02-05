@@ -82,7 +82,7 @@ export const AuthenticatedLayout: React.FC = () => {
                                 />
                             ) : (
                                 <span className="text-white font-bold text-xs">
-                                    {user.email?.charAt(0).toUpperCase()}
+                                    {(user.full_name || user.email)?.charAt(0).toUpperCase()}
                                 </span>
                             )}
                         </div>
@@ -179,12 +179,12 @@ export const AuthenticatedLayout: React.FC = () => {
                                 />
                             ) : (
                                 <span className="text-white font-bold text-sm">
-                                    {user?.email?.charAt(0).toUpperCase()}
+                                    {(user?.full_name || user?.email)?.charAt(0).toUpperCase()}
                                 </span>
                             )}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{user?.email}</p>
+                            <p className="text-sm font-medium text-white truncate">{user?.full_name || user?.email}</p>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className={cn(
                                     "text-xs px-2 py-0.5 rounded-full font-medium",
