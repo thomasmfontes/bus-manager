@@ -15,7 +15,8 @@ export interface PassengerForm {
     phone: string;
     instrument: string;
     auxiliar: string;
-    [key: string]: string; // Allow other fields
+    acceptedTerms: boolean;
+    [key: string]: string | boolean; // Allow other fields including booleans
 }
 
 export interface ValidationResult {
@@ -116,6 +117,7 @@ export const errorMessages = {
     birthDate: 'Data de nascimento inválida',
     fullName: 'Digite nome e sobrenome',
     doc: 'Digite um CPF ou RG válido',
+    terms: 'Você precisa aceitar os termos para continuar',
 };
 
 /**
@@ -175,6 +177,11 @@ export function validateForm(form: PassengerForm): ValidationResult {
     // Instrumento
     if (!isRequired(form.instrument)) {
         errors.instrument = errorMessages.required;
+    }
+
+    // Termos de Uso
+    if (!form.acceptedTerms) {
+        errors.acceptedTerms = errorMessages.terms;
     }
 
     return {

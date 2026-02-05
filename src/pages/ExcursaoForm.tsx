@@ -72,6 +72,7 @@ export default function ExcursaoForm() {
         phone: "",
         instrument: "",
         auxiliar: "",
+        acceptedTerms: false,
     });
 
     const [submitting, setSubmitting] = useState(false);
@@ -130,8 +131,12 @@ export default function ExcursaoForm() {
     }, {} as Record<string, string[]>);
 
     function onChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target as any;
         let v = value;
+
+        if (type === 'checkbox') {
+            v = (e.target as any).checked;
+        }
 
         // Clear error for this field when user starts typing
         if (errors[name]) {
@@ -289,6 +294,7 @@ export default function ExcursaoForm() {
                     telefone: form.phone,
                     instrumento: form.instrument,
                     auxiliar: form.auxiliar,
+                    lgpd_consent_at: new Date().toISOString(),
                 }).eq('id', passengerId);
             } else {
                 console.log('🆕 Criando novo registro de passageiro...');
@@ -304,6 +310,7 @@ export default function ExcursaoForm() {
                         telefone: form.phone,
                         instrumento: form.instrument,
                         auxiliar: form.auxiliar,
+                        lgpd_consent_at: new Date().toISOString(),
                     }])
                     .select()
                     .single();

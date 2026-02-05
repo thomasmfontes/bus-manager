@@ -19,6 +19,8 @@ import ExcursaoForm from '@/pages/ExcursaoForm';
 import Success from '@/pages/Success';
 import { TripPaymentCenter } from '@/pages/TripPaymentCenter';
 import { Statement } from '@/pages/Financeiro/Statement';
+import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
+import { TermsOfUse } from '@/pages/TermsOfUse';
 import { UserRole } from '@/types';
 
 export const router = createBrowserRouter([
@@ -33,6 +35,14 @@ export const router = createBrowserRouter([
     {
         path: '/login/user',
         element: <UserLogin />,
+    },
+    {
+        path: '/privacy',
+        element: <PrivacyPolicy />,
+    },
+    {
+        path: '/terms',
+        element: <TermsOfUse />,
     },
     {
         path: '/success',

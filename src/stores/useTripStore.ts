@@ -6,9 +6,11 @@ import { supabase } from '@/lib/supabase';
 interface TripState {
     trips: Trip[];
     selectedTripId: string | null;
+    isContextModalOpen: boolean;
     loading: boolean;
     fetchViagens: () => Promise<void>;
     setSelectedTripId: (id: string | null) => void;
+    setIsContextModalOpen: (open: boolean) => void;
     createViagem: (trip: Omit<Trip, 'id'>) => Promise<void>;
     updateViagem: (id: string, trip: Partial<Trip>) => Promise<void>;
     deleteViagem: (id: string) => Promise<void>;
@@ -19,8 +21,10 @@ export const useTripStore = create<TripState>()(
         (set, get) => ({
             trips: [],
             selectedTripId: null,
+            isContextModalOpen: false,
             loading: false,
             setSelectedTripId: (id: string | null) => set({ selectedTripId: id }),
+            setIsContextModalOpen: (open: boolean) => set({ isContextModalOpen: open }),
             fetchViagens: async () => {
                 set({ loading: true });
                 try {

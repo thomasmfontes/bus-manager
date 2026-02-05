@@ -9,7 +9,7 @@ interface ProgressIndicatorProps {
 /**
  * Indicador de progresso do formulário
  */
-export default function ProgressIndicator({ form, totalFields = 8 }: ProgressIndicatorProps) {
+export default function ProgressIndicator({ form, totalFields = 9 }: ProgressIndicatorProps) {
     const progress = useMemo(() => {
         let filled = 0;
 
@@ -19,11 +19,12 @@ export default function ProgressIndicator({ form, totalFields = 8 }: ProgressInd
         if (form.congregation?.trim()) filled++;
         if (form.maritalStatus?.trim()) filled++;
         if (form.auxiliar?.trim()) filled++;
-        if (form.age?.trim()) filled++;
+        if (form.birthDate?.trim()) filled++;
         if (form.phone?.trim()) filled++;
         if (form.instrument?.trim()) filled++;
+        if (form.acceptedTerms) filled++;
 
-        return Math.round((filled / totalFields) * 100);
+        return Math.min(100, Math.round((filled / totalFields) * 100));
     }, [form, totalFields]);
 
     const getProgressColor = () => {

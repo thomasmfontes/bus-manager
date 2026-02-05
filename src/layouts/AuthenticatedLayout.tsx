@@ -7,16 +7,47 @@ import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
 import { RegistrationModal } from '@/components/RegistrationModal';
 import { GlobalTripSelector } from '@/components/layout/GlobalTripSelector';
+import { TripContextModal } from '@/components/layout/TripContextModal';
+import { MissingDetailsModal } from '@/components/layout/MissingDetailsModal';
+import { useTripStore } from '@/stores/useTripStore';
+import { usePassengerStore } from '@/stores/usePassengerStore';
 
 export const AuthenticatedLayout: React.FC = () => {
     const { user, logout } = useAuthStore();
+    const { selectedTripId, setIsContextModalOpen } = useTripStore();
+    const { fetchPassageiros } = usePassengerStore();
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+    const [showMissingDetailsModal, setShowMissingDetailsModal] = useState(false);
     const [avatarError, setAvatarError] = useState(false);
 
+    useEffect(() => {
+        // Auto-open trip context modal if no trip is selected
+        const timer = setTimeout(() => {
+            if (user && !selectedTripId) {
+                setIsContextModalOpen(true);
+            }
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [user, selectedTripId, setIsContextModalOpen]);
 
+    useEffect(() => {
+        // Check for missing birth date if user is a passenger
+        if (user?.role === UserRole.PASSAGEIRO && user.id) {
+            const checkData = async () => {
+                // Ensure we have current passenger data
+                await fetchPassageiros();
+                const passenger = usePassengerStore.getState().passengers.find(p => p.id === user.id);
+
+                if (passenger && (!passenger.data_nascimento || !passenger.lgpd_consent_at)) {
+                    setShowMissingDetailsModal(true);
+                }
+            };
+            checkData();
+        }
+    }, [user, fetchPassageiros]);
 
     useEffect(() => {
         if (sidebarOpen) {
@@ -222,6 +253,16 @@ export const AuthenticatedLayout: React.FC = () => {
                 isOpen={showRegistrationModal}
                 onClose={() => setShowRegistrationModal(false)}
             />
+
+            <TripContextModal />
+
+            {user?.role === UserRole.PASSAGEIRO && user.id && (
+                <MissingDetailsModal
+                    isOpen={showMissingDetailsModal}
+                    passengerId={user.id}
+                    onSuccess={() => setShowMissingDetailsModal(false)}
+                />
+            )}
         </div>
     );
 };

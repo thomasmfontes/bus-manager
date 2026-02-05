@@ -63,6 +63,7 @@ export interface Passenger {
     data_nascimento?: string;
     instrumento?: string;
     auxiliar?: string;
+    lgpd_consent_at?: string;
     created_at?: string;
     updated_at?: string;
 

@@ -5,14 +5,14 @@ import { AdminList } from '@/components/settings/AdminList';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { SystemPreferences } from '@/components/settings/SystemPreferences';
 import { DataManagement } from '@/components/settings/DataManagement';
+import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { UserRole } from '@/types';
 
 export const Settings: React.FC = () => {
     const { user } = useAuthStore();
     const isAdmin = user?.role === UserRole.ADMIN;
 
-    // Set default tab based on role: admins see profile, passengers see preferences
-    const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'data' | 'admins'>(
+    const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'data' | 'admins' | 'privacy'>(
         isAdmin ? 'profile' : 'preferences'
     );
 
@@ -56,6 +56,19 @@ export const Settings: React.FC = () => {
                         <SettingsIcon size={18} className="shrink-0" />
                         <span className="hidden sm:inline">Preferências</span>
                     </button>
+                    {!isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('privacy')}
+                            className={`px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 whitespace-nowrap snap-start ${activeTab === 'privacy'
+                                ? 'border-blue-600 text-blue-600 bg-blue-50/50'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                }`}
+                            title="Privacidade"
+                        >
+                            <Shield size={18} className="shrink-0" />
+                            <span className="hidden sm:inline">Privacidade</span>
+                        </button>
+                    )}
                     {isAdmin && (
                         <button
                             onClick={() => setActiveTab('data')}
@@ -89,6 +102,7 @@ export const Settings: React.FC = () => {
             <div key={activeTab} className="animate-in fade-in duration-500">
                 {activeTab === 'profile' && isAdmin && <ProfileSettings />}
                 {activeTab === 'preferences' && <SystemPreferences />}
+                {activeTab === 'privacy' && !isAdmin && <PrivacySettings />}
                 {activeTab === 'data' && isAdmin && <DataManagement />}
                 {activeTab === 'admins' && isAdmin && <AdminList />}
             </div>

@@ -12,6 +12,7 @@ interface ModalProps {
     footer?: React.ReactNode;
     size?: 'sm' | 'md' | 'lg' | 'xl';
     className?: string;
+    showCloseButton?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -22,6 +23,7 @@ export const Modal: React.FC<ModalProps> = ({
     footer,
     size = 'md',
     className,
+    showCloseButton = true,
 }) => {
     useEffect(() => {
         if (isOpen) {
@@ -48,7 +50,7 @@ export const Modal: React.FC<ModalProps> = ({
             {/* Backdrop with blur */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity cursor-pointer"
-                onClick={onClose}
+                onClick={showCloseButton ? onClose : undefined}
             />
 
             {/* Modal Container */}
@@ -61,12 +63,14 @@ export const Modal: React.FC<ModalProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0 rounded-t-2xl">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white truncate pr-4">{title}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                        <X size={20} />
-                    </button>
+                    {showCloseButton && (
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                            <X size={20} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Content */}
