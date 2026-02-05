@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { X, UserPlus, UserCircle, ArrowLeft } from 'lucide-react';
-import { calculateAge } from '@/utils/formatters';
+import { calculateAge, maskCPF, maskRG, maskPhone, onlyDigits } from '@/utils/formatters';
 
 export const PassengerForm: React.FC = () => {
     const navigate = useNavigate();
@@ -54,10 +54,13 @@ export const PassengerForm: React.FC = () => {
         if (isEditing && id) {
             const passenger = passengers.find((p) => p.id === id);
             if (passenger) {
+                const doc = passenger.cpf_rg || '';
+                const isCPF = onlyDigits(doc).length > 9;
+
                 setFormData({
                     nome_completo: passenger.nome_completo,
-                    cpf_rg: passenger.cpf_rg,
-                    telefone: passenger.telefone || '',
+                    cpf_rg: isCPF ? maskCPF(doc) : maskRG(doc),
+                    telefone: passenger.telefone ? maskPhone(passenger.telefone) : '',
                     comum_congregacao: passenger.comum_congregacao || '',
                     idade: passenger.idade ? passenger.idade.toString() : '',
                     data_nascimento: passenger.data_nascimento || '',
@@ -129,8 +132,14 @@ export const PassengerForm: React.FC = () => {
                             label="CPF ou RG"
                             labelClassName="font-bold ml-1"
                             value={formData.cpf_rg}
-                            onChange={(e) => setFormData({ ...formData, cpf_rg: e.target.value })}
-                            placeholder="Ex: 123.456.789-00"
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                const digits = onlyDigits(val);
+                                const isCPF = digits.length > 9;
+                                const masked = isCPF ? maskCPF(val) : maskRG(val);
+                                setFormData({ ...formData, cpf_rg: masked });
+                            }}
+                            placeholder="Ex: 000.000.000-00 ou 00.000.000-0"
                             required
                         />
 
@@ -138,7 +147,7 @@ export const PassengerForm: React.FC = () => {
                             label="Telefone"
                             labelClassName="font-bold ml-1"
                             value={formData.telefone}
-                            onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, telefone: maskPhone(e.target.value) })}
                             placeholder="Ex: (11) 98765-4321"
                             required
                         />

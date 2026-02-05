@@ -14,6 +14,7 @@ import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, Al
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { TripEditModal } from '@/components/viagens/TripEditModal';
+import { FaWhatsapp } from 'react-icons/fa';
 
 export const TripSeatMap: React.FC = () => {
     const navigate = useNavigate();
@@ -511,10 +512,24 @@ export const TripSeatMap: React.FC = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-sm text-gray-600 mb-2">Passageiro atual:</p>
-                                        <p className="font-semibold">{currentPassenger.nome_completo}</p>
-                                        <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
-                                        <p className="text-sm text-gray-600">{currentPassenger.telefone}</p>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-semibold text-gray-900">{currentPassenger.nome_completo}</p>
+                                                <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
+                                                <p className="text-sm text-gray-600">{currentPassenger.telefone}</p>
+                                            </div>
+                                            {currentPassenger.telefone && (
+                                                <a
+                                                    href={`https://wa.me/55${currentPassenger.telefone.replace(/\D/g, '')}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center w-11 h-11 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl transition-all hover:scale-110 active:scale-95 shadow-sm"
+                                                    title="Chamar no WhatsApp"
+                                                >
+                                                    <FaWhatsapp size={24} />
+                                                </a>
+                                            )}
+                                        </div>
                                     </>
                                 )}
                             </div>

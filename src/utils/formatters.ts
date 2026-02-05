@@ -14,10 +14,10 @@ export function onlyDigits(str: string | number): string {
  */
 export function maskCPF(value: string | number): string {
     const digits = onlyDigits(value).slice(0, 11);
-    return digits
-        .replace(/^(\d{3})(\d)/, '$1.$2')
-        .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return digits.replace(/^(\d{3})(\d)/, '$1.$2');
+    if (digits.length <= 9) return digits.replace(/^(\d{3})(\d{3})(\d)/, '$1.$2.$3');
+    return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d)/, '$1.$2.$3-$4');
 }
 
 /**
@@ -25,10 +25,10 @@ export function maskCPF(value: string | number): string {
  */
 export function maskRG(value: string | number): string {
     const digits = onlyDigits(value).slice(0, 9);
-    return digits
-        .replace(/^(\d{2})(\d)/, '$1.$2')
-        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 5) return digits.replace(/^(\d{2})(\d)/, '$1.$2');
+    if (digits.length <= 8) return digits.replace(/^(\d{2})(\d{3})(\d)/, '$1.$2.$3');
+    return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d)/, '$1.$2.$3-$4');
 }
 
 /**
@@ -36,18 +36,21 @@ export function maskRG(value: string | number): string {
  */
 export function maskPhone(value: string | number): string {
     const digits = onlyDigits(value).slice(0, 11);
+    if (digits.length === 0) return '';
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
 
     if (digits.length <= 10) {
         // Telefone fixo: (00) 0000-0000
-        return digits
-            .replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3')
-            .trim();
+        const p1 = digits.slice(2, 6);
+        const p2 = digits.slice(6);
+        return `(${digits.slice(0, 2)}) ${p1}${p2.length > 0 ? '-' + p2 : ''}`;
     }
 
     // Celular: (00) 00000-0000
-    return digits
-        .replace(/^(\d{2})(\d{5})(\d{0,4})$/, '($1) $2-$3')
-        .trim();
+    const p1 = digits.slice(2, 7);
+    const p2 = digits.slice(7);
+    return `(${digits.slice(0, 2)}) ${p1}${p2.length > 0 ? '-' + p2 : ''}`;
 }
 
 /**
