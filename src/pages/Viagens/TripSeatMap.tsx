@@ -38,10 +38,13 @@ export const TripSeatMap: React.FC = () => {
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchViagens();
-        fetchOnibus();
-        fetchPassageiros();
-    }, [fetchViagens, fetchOnibus, fetchPassageiros]);
+        if (id) {
+            console.log('🔄 Carregando dados para a viagem:', id);
+            fetchViagens();
+            fetchOnibus();
+            fetchPassageiros(); // Global fetch to allow admins to see all possible passengers
+        }
+    }, [id, fetchViagens, fetchOnibus, fetchPassageiros]);
 
     const trip = trips.find((t) => t.id === id);
 
@@ -131,22 +134,21 @@ export const TripSeatMap: React.FC = () => {
             return;
         }
 
-        console.log('🚀 Iniciando atribuição:', {
-            tripId: id,
-            seat: selectedSeat,
+        console.log('🚀 Enviando para atribuirAssento:', {
             passengerId: selectedPassengerId,
+            seat: selectedSeat,
+            tripId: id,
             busId: currentBus.id
         });
 
         try {
+            console.log('✅ UI: Seat assigned, refreshing UI state...');
             await atribuirAssento(selectedPassengerId, selectedSeat, id, currentBus.id);
-
+            await fetchPassageiros();
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
             setSelectedPassengerId('');
-
-            await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao atribuir assento', 'error');
         }

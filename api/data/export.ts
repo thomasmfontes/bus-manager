@@ -40,8 +40,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const fieldsParam = Array.isArray(req.query.fields) ? req.query.fields[0] : req.query.fields;
         const viagemIdParam = Array.isArray(req.query.viagem_id) ? req.query.viagem_id[0] : req.query.viagem_id;
 
-        // Default fields if none provided
-        const selectedFields = fieldsParam ? (fieldsParam as string).split(',') : ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
+        // Default fields if none provided (decode + as space if needed)
+        const selectedFields = fieldsParam
+            ? (fieldsParam as string).split(',').map(f => decodeURIComponent(f).replace(/\+/g, ' '))
+            : ['Nome', 'Documento', 'Telefone', 'Congregação', 'Status', 'Assento'];
 
         // Map export labels back to database columns
         const columnMap: Record<string, string> = {
@@ -141,10 +143,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     else if (v === 'pending' || v === 'pendente') row[field] = 'Pendente';
                     else row[field] = value || 'Pendente';
                 } else if (field === 'Valor Pago') {
-                    const numValue = typeof value === 'number' ? value : parseFloat(value || '0');
+                    const numValue = (value !== undefined && value !== null) ? Number(value) : 0;
                     row[field] = `R$ ${numValue.toFixed(2)}`.replace('.', ',');
                 } else {
-                    row[field] = value || '-';
+                    row[field] = (value !== undefined && value !== null && value !== '') ? value : '-';
                 }
             });
             return row;

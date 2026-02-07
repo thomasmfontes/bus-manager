@@ -46,45 +46,29 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     atribuirAssento: async (passageiroId: string, assento: string, viagemId: string, onibusId?: string) => {
         set({ loading: true });
         try {
-            // Check if enrollment already exists for this trip
-            const { data: enrollment, error: eError } = await supabase
-                .from('viagem_passageiros')
-                .select('id')
-                .eq('passageiro_id', passageiroId)
-                .eq('viagem_id', viagemId)
-                .maybeSingle();
+            console.log('🚀 Chamando API de atribuição...');
+            const response = await fetch('/api/seats/assign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    passageiroId,
+                    assento,
+                    viagemId,
+                    onibusId
+                })
+            });
 
-            if (eError) throw eError;
-
-            if (enrollment) {
-                // Update existing enrollment
-                const { error: updateError } = await supabase
-                    .from('viagem_passageiros')
-                    .update({
-                        onibus_id: onibusId,
-                        assento: assento
-                    })
-                    .eq('id', enrollment.id);
-
-                if (updateError) throw updateError;
-            } else {
-                // Create new enrollment for this trip
-                const { error: insertError } = await supabase
-                    .from('viagem_passageiros')
-                    .insert([{
-                        passageiro_id: passageiroId,
-                        viagem_id: viagemId,
-                        onibus_id: onibusId,
-                        assento: assento,
-                        pagamento: 'Pendente'
-                    }]);
-
-                if (insertError) throw insertError;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro na API');
             }
+
+            const result = await response.json();
+            console.log('✅ API retornou com sucesso:', result);
 
             set({ loading: false });
         } catch (error) {
-            console.error('❌ Error assigning seat:', error);
+            console.error('❌ Error assigning seat via API:', error);
             set({ loading: false });
             throw error;
         }
