@@ -77,7 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     onibus:onibus_id (nome, placa),
                     passageiros!inner (*)
                 `)
-                .eq('viagem_id', (viagemIdParam as string));
+                .eq('viagem_id', (viagemIdParam as string))
+                .in('pagamento', ['Pago', 'paid', 'Realizado']);
 
             if (!error && data) {
                 // Flatten and clean

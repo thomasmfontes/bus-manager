@@ -22,151 +22,166 @@ import { Statement } from '@/pages/Financeiro/Statement';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { TermsOfUse } from '@/pages/TermsOfUse';
 import { UserRole } from '@/types';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import { Outlet } from 'react-router-dom';
+
+const Root = () => (
+    <>
+        <ScrollToTop />
+        <Outlet />
+    </>
+);
 
 export const router = createBrowserRouter([
     {
-        path: '/login',
-        element: <Login />,
-    },
-    {
-        path: '/login/admin',
-        element: <AdminLogin />,
-    },
-    {
-        path: '/login/user',
-        element: <UserLogin />,
-    },
-    {
-        path: '/privacy',
-        element: <PrivacyPolicy />,
-    },
-    {
-        path: '/terms',
-        element: <TermsOfUse />,
-    },
-    {
-        path: '/success',
-        element: <Success />,
-    },
-    {
-        path: '/excursao',
-        element: <ExcursaoForm />,
-    },
-    {
         path: '/',
-        element: <AuthenticatedLayout />,
+        element: <Root />,
         children: [
             {
-                index: true,
-                element: <Navigate to="/dashboard" replace />,
+                path: 'login',
+                element: <Login />,
             },
             {
-                path: 'dashboard',
-                element: (
-                    <ProtectedRoute>
-                        <Dashboard />
-                    </ProtectedRoute>
-                ),
+                path: 'login/admin',
+                element: <AdminLogin />,
             },
             {
-                path: 'pagamento',
-                element: <TripPaymentCenter />,
+                path: 'login/user',
+                element: <UserLogin />,
             },
             {
-                path: 'onibus',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <BusList />
-                    </RoleProtectedRoute>
-                ),
+                path: 'privacy',
+                element: <PrivacyPolicy />,
             },
             {
-                path: 'onibus/novo',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <BusForm />
-                    </RoleProtectedRoute>
-                ),
+                path: 'terms',
+                element: <TermsOfUse />,
             },
             {
-                path: 'onibus/editar/:id',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <BusForm />
-                    </RoleProtectedRoute>
-                ),
+                path: 'success',
+                element: <Success />,
             },
             {
-                path: 'viagens',
-                element: (
-                    <ProtectedRoute>
-                        <TripList />
-                    </ProtectedRoute>
-                ),
+                path: 'excursao',
+                element: <ExcursaoForm />,
             },
             {
-                path: 'viagens/nova',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <TripForm />
-                    </RoleProtectedRoute>
-                ),
-            },
-            {
-                path: 'viagens/:id',
-                element: (
-                    <ProtectedRoute>
-                        <TripSeatMap />
-                    </ProtectedRoute>
-                ),
-            },
-            {
-                path: 'passageiros',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <PassengerList />
-                    </RoleProtectedRoute>
-                ),
-            },
-            {
-                path: 'passageiros/novo',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <PassengerForm />
-                    </RoleProtectedRoute>
-                ),
-            },
-            {
-                path: 'passageiros/editar/:id',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <PassengerForm />
-                    </RoleProtectedRoute>
-                ),
-            },
-            {
-                path: 'financeiro',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <Financeiro />
-                    </RoleProtectedRoute>
-                ),
-            },
-            {
-                path: 'extrato',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                        <Statement />
-                    </RoleProtectedRoute>
-                ),
-            },
-            {
-                path: 'settings',
-                element: (
-                    <RoleProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.PASSAGEIRO]}>
-                        <Settings />
-                    </RoleProtectedRoute>
-                ),
+                path: '',
+                element: <AuthenticatedLayout />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="/dashboard" replace />,
+                    },
+                    {
+                        path: 'dashboard',
+                        element: (
+                            <ProtectedRoute>
+                                <Dashboard />
+                            </ProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'pagamento',
+                        element: <TripPaymentCenter />,
+                    },
+                    {
+                        path: 'onibus',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <BusList />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'onibus/novo',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <BusForm />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'onibus/editar/:id',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <BusForm />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'viagens',
+                        element: (
+                            <ProtectedRoute>
+                                <TripList />
+                            </ProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'viagens/nova',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <TripForm />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'viagens/:id',
+                        element: (
+                            <ProtectedRoute>
+                                <TripSeatMap />
+                            </ProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'passageiros',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <PassengerList />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'passageiros/novo',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <PassengerForm />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'passageiros/editar/:id',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <PassengerForm />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'financeiro',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <Financeiro />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'extrato',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                                <Statement />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'settings',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.PASSAGEIRO]}>
+                                <Settings />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                ],
             },
         ],
     },
