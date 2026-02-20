@@ -21,6 +21,7 @@ import {
     ChevronDown,
     Clock,
     X,
+    ShoppingCart,
 } from 'lucide-react';
 import { MdPix } from 'react-icons/md';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
@@ -53,6 +54,8 @@ export const TripPaymentCenter = () => {
     const [customPayerName, setCustomPayerName] = useState('');
     const [tripPayments, setTripPayments] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState<'payment' | 'history'>('payment');
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+    const [isQuickAccessExiting, setIsQuickAccessExiting] = useState(false);
 
     const userPassenger = useMemo(() => {
         if (!user?.id) return null;
@@ -281,10 +284,21 @@ export const TripPaymentCenter = () => {
         setSelectedPassengers(prev => {
             const isSelected = prev.find(item => item.id === p.id);
             if (isSelected) {
-                return prev.filter(item => item.id !== p.id);
+                const newSelection = prev.filter(item => item.id !== p.id);
+                if (newSelection.length === 0) setIsSummaryOpen(false);
+                return newSelection;
             }
             return [...prev, p];
         });
+    };
+
+    const handleQuickAccessClick = () => {
+        if (!userPassenger) return;
+        setIsQuickAccessExiting(true);
+        setTimeout(() => {
+            togglePassengerSelection(userPassenger);
+            setIsQuickAccessExiting(false);
+        }, 300);
     };
 
     const totalAmount = useMemo(() => {
@@ -679,19 +693,19 @@ export const TripPaymentCenter = () => {
                                             </div>
 
                                             {/* Fast Selection for the Logged User */}
-                                            {!searchQuery && userPassenger && !selectedPassengers.find(sp => sp.id === userPassenger.id) && !tripPayments.has(userPassenger.id) && (
-                                                <div className="px-6 py-4 border-b border-gray-50 bg-blue-50/30">
+                                            {!searchQuery && userPassenger && (!selectedPassengers.find(sp => sp.id === userPassenger.id) || isQuickAccessExiting) && !tripPayments.has(userPassenger.id) && (
+                                                <div className={cn("px-6 py-4 border-b border-gray-100 bg-gray-50/30", isQuickAccessExiting && "collapse-vertical")}>
                                                     <button
-                                                        onClick={() => togglePassengerSelection(userPassenger)}
-                                                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white border border-blue-100 hover:border-blue-300 transition-all shadow-sm active:scale-[0.98]"
+                                                        onClick={handleQuickAccessClick}
+                                                        className="w-full h-12 px-4 flex items-center gap-3 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:text-blue-600 transition-all active:scale-95 shadow-sm group"
                                                     >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs">
-                                                                {userPassenger.nome_completo.charAt(0)}
-                                                            </div>
-                                                            <p className="text-xs font-black text-gray-700">Pagar para mim: <span className="text-blue-600">{userPassenger.nome_completo}</span></p>
+                                                        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                                            <Users size={14} />
                                                         </div>
-                                                        <CheckCircle2 size={16} className="text-blue-200" />
+                                                        <span className="text-sm font-black text-gray-700 group-hover:text-blue-600 truncate">
+                                                            Pagar para mim ({userPassenger.nome_completo.split(' ')[0]})
+                                                        </span>
+                                                        <ChevronRightIcon size={16} className="ml-auto text-gray-300 group-hover:text-blue-600" />
                                                     </button>
                                                 </div>
                                             )}
@@ -754,72 +768,114 @@ export const TripPaymentCenter = () => {
                                             </div>
 
 
-                                            <div
-                                                className={cn(
-                                                    "transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden",
-                                                    selectedPassengers.length > 0
-                                                        ? "max-h-[2000px] opacity-100 pointer-events-auto"
-                                                        : "max-h-0 opacity-0 pointer-events-none"
-                                                )}
-                                            >
-                                                <div className="bg-white">
-                                                    <div className="p-4 sm:p-5 border-t border-blue-50/50 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 relative overflow-hidden">
-                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/20 rounded-full blur-3xl -mr-16 -mt-16" />
-                                                        <div className="relative flex items-center justify-between gap-4">
-                                                            <div>
-                                                                <p className="text-blue-600 text-[9px] font-black uppercase tracking-widest mb-0.5 opacity-70">Resumo</p>
-                                                                <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                                                                    {selectedPassengers.length} {selectedPassengers.length === 1 ? 'Passageiro' : 'Passageiros'}
-                                                                </h3>
+                                            {/* Drawer-like Summary Panel (Overlay) */}
+                                            {selectedPassengers.length > 0 && (
+                                                <>
+                                                    {/* Backdrop */}
+                                                    <div
+                                                        className={cn(
+                                                            "fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] transition-opacity duration-300",
+                                                            isSummaryOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                                                        )}
+                                                        onClick={() => setIsSummaryOpen(false)}
+                                                    />
+
+                                                    {/* Side Panel (Summary) */}
+                                                    <div
+                                                        className={cn(
+                                                            "fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-[101] shadow-2xl transition-transform duration-500 ease-out flex flex-col",
+                                                            isSummaryOpen ? "translate-x-0" : "translate-x-full"
+                                                        )}
+                                                    >
+                                                        {/* Drawer Header */}
+                                                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                                                    <ShoppingCart size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Seu Carrinho</h3>
+                                                                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none mt-1">
+                                                                        {selectedPassengers.length} {selectedPassengers.length === 1 ? 'Passageiro' : 'Passageiros'}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-0.5 opacity-70">Total</p>
-                                                                <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tighter">
+                                                            <button
+                                                                onClick={() => setIsSummaryOpen(false)}
+                                                                className="w-10 h-10 rounded-xl bg-white/50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-white transition-all shadow-sm"
+                                                            >
+                                                                <X size={20} />
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Passenger List Scrollable */}
+                                                        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                                            {selectedPassengers.map(p => (
+                                                                <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-blue-200 transition-all group">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-10 h-10 rounded-xl bg-white text-blue-600 flex items-center justify-center font-black shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
+                                                                            {p.nome_completo.charAt(0)}
+                                                                        </div>
+                                                                        <div className="flex flex-col">
+                                                                            <p className="text-sm font-black text-gray-800 tracking-tight line-clamp-1">{p.nome_completo}</p>
+                                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{p.cpf_rg || 'Sem Documento'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="text-sm font-black text-blue-600 tabular-nums">{formatCurrency(trip?.preco || 0)}</span>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                togglePassengerSelection(p);
+                                                                            }}
+                                                                            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-90"
+                                                                        >
+                                                                            <X size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Drawer Footer */}
+                                                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 space-y-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Total do Pedido</p>
+                                                                <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tighter">
                                                                     {formatCurrency(totalAmount)}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <Button
+                                                                    onClick={handleGeneratePayment}
+                                                                    isLoading={isProcessing}
+                                                                    className="w-full h-16 text-sm font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 bg-gray-900 hover:bg-blue-600 hover:-translate-y-1 active:scale-95 transition-all rounded-2xl"
+                                                                >
+                                                                    GERAR PIX
+                                                                </Button>
+                                                                <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                                                                    Ao clicar em gerar pix, um código único será criado <br /> para todos os passageiros selecionados.
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-col divide-y divide-gray-50 max-h-[250px] overflow-y-auto custom-scrollbar bg-white">
-                                                        {selectedPassengers.map(p => (
-                                                            <div key={p.id} className="flex items-center justify-between p-3 sm:px-4 hover:bg-gray-50/50 transition-all duration-300 gap-4">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-[10px] shrink-0 border border-blue-100/50">
-                                                                        {p.nome_completo.charAt(0)}
-                                                                    </div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-xs font-black text-gray-800 tracking-tight line-clamp-1">{p.nome_completo}</span>
-                                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">{p.cpf_rg || 'Sem Documento'}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="text-xs font-black text-blue-600 tabular-nums">{formatCurrency(trip?.preco || 0)}</span>
-                                                                    <button
-                                                                        onClick={() => togglePassengerSelection(p)}
-                                                                        className="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                                    >
-                                                                        <X size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="p-5 sm:p-6 bg-gray-50/50 border-t border-gray-100/50">
-                                                        <Button
-                                                            onClick={handleGeneratePayment}
-                                                            isLoading={isProcessing}
-                                                            className="w-full h-14 text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 bg-gray-900 hover:bg-blue-600 hover:-translate-y-1 active:scale-[0.98] transition-all rounded-2xl"
-                                                        >
-                                                            GERAR PIX
-                                                        </Button>
-                                                        <p className="text-center mt-3 text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
-                                                            * QR Code gerado após o clique.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                    {/* Floating Cart Button (Trigger) */}
+                                                    <button
+                                                        onClick={() => setIsSummaryOpen(true)}
+                                                        className={cn(
+                                                            "fixed bottom-8 right-8 z-[90] w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-blue-500/40 transition-all hover:scale-110 active:scale-95 animate-bounce-subtle animate-pop-in",
+                                                            isSummaryOpen && "scale-0 opacity-0 pointer-events-none"
+                                                        )}
+                                                    >
+                                                        <ShoppingCart size={24} />
+                                                        <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-lg">
+                                                            {selectedPassengers.length}
+                                                        </span>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     ) : paymentStatus === 'success' ? (
                                         <div className="fade-in duration-700 text-center bg-white rounded-2xl border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
