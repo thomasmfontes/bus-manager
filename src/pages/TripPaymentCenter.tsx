@@ -855,7 +855,7 @@ export const TripPaymentCenter = () => {
                                                                     GERAR PIX
                                                                 </Button>
                                                                 <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
-                                                                    Ao clicar em gerar pix, um código único será criado <br /> para todos os passageiros selecionados.
+                                                                    Ao clicar em gerar pix, um código único será criado.
                                                                 </p>
                                                             </div>
                                                         </div>
