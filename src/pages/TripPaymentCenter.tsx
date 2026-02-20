@@ -560,7 +560,7 @@ export const TripPaymentCenter = () => {
                                                             else showToast('Lotação Esgotada para este roteiro', 'warning');
                                                         }}
                                                         className={cn(
-                                                            "group relative bg-white rounded-[2.5rem] border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
+                                                            "group relative bg-white rounded-2xl border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
                                                             getVacancies(t) <= 0 && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0"
                                                         )}
                                                     >
@@ -652,7 +652,7 @@ export const TripPaymentCenter = () => {
                             ) : (
                                 <div className="space-y-6">
                                     {paymentStatus === 'selection' ? (
-                                        <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden">
+                                        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                                             {/* Info Notice */}
                                             <div className="px-6 py-4 bg-blue-50/50 border-b border-blue-100/50 flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
@@ -758,71 +758,71 @@ export const TripPaymentCenter = () => {
                                                 className={cn(
                                                     "transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) overflow-hidden",
                                                     selectedPassengers.length > 0
-                                                        ? "max-h-[2000px] opacity-100 mt-6 mb-4 pointer-events-auto"
-                                                        : "max-h-0 opacity-0 mt-0 mb-0 pointer-events-none"
+                                                        ? "max-h-[2000px] opacity-100 pointer-events-auto"
+                                                        : "max-h-0 opacity-0 pointer-events-none"
                                                 )}
                                             >
-                                                <div className="rounded-[2rem] border border-blue-100 bg-white shadow-xl shadow-blue-500/5">
-                                                    <div className="p-5 sm:p-8 border-b border-blue-50 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 relative overflow-hidden">
+                                                <div className="bg-white">
+                                                    <div className="p-4 sm:p-5 border-t border-blue-50/50 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 relative overflow-hidden">
                                                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/20 rounded-full blur-3xl -mr-16 -mt-16" />
                                                         <div className="relative flex items-center justify-between gap-4">
                                                             <div>
-                                                                <p className="text-blue-600 text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Resumo</p>
-                                                                <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                                                                <p className="text-blue-600 text-[9px] font-black uppercase tracking-widest mb-0.5 opacity-70">Resumo</p>
+                                                                <h3 className="text-lg font-black text-gray-900 tracking-tight">
                                                                     {selectedPassengers.length} {selectedPassengers.length === 1 ? 'Passageiro' : 'Passageiros'}
                                                                 </h3>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1 opacity-70">Total</p>
-                                                                <p className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tighter">
+                                                                <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-0.5 opacity-70">Total</p>
+                                                                <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tighter">
                                                                     {formatCurrency(totalAmount)}
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-col divide-y divide-gray-50 max-h-[300px] overflow-y-auto custom-scrollbar bg-white">
+                                                    <div className="flex flex-col divide-y divide-gray-50 max-h-[250px] overflow-y-auto custom-scrollbar bg-white">
                                                         {selectedPassengers.map(p => (
-                                                            <div key={p.id} className="flex items-center justify-between p-4 sm:px-8 hover:bg-gray-50/50 transition-all duration-300 gap-4">
+                                                            <div key={p.id} className="flex items-center justify-between p-3 sm:px-4 hover:bg-gray-50/50 transition-all duration-300 gap-4">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shrink-0 border border-blue-100/50">
+                                                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-[10px] shrink-0 border border-blue-100/50">
                                                                         {p.nome_completo.charAt(0)}
                                                                     </div>
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-sm font-black text-gray-800 tracking-tight line-clamp-1">{p.nome_completo}</span>
+                                                                        <span className="text-xs font-black text-gray-800 tracking-tight line-clamp-1">{p.nome_completo}</span>
                                                                         <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">{p.cpf_rg || 'Sem Documento'}</span>
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-4">
-                                                                    <span className="text-sm font-black text-blue-600 tabular-nums">{formatCurrency(trip?.preco || 0)}</span>
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-xs font-black text-blue-600 tabular-nums">{formatCurrency(trip?.preco || 0)}</span>
                                                                     <button
                                                                         onClick={() => togglePassengerSelection(p)}
-                                                                        className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                                        className="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                                     >
-                                                                        <X size={16} />
+                                                                        <X size={14} />
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
 
-                                                    <div className="p-8 bg-gray-50/50 border-t border-gray-100/50">
+                                                    <div className="p-5 sm:p-6 bg-gray-50/50 border-t border-gray-100/50">
                                                         <Button
                                                             onClick={handleGeneratePayment}
                                                             isLoading={isProcessing}
-                                                            className="w-full h-16 text-sm font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/30 bg-gray-900 hover:bg-blue-600 hover:-translate-y-1 active:scale-[0.98] transition-all rounded-2xl"
+                                                            className="w-full h-14 text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 bg-gray-900 hover:bg-blue-600 hover:-translate-y-1 active:scale-[0.98] transition-all rounded-2xl"
                                                         >
                                                             GERAR PIX
                                                         </Button>
-                                                        <p className="text-center mt-4 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">
-                                                            * Após clicar, um QR Code será gerado para pagamento.
+                                                        <p className="text-center mt-3 text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
+                                                            * QR Code gerado após o clique.
                                                         </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ) : paymentStatus === 'success' ? (
-                                        <div className="fade-in duration-700 text-center bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
+                                        <div className="fade-in duration-700 text-center bg-white rounded-2xl border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
                                             <div className="bg-gradient-to-br from-green-500 to-emerald-600 py-16 px-8 relative overflow-hidden">
                                                 {/* Decorative background elements */}
                                                 <div className="absolute top-0 left-0 w-full h-full opacity-10">
@@ -844,7 +844,7 @@ export const TripPaymentCenter = () => {
                                                     </p>
 
                                                     <div className="space-y-4 mb-10">
-                                                        <div className="flex items-center gap-4 p-5 bg-gray-50 rounded-[2rem] border border-gray-100 transition-all hover:border-blue-200 group">
+                                                        <div className="flex items-center gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:border-blue-200 group">
                                                             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-gray-200 group-hover:scale-110 transition-transform">
                                                                 <CreditCardIcon size={24} />
                                                             </div>
@@ -854,7 +854,7 @@ export const TripPaymentCenter = () => {
                                                             </div>
                                                         </div>
 
-                                                        <div className="p-6 bg-blue-600/5 rounded-[2rem] border border-blue-100 flex items-start gap-4 text-left">
+                                                        <div className="p-6 bg-blue-600/5 rounded-2xl border border-blue-100 flex items-start gap-4 text-left">
                                                             <div className="p-2 bg-blue-600 text-white rounded-lg mt-0.5">
                                                                 <AlertCircle size={16} />
                                                             </div>
@@ -892,7 +892,7 @@ export const TripPaymentCenter = () => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="fade-in duration-500 bg-white rounded-[3rem] border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
+                                        <div className="fade-in duration-500 bg-white rounded-2xl border border-gray-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
                                             <div className="p-8 sm:p-12">
                                                 <div className="max-w-md mx-auto">
                                                     <PixPaymentPanel
@@ -913,7 +913,7 @@ export const TripPaymentCenter = () => {
                                                         <span className="text-xs uppercase tracking-[0.2em]">Aguardando Pagamento...</span>
                                                     </div>
 
-                                                    <div className="p-8 bg-blue-50/30 rounded-[2.5rem] border border-blue-100/50 space-y-4">
+                                                    <div className="p-8 bg-blue-50/30 rounded-2xl border border-blue-100/50 space-y-4">
                                                         <div>
                                                             <label className="block text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 ml-2">
                                                                 Identificação do Pagador

@@ -361,7 +361,7 @@ export const TripList: React.FC = () => {
                                     <div
                                         key={trip.id}
                                         onClick={() => handleTripClick(trip)}
-                                        className="bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group"
+                                        className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group"
                                     >
                                         {user?.role === UserRole.ADMIN && (
                                             <div className="absolute top-0 right-0 p-4">

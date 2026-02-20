@@ -50,7 +50,7 @@
   }
 
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-soft border border-gray-100 dark:border-gray-700 p-6 transition-smooth;
+    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-700 p-6 transition-smooth;
   }
 
   .card-hover {

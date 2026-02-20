@@ -80,7 +80,7 @@ export default function Success() {
                     <span className="text-xl">🚀</span> Próximos Passos
                 </h3>
                 <ul className="text-sm text-blue-950 dark:text-blue-100 space-y-4 text-left">
-                    <li className="flex items-start gap-3 bg-white/60 dark:bg-blue-900/30 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700">
+                    <li className="flex items-start gap-3 bg-white/60 dark:bg-blue-900/30 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/50 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700">
                         <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm mt-1">1</span>
                         <div className="flex-1">
                             <span className="font-medium text-base block mb-3">Acompanhe seu pagamento e escolha seu assento</span>

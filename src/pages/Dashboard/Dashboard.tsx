@@ -445,7 +445,7 @@ export const Dashboard: React.FC = () => {
                                 <div
                                     key={trip.id}
                                     onClick={() => handleTripClick(trip)}
-                                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-6 bg-white rounded-[2rem] hover:shadow-xl hover:border-blue-200 transition-all group border border-gray-100 gap-6 cursor-pointer active:scale-[0.99]"
+                                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-6 bg-white rounded-2xl hover:shadow-xl hover:border-blue-200 transition-all group border border-gray-100 gap-6 cursor-pointer active:scale-[0.99]"
                                 >
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-4">

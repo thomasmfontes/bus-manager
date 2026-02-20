@@ -241,7 +241,7 @@ export const PassengerList: React.FC = () => {
                         {/* Mobile Card View */}
                         <div className="md:hidden space-y-3">
                             {filteredPassengers.map((passenger) => (
-                                <div key={passenger.id} className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
+                                <div key={passenger.id} className="border border-gray-200 rounded-2xl p-4 hover:border-gray-300 transition-colors">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
                                             <h3 className="font-semibold text-gray-900">{passenger.nome_completo}</h3>
