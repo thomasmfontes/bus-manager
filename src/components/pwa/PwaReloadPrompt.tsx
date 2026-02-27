@@ -4,7 +4,7 @@ import { RefreshCw, X } from 'lucide-react';
 
 export const PwaReloadPrompt: React.FC = () => {
     const {
-        offlineReady: [offlineReady, setOfflineReady],
+        offlineReady: [, setOfflineReady],
         needRefresh: [needRefresh, setNeedRefresh],
         updateServiceWorker,
     } = useRegisterSW({
@@ -33,7 +33,7 @@ export const PwaReloadPrompt: React.FC = () => {
         setNeedRefresh(false)
     }
 
-    if (!offlineReady && !needRefresh) {
+    if (!needRefresh) {
         return null;
     }
 
