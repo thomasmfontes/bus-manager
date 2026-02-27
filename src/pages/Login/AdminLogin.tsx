@@ -58,7 +58,7 @@ export const AdminLogin: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <Input
                         type="email"
-                        label="E-mail do Administrador"
+                        label="E-mail"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="admin@example.com"
