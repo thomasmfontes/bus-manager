@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router-dom';
 import { ToastProvider } from '@/components/ui/Toast';
 import { router } from '@/router';
 import { useThemeStore } from '@/stores/useThemeStore';
+import { PwaReloadPrompt } from '@/components/pwa/PwaReloadPrompt';
 
 function App() {
     const { theme } = useThemeStore();
@@ -16,6 +17,7 @@ function App() {
     return (
         <ToastProvider>
             <RouterProvider router={router} />
+            <PwaReloadPrompt />
         </ToastProvider>
     );
 }
