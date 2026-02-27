@@ -10,6 +10,7 @@ interface BusMultiSelectProps {
     label?: string;
     labelClassName?: string;
     required?: boolean;
+    actionRight?: React.ReactNode;
 }
 
 export const BusMultiSelect: React.FC<BusMultiSelectProps> = ({
@@ -19,6 +20,7 @@ export const BusMultiSelect: React.FC<BusMultiSelectProps> = ({
     label = 'Ônibus',
     labelClassName,
     required = false,
+    actionRight,
 }) => {
     const toggleBus = (busId: string) => {
         if (selectedBusIds.includes(busId)) {
@@ -30,9 +32,12 @@ export const BusMultiSelect: React.FC<BusMultiSelectProps> = ({
 
     return (
         <div className="space-y-2">
-            <label className={cn("block text-sm font-medium text-gray-700", labelClassName)}>
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
+            <div className="flex items-center justify-between">
+                <label className={cn("block text-sm font-medium text-gray-700", labelClassName)}>
+                    {label} {required && <span className="text-red-500">*</span>}
+                </label>
+                {actionRight}
+            </div>
 
             {buses.length === 0 ? (
                 <p className="text-sm text-gray-500">Nenhum ônibus cadastrado.</p>

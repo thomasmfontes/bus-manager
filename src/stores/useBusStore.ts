@@ -6,7 +6,7 @@ interface BusState {
     buses: Bus[];
     loading: boolean;
     fetchOnibus: () => Promise<void>;
-    createOnibus: (bus: Omit<Bus, 'id'>) => Promise<void>;
+    createOnibus: (bus: Omit<Bus, 'id'>) => Promise<Bus>;
     updateOnibus: (id: string, bus: Partial<Bus>) => Promise<void>;
     deleteOnibus: (id: string) => Promise<void>;
     releaseBuses: () => Promise<void>;
@@ -114,6 +114,7 @@ export const useBusStore = create<BusState>((set, get) => ({
             if (error) throw error;
 
             set({ buses: [data, ...get().buses], loading: false });
+            return data;
         } catch (error) {
             console.error('Error creating onibus:', error);
             set({ loading: false });

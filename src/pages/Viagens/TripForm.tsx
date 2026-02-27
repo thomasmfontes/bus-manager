@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
 import { X, Plus, AlertCircle, ArrowLeft } from 'lucide-react';
+import { BusInlineForm } from '@/components/onibus/BusInlineForm';
 
 export const TripForm: React.FC = () => {
     const navigate = useNavigate();
-    const { createViagem, trips, loading } = useTripStore();
+    const { createViagem, trips, fetchViagens, loading } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
     const { showToast } = useToast();
 
@@ -27,9 +28,17 @@ export const TripForm: React.FC = () => {
         meta_financeira: '' as string | number,
     });
 
+    const [isBusModalOpen, setIsBusModalOpen] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+
     useEffect(() => {
-        fetchOnibus();
-    }, [fetchOnibus]);
+        const loadInitialData = async () => {
+            setIsInitialLoading(true);
+            await Promise.all([fetchOnibus(), fetchViagens()]);
+            setIsInitialLoading(false);
+        };
+        loadInitialData();
+    }, [fetchOnibus, fetchViagens]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -185,6 +194,20 @@ export const TripForm: React.FC = () => {
 
 
                     {(() => {
+                        if (isInitialLoading) {
+                            return (
+                                <div className="space-y-2">
+                                    <label className="block text-sm text-gray-700 font-bold ml-1">
+                                        Selecione os Ônibus Disponíveis *
+                                    </label>
+                                    <div className="p-6 text-center bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center justify-center">
+                                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        <p className="text-sm text-gray-500 mt-3">Carregando frota disponível...</p>
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         const now = new Date();
                         const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
 
@@ -213,7 +236,7 @@ export const TripForm: React.FC = () => {
                                     size="sm"
                                     type="button"
                                     className="bg-white border-orange-200 text-orange-600 hover:bg-orange-50 w-full sm:w-auto mx-auto"
-                                    onClick={() => navigate('/onibus/novo')}
+                                    onClick={() => setIsBusModalOpen(true)}
                                 >
                                     <Plus size={16} className="mr-2" />
                                     Criar Novo Ônibus
@@ -224,9 +247,19 @@ export const TripForm: React.FC = () => {
                                 buses={availableBuses}
                                 selectedBusIds={formData.onibus_ids}
                                 onChange={(busIds) => setFormData({ ...formData, onibus_ids: busIds })}
-                                label="Ônibus"
-                                labelClassName="font-bold ml-1"
+                                label="Selecione os Ônibus Disponíveis"
+                                labelClassName="font-bold ml-1 text-gray-700"
                                 required
+                                actionRight={
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBusModalOpen(true)}
+                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm"
+                                        title="Cadastrar Novo Ônibus"
+                                    >
+                                        <Plus size={18} />
+                                    </button>
+                                }
                             />
                         );
                     })()}
@@ -253,6 +286,21 @@ export const TripForm: React.FC = () => {
                     </div>
                 </form>
             </Card>
+
+            <BusInlineForm
+                isOpen={isBusModalOpen}
+                onClose={() => setIsBusModalOpen(false)}
+                onSuccess={(newBusId) => {
+                    // Update the form data to include the new selected bus
+                    if (newBusId) {
+                        setFormData((prev) => ({
+                            ...prev,
+                            onibus_ids: [...prev.onibus_ids, newBusId]
+                        }));
+                    }
+                    setIsBusModalOpen(false);
+                }}
+            />
         </div>
     );
 };
