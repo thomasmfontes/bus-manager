@@ -11,6 +11,21 @@ export const PwaReloadPrompt: React.FC = () => {
         onRegisterError(error: Error | any) {
             console.error('SW registration error', error)
         },
+        onRegistered(r) {
+            if (r) {
+                // Check for updates every hour silently
+                setInterval(() => {
+                    r.update()
+                }, 60 * 60 * 1000);
+
+                // Check for updates immediately when app comes back to foreground
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        r.update();
+                    }
+                });
+            }
+        }
     });
 
     const close = () => {
