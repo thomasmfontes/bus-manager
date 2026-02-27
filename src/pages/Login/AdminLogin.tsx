@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { Bus, ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft, Shield } from 'lucide-react';
 
 export const AdminLogin: React.FC = () => {
     const [email, setEmail] = useState('');
