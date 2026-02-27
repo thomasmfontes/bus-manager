@@ -4,6 +4,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { router } from '@/router';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { PwaReloadPrompt } from '@/components/pwa/PwaReloadPrompt';
+import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 
 function App() {
     const { theme } = useThemeStore();
@@ -18,6 +19,7 @@ function App() {
         <ToastProvider>
             <RouterProvider router={router} />
             <PwaReloadPrompt />
+            <PwaInstallPrompt />
         </ToastProvider>
     );
 }
