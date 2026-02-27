@@ -198,7 +198,7 @@ export const TripForm: React.FC = () => {
                             return (
                                 <div className="space-y-2">
                                     <label className="block text-sm text-gray-700 font-bold ml-1">
-                                        Selecione os Ônibus Disponíveis *
+                                        Selecione os Ônibus *
                                     </label>
                                     <div className="p-6 text-center bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center justify-center">
                                         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
