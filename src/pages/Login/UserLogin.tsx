@@ -51,7 +51,7 @@ export const UserLogin: React.FC = () => {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl mb-4 shadow-lg">
                         <Bus className="text-white" size={32} strokeWidth={2} />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Acesso de Passageiro</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Passageiro</h1>
                     <p className="text-gray-600">Informe seu CPF ou RG para acessar</p>
                 </div>
 
