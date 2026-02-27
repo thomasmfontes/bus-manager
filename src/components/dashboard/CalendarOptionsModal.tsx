@@ -16,6 +16,8 @@ interface CalendarOptionsModalProps {
         nome: string;
         destino: string;
         data_ida: string;
+        data_volta?: string;
+        destino_endereco?: string;
     };
 }
 
@@ -28,9 +30,10 @@ export const CalendarOptionsModal: React.FC<CalendarOptionsModalProps> = ({
 
     const eventData = {
         title: `Excursão: ${trip.nome}`,
-        description: `Viagem para ${trip.destino}. Organizado via Bus Manager.`,
-        location: trip.destino,
+        description: `Excursão para ${trip.destino}${trip.destino_endereco ? ` (${trip.destino_endereco})` : ''}. Organizado via Bus Manager.`,
+        location: trip.destino_endereco || trip.destino,
         startDate: trip.data_ida,
+        endDate: trip.data_volta,
     };
 
     const handleOption = (type: 'google' | 'outlook' | 'universal') => {

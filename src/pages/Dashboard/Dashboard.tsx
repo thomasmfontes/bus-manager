@@ -277,12 +277,14 @@ export const Dashboard: React.FC = () => {
                 onIconClick: filteredTrips[0].destino ? () => handleOpenMap(filteredTrips[0]) : undefined
             },
             {
-                label: 'Partida',
+                label: filteredTrips[0].data_volta ? 'Partida / Retorno' : 'Partida',
                 value: formatPrettyDate(filteredTrips[0].data_ida),
                 icon: Calendar,
                 iconBg: 'bg-purple-100',
                 iconColor: 'text-purple-600',
-                trend: new Date(filteredTrips[0].data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                trend: filteredTrips[0].data_volta
+                    ? `Partida: ${new Date(filteredTrips[0].data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • Retorno: ${new Date(filteredTrips[0].data_volta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                    : `Partida às ${new Date(filteredTrips[0].data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
                 onIconClick: () => {
                     setCalendarModalOpen(true);
                 }
@@ -465,11 +467,17 @@ export const Dashboard: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-x-6 gap-y-3 ml-1">
+                                        <div className="grid grid-cols-1 xs:grid-cols-2 md:flex md:flex-wrap gap-x-6 gap-y-3 ml-1">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Partida</span>
                                                 <span className="text-sm font-black text-gray-700">{formatDate(trip.data_ida)}</span>
                                             </div>
+                                            {trip.data_volta && (
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Retorno</span>
+                                                    <span className="text-sm font-black text-gray-700">{formatDate(trip.data_volta)}</span>
+                                                </div>
+                                            )}
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Frota</span>
                                                 <span className="text-sm font-black text-gray-700">

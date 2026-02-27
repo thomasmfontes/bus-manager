@@ -601,8 +601,8 @@ export const TripPaymentCenter = () => {
                                                                 <h3 className="text-2xl font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors tracking-tight">
                                                                     {t.nome}
                                                                 </h3>
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-2 text-gray-400 font-bold">
+                                                                <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-2">
+                                                                    <div className="flex items-center gap-2 text-gray-400 font-bold min-w-0 flex-1">
                                                                         <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                                                                             <MapPin size={12} className="text-gray-400" />
                                                                         </div>
@@ -610,31 +610,43 @@ export const TripPaymentCenter = () => {
                                                                     </div>
 
                                                                     <div className={cn(
-                                                                        "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                                                                        "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] whitespace-nowrap font-black uppercase tracking-widest shrink-0 shadow-sm",
                                                                         getVacancies(t) > 5 ? "bg-blue-50 text-blue-600" :
                                                                             getVacancies(t) > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
                                                                     )}>
                                                                         <Users size={12} />
-                                                                        {getVacancies(t)} Vagas
+                                                                        <span>{getVacancies(t)} Vagas</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
 
                                                             {/* Info Grid */}
-                                                            <div className="grid grid-cols-2 gap-4">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                                                 <div className="bg-gray-50/80 p-4 rounded-3xl border border-gray-100/50 group-hover:bg-blue-50/50 group-hover:border-blue-100/50 transition-colors duration-500">
                                                                     <div className="flex items-center gap-3 mb-1">
                                                                         <Calendar size={14} className="text-blue-500" />
-                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Data</span>
+                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Partida</span>
                                                                     </div>
-                                                                    <p className="text-sm font-black text-gray-700">{new Date(t.data_ida).toLocaleDateString('pt-BR')}</p>
+                                                                    <p className="text-sm font-black text-gray-700">{new Date(t.data_ida).toLocaleDateString('pt-BR')} às {new Date(t.data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                                                                 </div>
                                                                 <div className="bg-gray-50/80 p-4 rounded-3xl border border-gray-100/50 group-hover:bg-blue-50/50 group-hover:border-blue-100/50 transition-colors duration-500">
-                                                                    <div className="flex items-center gap-3 mb-1">
-                                                                        <Clock size={14} className="text-blue-500" />
-                                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hora</span>
-                                                                    </div>
-                                                                    <p className="text-sm font-black text-gray-700">07:00</p>
+                                                                    {t.data_volta ? (
+                                                                        <>
+                                                                            <div className="flex items-center gap-3 mb-1">
+                                                                                <Clock size={14} className="text-purple-500" />
+                                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Retorno</span>
+                                                                            </div>
+                                                                            <p className="text-sm font-black text-gray-700">{new Date(t.data_volta).toLocaleDateString('pt-BR')} às {new Date(t.data_volta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <div className="flex items-center gap-3 mb-1">
+                                                                                <Clock size={14} className="text-blue-500" />
+                                                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hora</span>
+                                                                            </div>
+                                                                            <p className="text-sm font-black text-gray-700">07:00</p>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
 

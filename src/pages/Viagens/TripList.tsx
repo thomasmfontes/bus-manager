@@ -296,8 +296,16 @@ export const TripList: React.FC = () => {
                                                 <td className="py-5 px-6 font-bold text-gray-600">{trip.destino}</td>
                                                 <td className="py-5 px-6">
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-black text-gray-800">{formatDate(trip.data_ida).split(',')[0]}</span>
-                                                        <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">{formatDate(trip.data_ida).split(',')[1]}</span>
+                                                        <div className="flex flex-col mb-2">
+                                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Partida</span>
+                                                            <span className="text-sm font-black text-gray-800">{formatDate(trip.data_ida).split(',')[0]} às {formatDate(trip.data_ida).split(',')[1]}</span>
+                                                        </div>
+                                                        {trip.data_volta && (
+                                                            <div className="flex flex-col border-t border-gray-50 pt-1">
+                                                                <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Retorno</span>
+                                                                <span className="text-sm font-black text-gray-800">{formatDate(trip.data_volta).split(',')[0]} às {formatDate(trip.data_volta).split(',')[1]}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="py-5 px-6">
@@ -390,11 +398,17 @@ export const TripList: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-4 py-3 border-y border-gray-50">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-3 border-y border-gray-50">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Embarque</span>
+                                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Partida</span>
                                                     <span className="text-sm font-black text-gray-800">{formatDate(trip.data_ida)}</span>
                                                 </div>
+                                                {trip.data_volta && (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Retorno</span>
+                                                        <span className="text-sm font-black text-gray-800">{formatDate(trip.data_volta)}</span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="space-y-3">

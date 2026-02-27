@@ -323,7 +323,7 @@ export const TripSeatMap: React.FC = () => {
                             <Pencil size={18} />
                         </button>
                     )}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
                                 <MapPin size={24} />
@@ -340,11 +340,21 @@ export const TripSeatMap: React.FC = () => {
                                 <Calendar size={24} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</p>
-                                <p className="font-bold text-gray-900">{formatDate(trip.data_ida)}</p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Partida</span>
+                                        <span className="font-bold text-gray-900 leading-tight">{formatDate(trip.data_ida)}</span>
+                                    </div>
+                                    {trip.data_volta && (
+                                        <div className="flex flex-col sm:border-l sm:border-gray-200 sm:pl-4">
+                                            <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Retorno</span>
+                                            <span className="font-bold text-gray-900 leading-tight">{formatDate(trip.data_volta)}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-1">
                             <div className="p-2.5 bg-orange-50 rounded-xl text-orange-600">
                                 <BusIcon size={24} />
                             </div>
