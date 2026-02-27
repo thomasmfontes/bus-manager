@@ -100,7 +100,6 @@ export const BusForm: React.FC = () => {
                         value={formData.placa}
                         onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
                         placeholder="Ex: ABC-1234"
-                        required
                     />
 
                     <Input
