@@ -32,6 +32,14 @@ const Root = () => (
     </>
 );
 
+const HomeRedirect = () => {
+    const { user } = useAuthStore();
+    if (user?.role === UserRole.PASSAGEIRO) {
+        return <Navigate to="/viagens" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+};
+
 export const router = createBrowserRouter([
     {
         path: '/',
@@ -71,7 +79,7 @@ export const router = createBrowserRouter([
                 children: [
                     {
                         index: true,
-                        element: <Navigate to="/dashboard" replace />,
+                        element: <HomeRedirect />,
                     },
                     {
                         path: 'dashboard',

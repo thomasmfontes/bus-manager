@@ -27,7 +27,7 @@ export const UserLogin: React.FC = () => {
 
         if (success) {
             showToast('Login realizado com sucesso!', 'success');
-            navigate('/dashboard');
+            navigate('/viagens');
         } else {
             showToast('Cadastro não encontrado. Redirecionando para o formulário...', 'error');
             setTimeout(() => {
