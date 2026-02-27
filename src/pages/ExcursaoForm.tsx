@@ -133,10 +133,36 @@ export default function ExcursaoForm() {
     }, {} as Record<string, string[]>), [categorias, getInstrumentosPorCategoria]);
 
     function addPassenger() {
+        const lastIndex = passengers.length - 1;
+        const lastPassenger = passengers[lastIndex];
+        const validation = validateForm(lastPassenger);
+
+        // Termos apenas para o primeiro, mas ignoramos para validação de "Adicionar outro" se não for o primeiro?
+        // Na verdade, queremos que o formulário atual esteja limpo de erros antes de abrir outro.
+        // O validateForm já checa termos, mas o botão de termos só aparece no index 0.
+        if (lastIndex > 0 && validation.errors.acceptedTerms) {
+            delete validation.errors.acceptedTerms;
+            if (Object.keys(validation.errors).length === 0) {
+                validation.isValid = true;
+            }
+        }
+
+        if (!validation.isValid) {
+            setErrors(prev => ({ ...prev, [lastIndex]: validation.errors }));
+            toast.error("Preencha todos os campos do passageiro atual antes de adicionar outro.");
+            if (!expandedIndices.includes(lastIndex)) {
+                setExpandedIndices(prev => [...prev, lastIndex]);
+            }
+            return;
+        }
+
+        // Se chegamos aqui, o formulário atual é válido. 
+        // Vamos fechar o formulário atual antes de adicionar o próximo
+        setExpandedIndices(prev => prev.filter(i => i !== lastIndex).concat(passengers.length));
+
         setPassengers([...passengers, initialPassenger]);
         setCongregationSelects([...congregationSelects, ""]);
         setInstrumentSelects([...instrumentSelects, ""]);
-        setExpandedIndices([...expandedIndices, passengers.length]);
     }
 
     function toggleExpanded(index: number) {

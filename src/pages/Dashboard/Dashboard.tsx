@@ -16,6 +16,7 @@ import { UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
+import { CalendarOptionsModal } from '@/components/dashboard/CalendarOptionsModal';
 
 export const Dashboard: React.FC = () => {
     const { buses, fetchOnibus } = useBusStore();
@@ -26,6 +27,7 @@ export const Dashboard: React.FC = () => {
     const { showToast } = useToast();
     const [timeFilter, setTimeFilter] = React.useState<'future' | 'past' | 'all'>('future');
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
+    const [calendarModalOpen, setCalendarModalOpen] = React.useState(false);
     const [paymentModalTrip, setPaymentModalTrip] = React.useState<any | null>(null);
     const [mapTarget, setMapTarget] = React.useState<{
         origin: string;
@@ -280,7 +282,10 @@ export const Dashboard: React.FC = () => {
                 icon: Calendar,
                 iconBg: 'bg-purple-100',
                 iconColor: 'text-purple-600',
-                trend: new Date(filteredTrips[0].data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                trend: new Date(filteredTrips[0].data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                onIconClick: () => {
+                    setCalendarModalOpen(true);
+                }
             },
             {
                 label: 'Ocupação',
@@ -680,6 +685,12 @@ export const Dashboard: React.FC = () => {
                     )}
                 </div>
             </Modal>
+
+            <CalendarOptionsModal
+                isOpen={calendarModalOpen}
+                onClose={() => setCalendarModalOpen(false)}
+                trip={selectedTripId && selectedTripId !== 'all' ? filteredTrips[0] : futureTrips[0]}
+            />
         </div>
     );
 };
