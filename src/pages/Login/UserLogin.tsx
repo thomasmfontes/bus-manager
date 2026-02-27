@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { DocumentInput } from '@/components/ui/DocumentInput';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
-import { Bus, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Users } from 'lucide-react';
 
 export const UserLogin: React.FC = () => {
     const [documento, setDocumento] = useState('');
@@ -49,7 +49,7 @@ export const UserLogin: React.FC = () => {
 
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl mb-4 shadow-lg">
-                        <Bus className="text-white" size={32} strokeWidth={2} />
+                        <Users className="text-white" size={32} strokeWidth={2} />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Passageiro</h1>
                     <p className="text-gray-600">Informe seu CPF ou RG para acessar</p>
