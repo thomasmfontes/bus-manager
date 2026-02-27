@@ -6,21 +6,33 @@ import { FormLayout } from '../components/excursao/FormLayout';
 
 export default function Success() {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState<PassengerForm | null>(null);
+    const [passengers, setPassengers] = useState<PassengerForm[]>([]);
+    const [expandedIndices, setExpandedIndices] = useState<number[]>([0]); // First one expanded by default
 
     useEffect(() => {
         // Recupera dados do localStorage
         try {
             const data = localStorage.getItem('lastSubmission');
             if (data) {
-                setFormData(JSON.parse(data));
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed)) {
+                    setPassengers(parsed);
+                } else if (parsed && typeof parsed === 'object') {
+                    setPassengers([parsed as PassengerForm]);
+                }
             }
         } catch (e) {
             console.error('Erro ao recuperar dados:', e);
         }
     }, []);
 
-
+    const toggleExpanded = (index: number) => {
+        setExpandedIndices(prev =>
+            prev.includes(index)
+                ? prev.filter(i => i !== index)
+                : [...prev, index]
+        );
+    };
 
     return (
         <FormLayout className="text-center backdrop-blur-xl border border-white/20 shadow-2xl">
@@ -36,42 +48,66 @@ export default function Success() {
                 Sua inscrição para a excursão foi registrada com sucesso.
             </p>
 
-            {formData && (
-                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl p-6 mb-8 text-left border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h2 className="text-lg font-bold mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <span className="w-1 h-6 bg-blue-500 rounded-full"></span>
-                        Resumo da Inscrição
-                    </h2>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                            <span className="text-muted text-sm font-medium">Nome</span>
-                            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{formData.fullName}</span>
-                        </div>
-                        {formData.cpf && (
-                            <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                                <span className="text-muted text-sm font-medium">CPF</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.cpf}</span>
+            {passengers.length > 0 && (
+                <div className="space-y-3 mb-8">
+                    {passengers.map((passenger, index) => {
+                        const isExpanded = expandedIndices.includes(index);
+
+                        return (
+                            <div
+                                key={index}
+                                className={`bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm transition-all hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer`}
+                                onClick={() => toggleExpanded(index)}
+                            >
+                                {/* Header / Collapsed View Components */}
+                                <div className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+                                            {index + 1}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 text-left">
+                                                {passenger.fullName}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${isExpanded ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                                            Cadastrado
+                                        </span>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="18" height="18"
+                                            viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" strokeWidth="2"
+                                            strokeLinecap="round" strokeLinejoin="round"
+                                            className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                                        >
+                                            <path d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                {/* Expanded Content with smooth animation */}
+                                <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                    <div className="overflow-hidden">
+                                        <div className="px-6 pb-6 pt-2 space-y-3">
+                                            {(passenger.cpf || passenger.rg) && (
+                                                <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
+                                                    <span className="text-muted text-sm font-medium">Documento</span>
+                                                    <span className="font-semibold text-slate-800 dark:text-slate-200">{passenger.cpf || passenger.rg}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
+                                                <span className="text-muted text-sm font-medium">Telefone</span>
+                                                <span className="font-semibold text-slate-800 dark:text-slate-200">{passenger.phone}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        )}
-                        {formData.rg && (
-                            <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                                <span className="text-muted text-sm font-medium">RG</span>
-                                <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.rg}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                            <span className="text-muted text-sm font-medium">Congregação</span>
-                            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{formData.congregation}</span>
-                        </div>
-                        <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                            <span className="text-muted text-sm font-medium">Instrumento</span>
-                            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{formData.instrument}</span>
-                        </div>
-                        <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700/50 pb-2 last:border-0 last:pb-0">
-                            <span className="text-muted text-sm font-medium">Telefone</span>
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">{formData.phone}</span>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
             )}
 

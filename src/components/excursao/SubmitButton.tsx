@@ -15,6 +15,7 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
 }) => {
     return (
         <button
+            type="submit"
             className="btn-base btn-primary w-full mt-4 flex items-center justify-center gap-2"
             disabled={isSubmitting || disabled}
         >
