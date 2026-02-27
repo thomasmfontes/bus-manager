@@ -247,7 +247,7 @@ export const TripForm: React.FC = () => {
                                 buses={availableBuses}
                                 selectedBusIds={formData.onibus_ids}
                                 onChange={(busIds) => setFormData({ ...formData, onibus_ids: busIds })}
-                                label="Selecione os Ônibus Disponíveis"
+                                label="Selecione os Ônibus"
                                 labelClassName="font-bold ml-1 text-gray-700"
                                 required
                                 actionRight={
