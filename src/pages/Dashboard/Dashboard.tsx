@@ -331,7 +331,7 @@ export const Dashboard: React.FC = () => {
                             </div>
                             Dashboard
                         </h1>
-                        <p className="text-gray-500 text-sm ml-[52px]">Visão geral do negócio e métricas principais.</p>
+                        <p className="text-gray-500 text-sm ml-[52px]">Visão geral das excursões.</p>
                     </div>
                 </div>
 
