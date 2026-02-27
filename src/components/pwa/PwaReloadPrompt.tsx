@@ -42,6 +42,19 @@ export const PwaReloadPrompt: React.FC = () => {
         return null;
     }
 
+    const handleUpdate = async () => {
+        try {
+            await updateServiceWorker(true);
+            // Em caso de falha do evento controllerchange nativo, forçar o reload
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (err) {
+            console.error("Failed to update SW:", err);
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-sm">
             <div className="bg-gray-900 dark:bg-gray-800 rounded-xl shadow-2xl p-3 sm:p-4 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300">
@@ -63,7 +76,7 @@ export const PwaReloadPrompt: React.FC = () => {
                 <div className="flex items-center gap-2 shrink-0">
                     {needRefresh && (
                         <button
-                            onClick={() => updateServiceWorker(true)}
+                            onClick={handleUpdate}
                             className="text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors px-2 py-1"
                         >
                             Atualizar

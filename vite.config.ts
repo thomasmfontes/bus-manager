@@ -29,6 +29,10 @@ export default defineConfig({
                     }
                 ]
             },
+            workbox: {
+                cleanupOutdatedCaches: true,
+                clientsClaim: true,
+            },
             devOptions: {
                 enabled: false
             }
