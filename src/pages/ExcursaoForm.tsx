@@ -114,7 +114,7 @@ export default function ExcursaoForm() {
 
     // Fetch data from database
     const { congregacoes, fetchCongregacoes } = useCongregacaoStore();
-    const { categorias, fetchInstrumentos, fetchCategorias, getInstrumentosPorCategoria } = useInstrumentoStore();
+    const { categorias, instrumentos, fetchInstrumentos, fetchCategorias } = useInstrumentoStore();
 
     // Load data on mount
     useEffect(() => {
@@ -127,10 +127,12 @@ export default function ExcursaoForm() {
     const congregations = useMemo(() => congregacoes.map(c => c.nome), [congregacoes]);
 
     const instruments = useMemo(() => categorias.reduce((acc, categoria) => {
-        const instrumentosCategoria = getInstrumentosPorCategoria(categoria.id);
-        acc[categoria.nome] = instrumentosCategoria.map(i => i.nome);
+        const instrumentosCategoria = instrumentos.filter(i => i.categoria_id === categoria.id);
+        if (instrumentosCategoria.length > 0) {
+            acc[categoria.nome] = instrumentosCategoria.map(i => i.nome);
+        }
         return acc;
-    }, {} as Record<string, string[]>), [categorias, getInstrumentosPorCategoria]);
+    }, {} as Record<string, string[]>), [categorias, instrumentos]);
 
     function addPassenger() {
         const lastIndex = passengers.length - 1;
@@ -262,22 +264,21 @@ export default function ExcursaoForm() {
 
     // Mantém selects sincronizados
     useEffect(() => {
-        const nextCongregationSelects = passengers.map(p => {
-            if (!p.congregation) return "";
-            if (congregations.includes(p.congregation)) return p.congregation;
-            return "__OTHER__";
-        });
-        setCongregationSelects(nextCongregationSelects);
+        setCongregationSelects(current => passengers.map((p, i) => {
+            if (p.congregation && congregations.includes(p.congregation)) return p.congregation;
+            if (p.congregation) return "__OTHER__";
+            if (current[i] === "__OTHER__") return "__OTHER__";
+            return "";
+        }));
 
-        const nextInstrumentSelects = passengers.map(p => {
-            if (!p.instrument) return "";
-            // Flatten instruments to check inclusion
-            const allInstruments = Object.values(instruments).flat();
-            if (allInstruments.includes(p.instrument)) return p.instrument;
+        setInstrumentSelects(current => passengers.map((p, i) => {
             if (p.instrument === "Não toco") return "Não toco";
-            return "__OTHER__";
-        });
-        setInstrumentSelects(nextInstrumentSelects);
+            const allInstruments = Object.values(instruments).flat();
+            if (p.instrument && allInstruments.includes(p.instrument)) return p.instrument;
+            if (p.instrument) return "__OTHER__";
+            if (current[i] === "__OTHER__") return "__OTHER__";
+            return "";
+        }));
     }, [passengers, congregations, instruments]);
 
 

@@ -34,10 +34,12 @@ export const PassengerForm: React.FC = () => {
         cpf_rg: '',
         telefone: '',
         comum_congregacao: '',
+        comum_congregacao_other: '',
         idade: '',
         data_nascimento: '',
         estado_civil: '',
         instrumento: '',
+        instrumento_other: '',
         auxiliar: '',
     });
 
@@ -61,11 +63,13 @@ export const PassengerForm: React.FC = () => {
                     nome_completo: passenger.nome_completo,
                     cpf_rg: isCPF ? maskCPF(doc) : maskRG(doc),
                     telefone: passenger.telefone ? maskPhone(passenger.telefone) : '',
-                    comum_congregacao: passenger.comum_congregacao || '',
+                    comum_congregacao: congregacoes.some(c => c.nome === passenger.comum_congregacao) ? (passenger.comum_congregacao || '') : (passenger.comum_congregacao ? '__OTHER__' : ''),
+                    comum_congregacao_other: congregacoes.some(c => c.nome === passenger.comum_congregacao) ? '' : (passenger.comum_congregacao ? String(passenger.comum_congregacao) : ''),
                     idade: passenger.idade ? passenger.idade.toString() : '',
                     data_nascimento: passenger.data_nascimento || '',
                     estado_civil: passenger.estado_civil || '',
-                    instrumento: passenger.instrumento || '',
+                    instrumento: (passenger.instrumento === 'Não toco' || instrumentos.some(i => i.nome === passenger.instrumento)) ? (passenger.instrumento || '') : (passenger.instrumento ? '__OTHER__' : ''),
+                    instrumento_other: (passenger.instrumento === 'Não toco' || instrumentos.some(i => i.nome === passenger.instrumento)) ? '' : (passenger.instrumento ? String(passenger.instrumento) : ''),
                     auxiliar: passenger.auxiliar || '',
                 });
             }
@@ -77,10 +81,17 @@ export const PassengerForm: React.FC = () => {
 
         try {
             const calculatedAge = formData.data_nascimento ? calculateAge(formData.data_nascimento) : (formData.idade ? parseInt(formData.idade) : undefined);
+            const finalCongregacao = formData.comum_congregacao === '__OTHER__' ? formData.comum_congregacao_other : formData.comum_congregacao;
+            const finalInstrumento = formData.instrumento === '__OTHER__' ? formData.instrumento_other : formData.instrumento;
+
             const passengerData = {
                 ...formData,
+                comum_congregacao: finalCongregacao,
+                instrumento: finalInstrumento,
                 idade: calculatedAge ?? undefined,
             };
+            delete (passengerData as any).comum_congregacao_other;
+            delete (passengerData as any).instrumento_other;
 
             if (isEditing && id) {
                 await updatePassageiro(id, passengerData);
@@ -152,7 +163,7 @@ export const PassengerForm: React.FC = () => {
                             required
                         />
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex flex-col justify-end">
                             <label className="block text-sm font-bold text-gray-700 ml-1">
                                 Congregação
                             </label>
@@ -167,8 +178,20 @@ export const PassengerForm: React.FC = () => {
                                         {cong.nome}
                                     </option>
                                 ))}
+                                <option value="__OTHER__">Outra</option>
                             </select>
                         </div>
+
+                        {formData.comum_congregacao === '__OTHER__' && (
+                            <Input
+                                label="Qual congregação?"
+                                labelClassName="font-bold ml-1"
+                                value={formData.comum_congregacao_other}
+                                onChange={(e) => setFormData({ ...formData, comum_congregacao_other: e.target.value })}
+                                placeholder="Digite o nome da sua comum"
+                                required
+                            />
+                        )}
 
                         <Input
                             label="Data de Nascimento"
@@ -193,7 +216,7 @@ export const PassengerForm: React.FC = () => {
                             </select>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex flex-col justify-end">
                             <label className="block text-sm font-bold text-gray-700 ml-1">
                                 Instrumento
                             </label>
@@ -218,8 +241,20 @@ export const PassengerForm: React.FC = () => {
                                         </optgroup>
                                     );
                                 })}
+                                <option value="__OTHER__">Outra</option>
                             </select>
                         </div>
+
+                        {formData.instrumento === '__OTHER__' && (
+                            <Input
+                                label="Qual instrumento?"
+                                labelClassName="font-bold ml-1"
+                                value={formData.instrumento_other}
+                                onChange={(e) => setFormData({ ...formData, instrumento_other: e.target.value })}
+                                placeholder="Digite o nome do instrumento"
+                                required
+                            />
+                        )}
 
                         <div className="space-y-1.5">
                             <label className="block text-sm font-bold text-gray-700 ml-1">
