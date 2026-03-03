@@ -168,7 +168,7 @@ export const TripParticipantsList: React.FC<TripParticipantsListProps> = ({
             {/* Summary */}
             <div className="flex items-center justify-between px-2 pt-2 text-sm">
                 <p className="text-gray-500 font-medium">
-                    Total: <span className="text-gray-900 font-bold">{filteredParticipants.length}</span> passageiro(s)
+                    Total: <span className="text-gray-900 font-bold">{filteredParticipants.length}</span>
                 </p>
                 <div className="flex gap-4">
                     <span className="text-green-600 font-bold flex items-center gap-1">
