@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Calendar, Filter, ChevronDown } from 'lucide-react';
+import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Calendar, Filter, ChevronDown, CheckCircle2, Users } from 'lucide-react';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
@@ -202,21 +202,27 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                 )}
 
                 <div className="flex flex-col lg:flex-row items-center gap-3 w-full">
-                    {/* Status Filter */}
-                    <div className="relative w-full lg:w-48 shrink-0">
-                        <select
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                            className="w-full h-11 px-4 bg-white border border-gray-200 rounded-xl text-sm font-bold focus:ring-4 focus:ring-gray-100 focus:border-gray-900 outline-none transition-all appearance-none text-gray-700 shadow-sm"
-                        >
-                            <option value="all">Filtro de Status...</option>
-                            <option value="paid">Pagos</option>
-                            <option value="pending">Pendentes</option>
-                            <option value="failed_expired">Falhas / Expirados</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <ChevronDown size={16} />
-                        </div>
+                    <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
+                        {[
+                            { id: 'all', label: 'Todos', icon: Users },
+                            { id: 'paid', label: 'Pagos', icon: CheckCircle2 },
+                            { id: 'pending', label: 'Pendentes', icon: Clock },
+                            { id: 'failed_expired', label: 'Expirados', icon: AlertCircle }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setFilterStatus(tab.id)}
+                                className={cn(
+                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                    filterStatus === tab.id
+                                        ? "bg-white text-gray-900 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <tab.icon size={16} />
+                                <span className="hidden sm:inline">{tab.label}</span>
+                            </button>
+                        ))}
                     </div>
 
                     {/* Integrated Trip Selector */}
@@ -449,7 +455,7 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                                 </div>
                             </div>
 
-                            <div className="pt-2 border-t border-gray-50 pt-4">
+                            <div className="border-t border-gray-50 pt-4">
                                 <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">ID da Transação</h4>
                                 <p className="text-[10px] font-mono text-gray-400 break-all">{selectedPayment.id}</p>
                             </div>

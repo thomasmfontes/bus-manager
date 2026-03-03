@@ -61,7 +61,7 @@ export const PassengerList: React.FC = () => {
 
     const filteredPassengers = passengers.filter(
         (p: any) =>
-            p.nome_completo !== 'BLOQUEADO' && (
+            p.nome_completo !== 'BLOQUEADO' && p.cpf_rg !== 'BLOCKED' && (
                 p.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 p.cpf_rg?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 p.telefone?.toLowerCase().includes(searchTerm.toLowerCase()) ||

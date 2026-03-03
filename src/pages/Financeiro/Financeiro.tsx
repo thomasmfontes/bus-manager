@@ -3,7 +3,7 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar } from 'lucide-react';
+import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, CheckCircle2, Clock, Users } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 
@@ -170,7 +170,7 @@ export const Financeiro: React.FC = () => {
             {/* Main Content Container */}
             <div className="flex flex-col gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm w-full">
                 {/* Search and Filters */}
-                <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
@@ -178,25 +178,31 @@ export const Financeiro: React.FC = () => {
                             placeholder="Buscar por passageiro ou assento..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            className="w-full h-11 pl-10 pr-4 bg-gray-50 dark:bg-gray-800/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                         />
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">
-                        {/* Status Filter */}
-                        <div className="relative group min-w-[170px]">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full h-11 pl-4 pr-10 border border-gray-100 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:border-gray-200 focus:ring-2 focus:ring-emerald-500 transition-all outline-none font-bold text-gray-700 dark:text-gray-300 appearance-none cursor-pointer text-sm"
-                            >
-                                <option value="all">TODOS OS STATUS</option>
-                                <option value="paid">PAGOS</option>
-                                <option value="pending">PENDENTES</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-colors">
-                                <ChevronDown size={18} />
-                            </div>
+                        <div className="flex p-1 bg-gray-100 rounded-xl w-full sm:w-fit">
+                            {[
+                                { id: 'all', label: 'Todos', icon: Users },
+                                { id: 'paid', label: 'Pagos', icon: CheckCircle2 },
+                                { id: 'pending', label: 'Pendentes', icon: Clock }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setStatusFilter(tab.id)}
+                                    className={cn(
+                                        "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
+                                        statusFilter === tab.id
+                                            ? "bg-white text-emerald-600 shadow-sm"
+                                            : "text-gray-500 hover:text-gray-700"
+                                    )}
+                                >
+                                    <tab.icon size={16} />
+                                    <span className="hidden sm:inline">{tab.label}</span>
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>

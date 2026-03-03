@@ -10,10 +10,12 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users } from 'lucide-react';
+import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { TripEditModal } from '@/components/viagens/TripEditModal';
+import { TripParticipantsList } from '@/components/viagens/TripParticipantsList';
 import { FaWhatsapp } from 'react-icons/fa';
 
 export const TripSeatMap: React.FC = () => {
@@ -36,6 +38,7 @@ export const TripSeatMap: React.FC = () => {
     const [selectedPassengerId, setSelectedPassengerId] = useState('');
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'map' | 'participants'>('map');
 
     useEffect(() => {
         if (id) {
@@ -195,6 +198,18 @@ export const TripSeatMap: React.FC = () => {
     };
 
 
+
+    const handleRemoveEnrollment = async (passengerId: string, enrollmentId: string) => {
+        if (!window.confirm('Tem certeza que deseja remover esta inscrição?')) return;
+        try {
+            const { deletePassageiro } = usePassengerStore.getState();
+            await deletePassageiro(passengerId, enrollmentId);
+            showToast('Inscrição removida com sucesso!', 'success');
+            await fetchPassageiros();
+        } catch (error) {
+            showToast('Erro ao remover inscrição', 'error');
+        }
+    };
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -378,42 +393,64 @@ export const TripSeatMap: React.FC = () => {
                 onSuccess={() => id && fetchPassageiros(id)}
             />
 
-            {/* Bus Selector Tabs */}
-            {tripBuses.length > 1 && (
-                <div className="flex justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {tripBuses.map((bus) => (
-                        <button
-                            key={bus.id}
-                            onClick={() => setSelectedBusId(bus.id)}
-                            className={`
-                                px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium whitespace-nowrap transition-colors text-center
-                                ${selectedBusId === bus.id
-                                    ? 'bg-blue-600 text-white shadow-md'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}
-                            `}
-                        >
-                            {bus.nome}
-                        </button>
-                    ))}
+            {/* Tabs Selector */}
+            {user?.role === UserRole.ADMIN && (
+                <div className="flex bg-gray-100 p-1 rounded-2xl w-full sm:w-fit mx-auto sm:mx-0">
+                    <button
+                        onClick={() => setActiveTab('map')}
+                        className={cn(
+                            "flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                            activeTab === 'map' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        <BusIcon size={18} />
+                        Mapa
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('participants')}
+                        className={cn(
+                            "flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                            activeTab === 'participants' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                        )}
+                    >
+                        <Users size={18} />
+                        Passageiros
+                    </button>
                 </div>
             )}
 
-            {/* Seat map */}
-            {currentBus ? (
-                <div className="space-y-4">
-                    <SeatMap
-                        bus={currentBus}
-                        assignments={assignments}
-                        passengers={passengers}
-                        selectedSeat={selectedSeat}
-                        onSeatClick={handleSeatClick}
-                    />
-                    <SeatLegend />
-                </div>
+            {/* Content based on Tab */}
+            {activeTab === 'map' ? (
+                <>
+                    {/* Seat map using the new fused header selector */}
+                    {currentBus ? (
+                        <div className="space-y-4">
+                            <SeatMap
+                                bus={currentBus}
+                                allBuses={tripBuses}
+                                selectedBusId={selectedBusId ?? undefined}
+                                onBusSelect={setSelectedBusId}
+                                assignments={assignments}
+                                passengers={passengers}
+                                selectedSeat={selectedSeat}
+                                onSeatClick={handleSeatClick}
+                            />
+                            <SeatLegend />
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                            <BusIcon className="mx-auto text-gray-300 mb-2" size={32} />
+                            <p className="text-gray-500">Nenhum ônibus selecionado ou disponível.</p>
+                        </div>
+                    )}
+                </>
             ) : (
-                <Card>
-                    <p className="text-gray-500 text-center py-8">Nenhum ônibus vinculado a esta viagem.</p>
-                </Card>
+                <TripParticipantsList
+                    trip={trip}
+                    passengers={passengers}
+                    enrollments={enrollments}
+                    onDeleteEnrollment={handleRemoveEnrollment}
+                />
             )}
 
             {/* Seat action modal */}

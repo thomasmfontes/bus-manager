@@ -44,7 +44,7 @@ export const TripPaymentCenter = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Passenger[]>([]);
-    const { passengers, fetchPassageiros } = usePassengerStore();
+    const { passengers, enrollments, fetchPassageiros } = usePassengerStore();
     const { buses, fetchOnibus } = useBusStore();
     const { trips: storeTrips, fetchViagens, selectedTripId, setSelectedTripId } = useTripStore();
     const [selectedPassengers, setSelectedPassengers] = useState<Passenger[]>([]);
@@ -161,20 +161,30 @@ export const TripPaymentCenter = () => {
         }
     }, [selectedTripId]);
 
-    const getVacancies = (tripToCalc: Trip) => {
-        const busIds = tripToCalc.onibus_ids || (tripToCalc.onibus_id ? [tripToCalc.onibus_id] : []);
-        const totalCapacity = busIds.reduce((acc, id) => {
-            const bus = buses.find(b => b.id === id);
-            return acc + (bus?.capacidade || 0);
+    const getVacancies = (t: Trip) => {
+        const occupied = enrollments.filter((e) => {
+            if (e.viagem_id !== t.id) return false;
+            return (e.pagamento === 'Pago' || e.pagamento === 'Realizado') || e.assento;
+        }).length;
+
+        const totalSeats = (t.onibus_ids || []).reduce((total, id) => {
+            const bus = buses.find((b) => b.id === id);
+            return total + (bus?.capacidade || 0);
         }, 0);
 
-        // Occupied quotas: anyone with confirmed payment OR with an assigned seat
-        const occupied = passengers.filter(p =>
-            p.enrollment?.viagem_id === tripToCalc.id &&
-            ((p.enrollment?.pagamento === 'Pago' || p.enrollment?.pagamento === 'Realizado') || p.enrollment?.assento)
-        ).length;
+        return Math.max(0, totalSeats - occupied);
+    };
 
-        return Math.max(0, totalCapacity - occupied);
+    const isUserOccupiedInTrip = (tripId: string) => {
+        const activeTrip = storeTrips.find(t => t.id === tripId);
+        if (!activeTrip) return false;
+        const activeBusIds = activeTrip.onibus_ids || (activeTrip.onibus_id ? [activeTrip.onibus_id] : []);
+
+        return enrollments.some(e =>
+            e.viagem_id === tripId &&
+            (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
+            ((e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id)) || (e.pagamento === 'Pago' || e.pagamento === 'Realizado'))
+        );
     };
 
     const isPastTrip = useMemo(() => {
@@ -220,7 +230,7 @@ export const TripPaymentCenter = () => {
         };
 
         fetchTripPayments();
-    }, [trip?.id]);
+    }, [trip?.id, supabase, trips]);
 
     // Load passengers on mount/step change to enable client-side filtering
     useEffect(() => {
@@ -237,10 +247,13 @@ export const TripPaymentCenter = () => {
         }
 
         const query = searchQuery.toLowerCase().trim();
-        const filtered = passengers.filter(p =>
-            p.nome_completo.toLowerCase().includes(query) ||
-            (p.cpf_rg && p.cpf_rg.toLowerCase().includes(query))
-        );
+        const filtered = passengers.filter(p => {
+            const isSystemIdentity = p.nome_completo === 'BLOQUEADO' || p.cpf_rg === 'BLOCKED';
+            if (isSystemIdentity) return false;
+
+            return p.nome_completo.toLowerCase().includes(query) ||
+                (p.cpf_rg && p.cpf_rg.toLowerCase().includes(query));
+        });
 
         // Deduplicate Logic (Client-Side)
         // Group by identity (Name + Doc) to avoid showing duplicates
@@ -275,19 +288,46 @@ export const TripPaymentCenter = () => {
     } | null>(null);
 
     const togglePassengerSelection = (p: Passenger) => {
+        if (!trip) return;
+
         // Only block if they are already paid FOR THIS trip
-        if (p.enrollment?.viagem_id === trip?.id && (p.enrollment?.pagamento === 'Pago' || p.enrollment?.pagamento === 'Realizado')) {
+        const isPaid = p.enrollment?.viagem_id === trip.id && (p.enrollment?.pagamento === 'Pago' || p.enrollment?.pagamento === 'Realizado');
+        if (isPaid) {
             showToast('Este passageiro já está pago neste roteiro', 'info');
             return;
         }
 
+        const isAccountedFor = (pass: Passenger) => {
+            return enrollments.some(e =>
+                e.viagem_id === trip.id &&
+                e.passageiro_id === pass.id &&
+                ((e.pagamento === 'Pago' || e.pagamento === 'Realizado') || e.assento)
+            );
+        };
+
+        const isCurrentlySelected = selectedPassengers.some(item => item.id === p.id);
+
+        // If trying to add (not remove) and not already accounted for by admin/payment
+        if (!isCurrentlySelected && !isAccountedFor(p)) {
+            const vacancies = getVacancies(trip);
+            const cartNewOccupantsCount = selectedPassengers.filter(item => !isAccountedFor(item)).length;
+
+            if (vacancies - cartNewOccupantsCount <= 0) {
+                showToast('Não há vagas/cotas suficientes para adicionar este passageiro.', 'error');
+                return;
+            }
+        }
+
         setSelectedPassengers(prev => {
             const isSelected = prev.find(item => item.id === p.id);
+
+            // Removing from cart is always allowed
             if (isSelected) {
                 const newSelection = prev.filter(item => item.id !== p.id);
                 if (newSelection.length === 0) setIsSummaryOpen(false);
                 return newSelection;
             }
+
             return [...prev, p];
         });
     };
@@ -570,12 +610,13 @@ export const TripPaymentCenter = () => {
                                                         key={t.id}
                                                         onClick={() => {
                                                             const vacs = getVacancies(t);
-                                                            if (vacs > 0) selectTrip(t);
+                                                            const occupied = isUserOccupiedInTrip(t.id);
+                                                            if (vacs > 0 || occupied) selectTrip(t);
                                                             else showToast('Lotação Esgotada para este roteiro', 'warning');
                                                         }}
                                                         className={cn(
                                                             "group relative bg-white rounded-2xl border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
-                                                            getVacancies(t) <= 0 && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0"
+                                                            (getVacancies(t) <= 0 && !isUserOccupiedInTrip(t.id)) && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0"
                                                         )}
                                                     >
                                                         {/* Decorator Gradient Header */}
@@ -611,11 +652,11 @@ export const TripPaymentCenter = () => {
 
                                                                     <div className={cn(
                                                                         "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] whitespace-nowrap font-black uppercase tracking-widest shrink-0 shadow-sm",
-                                                                        getVacancies(t) > 5 ? "bg-blue-50 text-blue-600" :
-                                                                            getVacancies(t) > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                                                                        (getVacancies(t) + (isUserOccupiedInTrip(t.id) ? 1 : 0)) > 5 ? "bg-blue-50 text-blue-600" :
+                                                                            (getVacancies(t) + (isUserOccupiedInTrip(t.id) ? 1 : 0)) > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
                                                                     )}>
                                                                         <Users size={12} />
-                                                                        <span>{getVacancies(t)} Vagas</span>
+                                                                        <span>{(getVacancies(t) + (isUserOccupiedInTrip(t.id) ? 1 : 0))} Vagas</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -661,12 +702,12 @@ export const TripPaymentCenter = () => {
                                                                 <div
                                                                     className={cn(
                                                                         "h-12 px-6 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center justify-center transition-all duration-300",
-                                                                        getVacancies(t) > 0
+                                                                        (getVacancies(t) > 0 || isUserOccupiedInTrip(t.id))
                                                                             ? "bg-gray-900 text-white group-hover:bg-blue-600 group-hover:shadow-xl group-hover:shadow-blue-500/40"
                                                                             : "bg-gray-100 text-gray-400 cursor-not-allowed"
                                                                     )}
                                                                 >
-                                                                    {getVacancies(t) > 0 ? "Selecionar" : "Esgotado"}
+                                                                    {(getVacancies(t) > 0 || isUserOccupiedInTrip(t.id)) ? "Selecionar" : "Esgotado"}
                                                                 </div>
                                                             </div>
                                                         </div>
