@@ -228,18 +228,13 @@ export const TripSeatMap: React.FC = () => {
         if (!enrollmentId) return;
 
         try {
-            // Soft delete: keep the enrollment for financial logs, but mark as "DESISTENTE" in the seat
-            const { error, data } = await supabase
-                .from('viagem_passageiros')
-                .update({ assento: 'DESISTENTE', onibus_id: null })
-                .eq('id', enrollmentId)
-                .select();
-
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                throw new Error(`Nenhuma alteração foi feita. Inscrição ID: ${enrollmentId} não encontrada ou sem permissão.`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro na API ao remover inscrição.');
             }
+
+            const result = await response.json();
+            console.log('✅ Passageiro removido (soft-delete):', result);
 
             showToast('Passageiro removido da lista!', 'success');
             await fetchPassageiros(id);
