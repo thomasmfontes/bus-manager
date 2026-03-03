@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { TripEditModal } from '@/components/viagens/TripEditModal';
 import { TripParticipantsList } from '@/components/viagens/TripParticipantsList';
@@ -199,13 +200,18 @@ export const TripSeatMap: React.FC = () => {
 
 
 
-    const handleRemoveEnrollment = async (passengerId: string, enrollmentId: string) => {
-        if (!window.confirm('Tem certeza que deseja remover esta inscrição?')) return;
+    const handleRemoveEnrollment = async (_passengerId: string, enrollmentId: string) => {
+        if (!window.confirm('Tem certeza que deseja remover esta inscrição? Esta pessoa deixará de aparecer na lista, mas os pagamentos realizados continuarão no Extrato e no Financeiro.')) return;
         try {
-            const { deletePassageiro } = usePassengerStore.getState();
-            await deletePassageiro(passengerId, enrollmentId);
-            showToast('Inscrição removida com sucesso!', 'success');
-            await fetchPassageiros();
+            // Soft delete: keep the enrollment for financial logs, but mark as "DESISTENTE" in the seat
+            const { error } = await supabase
+                .from('viagem_passageiros')
+                .update({ assento: 'DESISTENTE', onibus_id: null })
+                .eq('id', enrollmentId);
+
+            if (error) throw error;
+            showToast('Passageiro removido da lista!', 'success');
+            await fetchPassageiros(id);
         } catch (error) {
             showToast('Erro ao remover inscrição', 'error');
         }

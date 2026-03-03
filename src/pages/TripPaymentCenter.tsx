@@ -121,13 +121,27 @@ export const TripPaymentCenter = () => {
     useEffect(() => {
         if (storeTrips.length === 0) return;
 
+        const tryAutoSelect = (tripId: string) => {
+            const t = storeTrips.find(t => t.id === tripId);
+            if (!t) return false;
+
+            // Only auto-jump to payment if there's a vacancy OR user is already part of it
+            const hasVacancies = getVacancies(t) > 0;
+            const isUserEnrolled = isUserOccupiedInTrip(t.id);
+
+            if (hasVacancies || isUserEnrolled) {
+                setTrip(t);
+                setSelectedTripFilterId(tripId);
+                return true;
+            }
+            return false;
+        };
+
         // If we have a URL param, it takes precedence for the initial load
         if (initialTripId) {
-            const selectedTrip = storeTrips.find(t => t.id === initialTripId);
-            if (selectedTrip) {
-                setTrip(selectedTrip);
+            const autoSelected = tryAutoSelect(initialTripId);
+            if (autoSelected) {
                 setSelectedTripId(initialTripId); // Sync global context if URL has it
-                setSelectedTripFilterId(initialTripId);
                 // Note: We stay on 'trip-selection' step as per previous logic for URL-based search
             }
             return;
@@ -135,11 +149,9 @@ export const TripPaymentCenter = () => {
 
         // If no URL param, but we have a global selection, use it
         if (selectedTripId) {
-            const globalTrip = storeTrips.find(t => t.id === selectedTripId);
-            if (globalTrip) {
-                setTrip(globalTrip);
+            const autoSelected = tryAutoSelect(selectedTripId);
+            if (autoSelected) {
                 setStep('payment-flow');
-                setSelectedTripFilterId(selectedTripId);
             }
         }
     }, [storeTrips, initialTripId]);
@@ -147,11 +159,21 @@ export const TripPaymentCenter = () => {
     // Sync with Global Context changes (Reactive)
     useEffect(() => {
         if (selectedTripId) {
-            const globalTrip = storeTrips.find(t => t.id === selectedTripId);
-            if (globalTrip) {
-                setTrip(globalTrip);
-                setStep('payment-flow');
-                setSelectedTripFilterId(selectedTripId);
+            const t = storeTrips.find(t => t.id === selectedTripId);
+            if (t) {
+                const hasVacancies = getVacancies(t) > 0;
+                const isUserEnrolled = isUserOccupiedInTrip(t.id);
+
+                if (hasVacancies || isUserEnrolled) {
+                    setTrip(t);
+                    setStep('payment-flow');
+                    setSelectedTripFilterId(selectedTripId);
+                } else {
+                    // Force deselect if they try to select a sold-out trip globally
+                    setTrip(null);
+                    setStep('trip-selection');
+                    setSelectedTripFilterId('all');
+                }
             }
         } else if (step === 'payment-flow') {
             // Only reset if we were showing a specific trip flow
@@ -164,7 +186,11 @@ export const TripPaymentCenter = () => {
     const getVacancies = (t: Trip) => {
         const occupied = enrollments.filter((e) => {
             if (e.viagem_id !== t.id) return false;
-            return (e.pagamento === 'Pago' || e.pagamento === 'Realizado') || e.assento;
+
+            // Exclude soft-deleted (cancelled) seats from occupancy count
+            if (e.assento === 'DESISTENTE') return false;
+
+            return true;
         }).length;
 
         const totalSeats = (t.onibus_ids || []).reduce((total, id) => {
@@ -176,15 +202,12 @@ export const TripPaymentCenter = () => {
     };
 
     const isUserOccupiedInTrip = (tripId: string) => {
-        const activeTrip = storeTrips.find(t => t.id === tripId);
-        if (!activeTrip) return false;
-        const activeBusIds = activeTrip.onibus_ids || (activeTrip.onibus_id ? [activeTrip.onibus_id] : []);
+        return enrollments.some(e => {
+            if (e.viagem_id !== tripId) return false;
+            if (e.assento === 'DESISTENTE') return false;
 
-        return enrollments.some(e =>
-            e.viagem_id === tripId &&
-            (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
-            ((e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id)) || (e.pagamento === 'Pago' || e.pagamento === 'Realizado'))
-        );
+            return e.passageiro_id === user?.id || e.pago_por === user?.id;
+        });
     };
 
     const isPastTrip = useMemo(() => {
@@ -685,7 +708,7 @@ export const TripPaymentCenter = () => {
                                                                                 <Clock size={14} className="text-blue-500" />
                                                                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hora</span>
                                                                             </div>
-                                                                            <p className="text-sm font-black text-gray-700">07:00</p>
+                                                                            <p className="text-sm font-black text-gray-700">{new Date(t.data_ida).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                                                                         </>
                                                                     )}
                                                                 </div>

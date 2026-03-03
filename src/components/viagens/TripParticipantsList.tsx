@@ -36,7 +36,8 @@ export const TripParticipantsList: React.FC<TripParticipantsListProps> = ({
             };
         }).filter(p => {
             const isSystemIdentity = p.nome_completo === 'BLOQUEADO' || p.cpf_rg === 'BLOCKED';
-            return p.id && !isSystemIdentity;
+            const isDesistente = p.enrollment?.assento === 'DESISTENTE';
+            return p.id && !isSystemIdentity && !isDesistente;
         });
     }, [tripEnrollments, passengers]);
 

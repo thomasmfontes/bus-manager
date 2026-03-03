@@ -146,11 +146,14 @@ export const TripList: React.FC = () => {
     const getOccupiedSeats = (tripId: string) => {
         const { enrollments } = usePassengerStore.getState();
 
-        // Count confirmed payments OR assigned seats as occupied "quotas"
+        // Count any active (non-desistente) enrollment as occupying a spot
         return enrollments.filter((e) => {
             if (e.viagem_id !== tripId) return false;
 
-            return (e.pagamento === 'Pago' || e.pagamento === 'Realizado') || e.assento;
+            // Exclude soft-deleted (cancelled) seats from occupancy count
+            if (e.assento === 'DESISTENTE') return false;
+
+            return true; // If they expressed interest, they take a spot until cancelled
         }).length;
     };
 

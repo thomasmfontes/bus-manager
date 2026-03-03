@@ -50,11 +50,16 @@ export const Dashboard: React.FC = () => {
         if (!activeTrip) return false;
         const activeBusIds = activeTrip.onibus_ids || (activeTrip.onibus_id ? [activeTrip.onibus_id] : []);
 
-        return enrollments.some(e =>
-            e.viagem_id === tripId &&
-            (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
-            ((e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id)) || (e.pagamento === 'Pago' || e.pagamento === 'Realizado'))
-        );
+        return enrollments.some(e => {
+            if (e.viagem_id !== tripId) return false;
+            if (e.assento === 'DESISTENTE') return false;
+
+            const isUserOrPayer = e.passageiro_id === user?.id || e.pago_por === user?.id;
+            const hasValidSeat = e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id);
+            const isPaid = e.pagamento === 'Pago' || e.pagamento === 'Realizado';
+
+            return isUserOrPayer && (hasValidSeat || isPaid);
+        });
     };
 
     // Filter trips and passengers based on selection
@@ -71,16 +76,14 @@ export const Dashboard: React.FC = () => {
         const trip = trips.find(t => t.id === tripId);
         if (!trip) return 0;
 
-        const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
-
+        // Count any active (non-desistente) enrollment as occupying a spot
         return enrollments.filter((e) => {
             if (e.viagem_id !== tripId) return false;
 
-            // Occupied if has a seat OR is confirmed paid
-            const isAssigned = e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id);
-            const isPaid = e.pagamento === 'Pago' || e.pagamento === 'Realizado';
+            // Exclude soft-deleted (cancelled) seats from occupancy count
+            if (e.assento === 'DESISTENTE') return false;
 
-            return isAssigned || isPaid;
+            return true; // If they expressed interest, they take a spot until cancelled
         }).length;
     };
 
@@ -144,27 +147,8 @@ export const Dashboard: React.FC = () => {
     const blockedIdentityId = passengers.find(p => p.nome_completo === 'BLOQUEADO')?.id;
 
     const occupiedSeats = (!selectedTripId || selectedTripId === 'all')
-        ? usePassengerStore.getState().enrollments.filter(e => {
-            if (!e.assento || !e.viagem_id || !e.onibus_id) return false;
-            // Exclude blocks from occupancy count
-            if (blockedIdentityId && e.passageiro_id === blockedIdentityId) return false;
-
-            const trip = trips.find(t => t.id === e.viagem_id);
-            if (!trip) return false;
-            const activeBusIds = trip.onibus_ids || (trip.onibus_id ? [trip.onibus_id] : []);
-            return activeBusIds.includes(e.onibus_id);
-        }).length
-        : filteredPassengers.filter((p) => {
-            if (p.nome_completo === 'BLOQUEADO') return false;
-            const e = p.enrollment;
-            if (!e || !e.assento || !e.viagem_id || !e.onibus_id) return false;
-
-            const passengerTrip = trips.find(t => t.id === e.viagem_id);
-            if (!passengerTrip) return false;
-
-            const activeBusIds = passengerTrip.onibus_ids || (passengerTrip.onibus_id ? [passengerTrip.onibus_id] : []);
-            return activeBusIds.includes(e.onibus_id);
-        }).length;
+        ? 0 // Not shown in global view anyway
+        : getOccupiedSeats(selectedTripId);
 
     // Calculate capacity for the selected trip(s)
     const currentCapacity = filteredTrips.reduce((acc: number, trip: any) => {
@@ -309,15 +293,7 @@ export const Dashboard: React.FC = () => {
                 iconBg: 'bg-purple-100',
                 iconColor: 'text-purple-600',
                 trend: totalPassengers === 0 ? 'Nenhum cadastrado' : totalPassengers === 1 ? '1 cadastrado' : `${totalPassengers} cadastrados`
-            },
-            {
-                label: 'Assentos Ocupados',
-                value: occupiedSeats,
-                icon: Calendar,
-                iconBg: 'bg-orange-100',
-                iconColor: 'text-orange-600',
-                trend: currentCapacity > 0 ? `de ${currentCapacity} assentos` : 'Nenhum assento disponível'
-            },
+            }
         ]
         : (filteredTrips[0] ? [
             {

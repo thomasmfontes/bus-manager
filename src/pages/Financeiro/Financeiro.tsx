@@ -24,7 +24,16 @@ export const Financeiro: React.FC = () => {
     // Only show passengers that are assigned to a trip in an enrollment - EXCLUDE BLOQUEADO technical user
     const tripPassengers = passengers.filter(p => {
         const e = p.enrollment;
-        return p.nome_completo !== 'BLOQUEADO' && e && e.viagem_id && e.assento;
+        if (!e || !e.viagem_id || p.nome_completo === 'BLOQUEADO') return false;
+
+        const isDesistente = e.assento === 'DESISTENTE';
+        const isPaid = e.pagamento === 'paid' || e.pagamento === 'Realizado' || e.pagamento === 'Pago';
+
+        if (isDesistente && !isPaid) {
+            return false;
+        }
+
+        return true;
     });
     const now = new Date();
 
@@ -210,7 +219,7 @@ export const Financeiro: React.FC = () => {
                 {loadingPassengers ? (
                     <div className="p-12 text-center text-gray-500">Carregando dados...</div>
                 ) : filteredPassengers.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500">Nenhum passageiro encontrado com assento atribuído.</div>
+                    <div className="p-12 text-center text-gray-500">Nenhum passageiro encontrado.</div>
                 ) : (
                     <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                         {/* Desktop Table View */}
