@@ -122,16 +122,6 @@ export const Dashboard: React.FC = () => {
         ? tripsInView
         : trips.filter(t => t.id === selectedTripId);
 
-    const filteredPassengers = !selectedTripId || selectedTripId === 'all'
-        ? (effectiveTimeFilter === 'all' ? passengers : passengers.filter(p => {
-            if (!p.enrollment) return false;
-            const passengerTrip = trips.find(t => t.id === p.enrollment?.viagem_id);
-            if (!passengerTrip) return false;
-            const isFuture = new Date(passengerTrip.data_ida) >= now;
-            return effectiveTimeFilter === 'future' ? isFuture : !isFuture;
-        }))
-        : passengers.filter(p => p.enrollment?.viagem_id === selectedTripId);
-
     // Calculate stats
     const totalBuses = buses.length;
     const totalTrips = trips.length;
@@ -142,9 +132,6 @@ export const Dashboard: React.FC = () => {
             .map(p => `${p.nome_completo.trim().toLowerCase()}-${(p.cpf_rg || '').trim()}`)
     );
     const totalPassengers = uniquePassengerIdentities.size;
-
-    // Count passengers with assigned seats in the filtered group (exclude BLOQUEADO)
-    const blockedIdentityId = passengers.find(p => p.nome_completo === 'BLOQUEADO')?.id;
 
     const occupiedSeats = (!selectedTripId || selectedTripId === 'all')
         ? 0 // Not shown in global view anyway
