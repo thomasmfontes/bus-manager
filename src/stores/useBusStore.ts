@@ -151,6 +151,10 @@ export const useBusStore = create<BusState>((set, get) => ({
     deleteOnibus: async (id) => {
         set({ loading: true });
         try {
+            // 1. Delete trip-bus relationships first
+            await supabase.from('viagem_onibus').delete().eq('onibus_id', id);
+
+            // 2. Delete the bus itself
             const { error } = await supabase.from('onibus').delete().eq('id', id);
             if (error) throw error;
             set({ buses: get().buses.filter((b) => b.id !== id), loading: false });

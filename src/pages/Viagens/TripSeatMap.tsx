@@ -147,7 +147,7 @@ export const TripSeatMap: React.FC = () => {
         try {
             console.log('✅ UI: Seat assigned, refreshing UI state...');
             await atribuirAssento(selectedPassengerId, selectedSeat, id, currentBus.id);
-            await fetchPassageiros();
+            await fetchPassageiros(id);
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
@@ -174,7 +174,7 @@ export const TripSeatMap: React.FC = () => {
             showToast('Assento liberado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
-            await fetchPassageiros();
+            await fetchPassageiros(id);
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
         }
@@ -191,7 +191,7 @@ export const TripSeatMap: React.FC = () => {
             showToast('Assento bloqueado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
-            await fetchPassageiros();
+            await fetchPassageiros(id);
         } catch (error) {
             showToast('Erro ao bloquear assento', 'error');
         }

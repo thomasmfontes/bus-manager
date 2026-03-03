@@ -173,23 +173,13 @@ export const useTripStore = create<TripState>()(
 
                             // 1. Clear seat assignments for real passengers on removed buses
                             const { error: unlinkError } = await supabase
-                                .from('passageiros')
+                                .from('viagem_passageiros')
                                 .update({ assento: null, onibus_id: null })
                                 .eq('viagem_id', id)
-                                .in('onibus_id', removedBusIds)
-                                .neq('nome_completo', 'BLOQUEADO');
+                                .in('onibus_id', removedBusIds);
 
                             if (unlinkError) console.error('Error unlinking passengers:', unlinkError);
 
-                            // 2. Delete blocked seat records for removed buses
-                            const { error: deleteBlocksError } = await supabase
-                                .from('passageiros')
-                                .delete()
-                                .eq('viagem_id', id)
-                                .in('onibus_id', removedBusIds)
-                                .eq('nome_completo', 'BLOQUEADO');
-
-                            if (deleteBlocksError) console.error('Error deleting blocked seats:', deleteBlocksError);
                         }
 
                         if (busIds.length > 0) {
@@ -222,37 +212,29 @@ export const useTripStore = create<TripState>()(
             deleteViagem: async (id) => {
                 set({ loading: true });
                 try {
-                    // 1. Get all passengers associated with this trip
-                    const { data: tripPassengers, error: fetchError } = await supabase
-                        .from('passageiros')
+                    // 1. Get all enrollments associated with this trip
+                    const { data: tripEnrollments, error: fetchError } = await supabase
+                        .from('viagem_passageiros')
                         .select('*')
                         .eq('viagem_id', id);
 
                     if (fetchError) throw fetchError;
 
-                    // 2. Handle each passenger
-                    for (const p of (tripPassengers || [])) {
-                        if (p.nome_completo === 'BLOQUEADO') {
-                            // Always delete blocked seats
-                            await supabase.from('passageiros').delete().eq('id', p.id);
+                    // 2. Handle each enrollment
+                    for (const e of (tripEnrollments || [])) {
+                        // Check if the passenger is BLOQUEADO (by fetching passenger name)
+                        const { data: pData } = await supabase
+                            .from('passageiros')
+                            .select('nome_completo')
+                            .eq('id', e.passageiro_id)
+                            .single();
+
+                        if (pData?.nome_completo === 'BLOQUEADO') {
+                            // Always delete enrollment for blocked seats
+                            await supabase.from('viagem_passageiros').delete().eq('id', e.id);
                         } else {
-                            // Check if this person exists elsewhere (Master record or other trips)
-                            const { count, error: countError } = await supabase
-                                .from('passageiros')
-                                .select('*', { count: 'exact', head: true })
-                                .eq('nome_completo', p.nome_completo)
-                                .eq('cpf_rg', p.cpf_rg || '')
-                                .neq('id', p.id);
-
-                            if (countError) console.error('Error checking passenger existence:', countError);
-
-                            if (count && count > 0) {
-                                // Recurso redundante (clone), pode deletar com segurança
-                                await supabase.from('passageiros').delete().eq('id', p.id);
-                            } else {
-                                // Único registro dessa pessoa! Promover ao cadastro geral (Master)
-                                await supabase.from('passageiros').update({ viagem_id: null, assento: null, onibus_id: null }).eq('id', p.id);
-                            }
+                            // Just delete the enrollment, the identity remains in master record
+                            await supabase.from('viagem_passageiros').delete().eq('id', e.id);
                         }
                     }
 

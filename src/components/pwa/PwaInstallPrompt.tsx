@@ -19,8 +19,13 @@ export const PwaInstallPrompt: React.FC = () => {
 
         // Listen for standard PWA install prompt (Android/Desktop)
         const handleBeforeInstallPrompt = (e: Event) => {
-            e.preventDefault();
-            setDeferredPrompt(e as BeforeInstallPromptEvent);
+            // Only prevent default if we haven't already handled/captured the prompt
+            // This avoids the 'preventDefault() called' console spam if the browser
+            // keeps firing the event (e.g., after a dismissal or state change).
+            if (!deferredPrompt) {
+                e.preventDefault();
+                setDeferredPrompt(e as BeforeInstallPromptEvent);
+            }
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
