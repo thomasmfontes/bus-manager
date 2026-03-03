@@ -238,7 +238,7 @@ export const TripSeatMap: React.FC = () => {
             if (error) throw error;
 
             if (!data || data.length === 0) {
-                throw new Error('Nenhuma alteração foi feita. Verifique se a inscrição ainda existe.');
+                throw new Error(`Nenhuma alteração foi feita. Inscrição ID: ${enrollmentId} não encontrada ou sem permissão.`);
             }
 
             showToast('Passageiro removido da lista!', 'success');
