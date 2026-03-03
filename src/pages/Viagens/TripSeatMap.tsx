@@ -229,16 +229,23 @@ export const TripSeatMap: React.FC = () => {
 
         try {
             // Soft delete: keep the enrollment for financial logs, but mark as "DESISTENTE" in the seat
-            const { error } = await supabase
+            const { error, data } = await supabase
                 .from('viagem_passageiros')
                 .update({ assento: 'DESISTENTE', onibus_id: null })
-                .eq('id', enrollmentId);
+                .eq('id', enrollmentId)
+                .select();
 
             if (error) throw error;
+
+            if (!data || data.length === 0) {
+                throw new Error('Nenhuma alteração foi feita. Verifique se a inscrição ainda existe.');
+            }
+
             showToast('Passageiro removido da lista!', 'success');
             await fetchPassageiros(id);
-        } catch (error) {
-            showToast('Erro ao remover inscrição', 'error');
+        } catch (error: any) {
+            console.error('Error removing passenger:', error);
+            showToast(error.message || 'Erro ao remover inscrição', 'error');
         } finally {
             setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }));
         }
