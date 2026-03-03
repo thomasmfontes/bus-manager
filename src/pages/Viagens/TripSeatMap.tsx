@@ -13,7 +13,6 @@ import { useToast } from '@/components/ui/Toast';
 import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { TripEditModal } from '@/components/viagens/TripEditModal';
 import { TripParticipantsList } from '@/components/viagens/TripParticipantsList';
@@ -228,6 +227,14 @@ export const TripSeatMap: React.FC = () => {
         if (!enrollmentId) return;
 
         try {
+            // Soft delete: keep the enrollment for financial logs, but mark as "DESISTENTE" in the seat
+            // We use an API route to bypass RLS, ensuring it updates even in production
+            const response = await fetch('/api/seats/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enrollmentId })
+            });
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Erro na API ao remover inscrição.');
