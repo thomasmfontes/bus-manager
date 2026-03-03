@@ -9,7 +9,7 @@ interface TripParticipantsListProps {
     trip: Trip;
     passengers: Passenger[];
     enrollments: TripEnrollment[];
-    onDeleteEnrollment?: (passengerId: string, enrollmentId: string) => Promise<void>;
+    onDeleteEnrollment?: (passengerId: string, enrollmentId: string, passengerName?: string) => Promise<void> | void;
 }
 
 export const TripParticipantsList: React.FC<TripParticipantsListProps> = ({
@@ -148,8 +148,9 @@ export const TripParticipantsList: React.FC<TripParticipantsListProps> = ({
                                     {onDeleteEnrollment && p.id && (
                                         <button
                                             onClick={() => {
-                                                if (window.confirm(`Tem certeza que deseja remover ${p.nome_completo} desta viagem?`)) {
-                                                    onDeleteEnrollment(p.id!, p.enrollment.id);
+                                                if (onDeleteEnrollment) {
+                                                    // Delegate to parent's custom confirmation modal
+                                                    onDeleteEnrollment(p.id!, p.enrollment.id, p.nome_completo);
                                                 }
                                             }}
                                             className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-all hover:scale-110 active:scale-95 shadow-sm border border-red-100"

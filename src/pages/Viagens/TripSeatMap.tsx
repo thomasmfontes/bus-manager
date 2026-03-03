@@ -200,8 +200,33 @@ export const TripSeatMap: React.FC = () => {
 
 
 
-    const handleRemoveEnrollment = async (_passengerId: string, enrollmentId: string) => {
-        if (!window.confirm('Tem certeza que deseja remover esta inscrição? Esta pessoa deixará de aparecer na lista, mas os pagamentos realizados continuarão no Extrato e no Financeiro.')) return;
+    const [removeConfirmModal, setRemoveConfirmModal] = useState<{
+        isOpen: boolean;
+        passengerId: string;
+        enrollmentId: string;
+        passengerName: string;
+    }>({
+        isOpen: false,
+        passengerId: '',
+        enrollmentId: '',
+        passengerName: ''
+    });
+
+    const handleRemoveEnrollment = async (passengerId: string, enrollmentId: string, passengerName?: string) => {
+        // Find the passenger name if not explicitly passed
+        const name = passengerName || passengers.find(p => p.id === passengerId)?.nome_completo || 'este passageiro';
+        setRemoveConfirmModal({
+            isOpen: true,
+            passengerId,
+            enrollmentId,
+            passengerName: name
+        });
+    };
+
+    const confirmRemoval = async () => {
+        const { enrollmentId } = removeConfirmModal;
+        if (!enrollmentId) return;
+
         try {
             // Soft delete: keep the enrollment for financial logs, but mark as "DESISTENTE" in the seat
             const { error } = await supabase
@@ -214,6 +239,8 @@ export const TripSeatMap: React.FC = () => {
             await fetchPassageiros(id);
         } catch (error) {
             showToast('Erro ao remover inscrição', 'error');
+        } finally {
+            setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }));
         }
     };
 
@@ -607,6 +634,44 @@ export const TripSeatMap: React.FC = () => {
                     </div>
                 )}
             </Modal>
+
+            {/* Removal Confirmation Modal */}
+            <Modal
+                isOpen={removeConfirmModal.isOpen}
+                onClose={() => setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                title="Remover Passageiro"
+                footer={
+                    <>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={confirmRemoval}
+                        >
+                            Remover
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                        <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={24} />
+                        <div>
+                            <h4 className="text-red-800 font-bold mb-1">Confirmação de Remoção</h4>
+                            <p className="text-sm text-red-700">
+                                Tem certeza que deseja remover <strong>{removeConfirmModal.passengerName}</strong> desta viagem?
+                            </p>
+                            <p className="text-xs text-red-600 mt-2">
+                                Esta pessoa deixará de aparecer na lista de passageiros e assentos, mas os pagamentos realizados continuarão salvos no Extrato e no Financeiro.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </Modal >
         </div>
     );
 };
