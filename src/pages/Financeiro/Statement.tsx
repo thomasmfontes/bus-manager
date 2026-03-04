@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Calendar, Filter, ChevronDown, CheckCircle2, Users } from 'lucide-react';
+import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Calendar, Filter, ChevronDown, CheckCircle2, Users, ArrowRightLeft } from 'lucide-react';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
@@ -12,6 +12,7 @@ import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { UserRole } from '@/types';
+import { SubstitutionModal } from '@/components/viagens/SubstitutionModal';
 
 interface StatementProps {
     userId?: string;
@@ -31,6 +32,38 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+    const [substituteEnrollment, setSubstituteEnrollment] = useState<{ id: string, name: string } | null>(null);
+    const [enrollmentsMap, setEnrollmentsMap] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const fetchRelatedEnrollments = async () => {
+            if (!selectedPayment?.viagem_id || !selectedPayment?.passageiros_ids) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('viagem_passageiros')
+                    .select('id, passageiro_id')
+                    .eq('viagem_id', selectedPayment.viagem_id)
+                    .in('passageiro_id', selectedPayment.passageiros_ids);
+
+                if (error) throw error;
+
+                const map: Record<string, string> = {};
+                data?.forEach(e => {
+                    map[e.passageiro_id] = e.id;
+                });
+                setEnrollmentsMap(map);
+            } catch (err) {
+                console.error('Error fetching enrollments for payment:', err);
+            }
+        };
+
+        if (selectedPayment) {
+            fetchRelatedEnrollments();
+        } else {
+            setEnrollmentsMap({});
+        }
+    }, [selectedPayment]);
 
     useEffect(() => {
         const init = async () => {
@@ -424,10 +457,25 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                                         selectedPayment.passageiros_ids.map((id: string) => {
                                             const name = passengers.find(pass => pass.id === id)?.nome_completo;
                                             return name ? (
-                                                <p key={id} className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                                                    {name}
-                                                </p>
+                                                <div key={id} className="flex items-center justify-between group/pax py-1">
+                                                    <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                                        {name}
+                                                    </p>
+                                                    {enrollmentsMap[id] && isPaid && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSubstituteEnrollment({ id: enrollmentsMap[id], name });
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm"
+                                                            title="Transferir vaga para outra pessoa"
+                                                        >
+                                                            <ArrowRightLeft size={12} />
+                                                            <span className="hidden sm:inline">Transferir</span>
+                                                        </button>
+                                                    )}
+                                                </div>
                                             ) : null;
                                         })
                                     ) : (
@@ -463,6 +511,20 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                     );
                 })()}
             </Modal>
+
+            {substituteEnrollment && (
+                <SubstitutionModal
+                    isOpen={!!substituteEnrollment}
+                    onClose={() => setSubstituteEnrollment(null)}
+                    enrollmentId={substituteEnrollment.id}
+                    tripId={selectedPayment.viagem_id}
+                    passengerName={substituteEnrollment.name}
+                    onSuccess={() => {
+                        fetchPayments();
+                        setSelectedPayment(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
