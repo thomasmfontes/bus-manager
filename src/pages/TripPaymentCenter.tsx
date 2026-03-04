@@ -409,6 +409,24 @@ export const TripPaymentCenter = () => {
         }
     };
 
+    // Real-time Payer Name update (for persistence)
+    useEffect(() => {
+        if (paymentStatus === 'pix' && pixData?.databaseId && customPayerName.trim()) {
+            const timer = setTimeout(async () => {
+                try {
+                    await supabase
+                        .from('pagamentos')
+                        .update({ payer_name: customPayerName })
+                        .eq('id', pixData.databaseId);
+                } catch (err) {
+                    console.error('Error syncing payer name:', err);
+                }
+            }, 1000); // 1s debounce
+
+            return () => clearTimeout(timer);
+        }
+    }, [customPayerName, paymentStatus, pixData?.databaseId]);
+
     // Polling for payment status
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -972,7 +990,7 @@ export const TripPaymentCenter = () => {
                                             <div className="p-8 sm:p-12">
                                                 <div className="max-w-md mx-auto">
                                                     <p className="text-gray-500 text-lg mb-8 leading-relaxed">
-                                                        O investimento de <span className="font-black text-gray-900 bg-blue-50 px-2 py-1 rounded-lg">{formatCurrency(totalAmount)}</span> foi processado com segurança.
+                                                        O PIX de <span className="font-black text-gray-900 bg-blue-50 px-2 py-1 rounded-lg">{formatCurrency(totalAmount)}</span> foi processado com segurança.
                                                     </p>
 
                                                     <div className="space-y-4 mb-10">
@@ -981,8 +999,15 @@ export const TripPaymentCenter = () => {
                                                                 <CreditCardIcon size={24} />
                                                             </div>
                                                             <div className="text-left">
-                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Passageiros Liberados</p>
-                                                                <p className="text-sm font-black text-gray-800">{selectedPassengers.length} {selectedPassengers.length === 1 ? 'Pessoa confirmada' : 'Pessoas confirmadas'}</p>
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-2">Passageiros Finalizados</p>
+                                                                <div className="flex flex-col gap-1">
+                                                                    {selectedPassengers.map(p => (
+                                                                        <div key={p.id} className="text-sm font-black text-gray-800 flex items-center gap-2">
+                                                                            <div className="w-1 h-1 bg-green-500 rounded-full" />
+                                                                            {p.nome_completo}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
                                                         </div>
 

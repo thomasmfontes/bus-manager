@@ -78,6 +78,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 3. Update the enrollment
+        const oldPassengerId = enrollment.passageiro_id;
+        const tripId = enrollment.viagem_id;
+
         const { data: updated, error: updateErr } = await supabase
             .from('viagem_passageiros')
             .update({
@@ -90,7 +93,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .select()
             .single();
 
-        if (updateErr) throw updateErr;
+        // 4. Sync with Pagamentos
+        console.log(`🔗 [API] Sincronizando pagamentos para a troca ${oldPassengerId} -> ${targetPassengerId}`);
+
+        // Get the payment ID from the junction table first for accuracy
+        const { data: pLinks } = await supabase
+            .from('pagamento_passageiro')
+            .select('pagamento_id')
+            .eq('passageiro_id', oldPassengerId);
+
+        const paymentIds = (pLinks || []).map(l => l.pagamento_id);
+
+        if (paymentIds.length > 0) {
+            // Find payments that belong to this trip
+            const { data: paymentsToUpdate } = await supabase
+                .from('pagamentos')
+                .select('id, passageiros_ids')
+                .eq('viagem_id', tripId)
+                .in('id', paymentIds);
+
+            if (paymentsToUpdate && paymentsToUpdate.length > 0) {
+                for (const payment of paymentsToUpdate) {
+                    const newIds = (payment.passageiros_ids || []).map((id: string) =>
+                        id === oldPassengerId ? targetPassengerId : id
+                    );
+
+                    await supabase
+                        .from('pagamentos')
+                        .update({ passageiros_ids: newIds })
+                        .eq('id', payment.id);
+
+                    // Update the ledger
+                    await supabase
+                        .from('pagamento_passageiro')
+                        .update({ passageiro_id: targetPassengerId })
+                        .eq('pagamento_id', payment.id)
+                        .eq('passageiro_id', oldPassengerId);
+                }
+            }
+        }
 
         console.log(`✅ [API] Inscrição ${enrollmentId} transferida para passageiro ${targetPassengerId}`);
         return res.status(200).json({ success: true, data: updated });

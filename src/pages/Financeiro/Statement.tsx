@@ -458,10 +458,10 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                                             const name = passengers.find(pass => pass.id === id)?.nome_completo;
                                             return name ? (
                                                 <div key={id} className="flex items-center justify-between group/pax py-1">
-                                                    <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                    <div className="text-sm font-bold text-gray-700 flex items-center gap-2">
                                                         <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
                                                         {name}
-                                                    </p>
+                                                    </div>
                                                     {enrollmentsMap[id] && isPaid && (
                                                         <button
                                                             onClick={(e) => {
@@ -521,6 +521,7 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                     passengerName={substituteEnrollment.name}
                     onSuccess={() => {
                         fetchPayments();
+                        fetchPassageiros();
                         setSelectedPayment(null);
                     }}
                 />
