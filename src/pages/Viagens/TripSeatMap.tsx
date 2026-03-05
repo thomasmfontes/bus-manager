@@ -40,7 +40,7 @@ export const TripSeatMap: React.FC = () => {
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'map' | 'participants'>('map');
-    const [processing, setProcessing] = useState(false);
+    const [loadingAction, setLoadingAction] = useState<'assign' | 'block' | 'release' | 'remove' | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -146,7 +146,7 @@ export const TripSeatMap: React.FC = () => {
             busId: currentBus.id
         });
 
-        setProcessing(true);
+        setLoadingAction('assign');
         try {
             console.log('✅ UI: Seat assigned, refreshing UI state...');
             await atribuirAssento(selectedPassengerId, selectedSeat, id!, currentBus.id);
@@ -158,7 +158,7 @@ export const TripSeatMap: React.FC = () => {
         } catch (error) {
             showToast('Erro ao atribuir assento', 'error');
         } finally {
-            setProcessing(false);
+            setLoadingAction(null);
         }
     };
 
@@ -174,7 +174,7 @@ export const TripSeatMap: React.FC = () => {
         );
         if (!enrollment) return;
 
-        setProcessing(true);
+        setLoadingAction('release');
         try {
             await liberarAssento(enrollment.passageiro_id, enrollment.id);
             showToast('Assento liberado com sucesso!', 'success');
@@ -184,7 +184,7 @@ export const TripSeatMap: React.FC = () => {
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
         } finally {
-            setProcessing(false);
+            setLoadingAction(null);
         }
     };
 
@@ -194,7 +194,7 @@ export const TripSeatMap: React.FC = () => {
             return;
         }
 
-        setProcessing(true);
+        setLoadingAction('block');
         try {
             await bloquearAssento(selectedSeat, id!, currentBus.id);
             showToast('Assento bloqueado com sucesso!', 'success');
@@ -204,7 +204,7 @@ export const TripSeatMap: React.FC = () => {
         } catch (error) {
             showToast('Erro ao bloquear assento', 'error');
         } finally {
-            setProcessing(false);
+            setLoadingAction(null);
         }
     };
 
@@ -239,7 +239,7 @@ export const TripSeatMap: React.FC = () => {
         const { enrollmentId } = removeConfirmModal;
         if (!enrollmentId) return;
 
-        setProcessing(true);
+        setLoadingAction('remove');
         try {
             const response = await fetch('/api/seats/remove', {
                 method: 'POST',
@@ -262,7 +262,7 @@ export const TripSeatMap: React.FC = () => {
             console.error('Error removing passenger:', error);
             showToast(error.message || 'Erro ao remover inscrição', 'error');
         } finally {
-            setProcessing(false);
+            setLoadingAction(null);
             setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }));
         }
     };
@@ -544,7 +544,11 @@ export const TripSeatMap: React.FC = () => {
                         )}
                         {/* Passageiro: only assign button */}
                         {user?.role === UserRole.PASSAGEIRO && user.id && actionType === 'assign' && (
-                            <Button onClick={handleAssignSeat} isLoading={processing}>
+                            <Button
+                                onClick={handleAssignSeat}
+                                isLoading={loadingAction === 'assign'}
+                                disabled={!!loadingAction && loadingAction !== 'assign'}
+                            >
                                 <Check size={20} className="sm:mr-2" />
                                 <span className="hidden sm:inline">Atribuir</span>
                             </Button>
@@ -554,18 +558,32 @@ export const TripSeatMap: React.FC = () => {
                             <>
                                 {actionType === 'assign' && (
                                     <>
-                                        <Button onClick={handleAssignSeat} isLoading={processing}>
+                                        <Button
+                                            onClick={handleAssignSeat}
+                                            isLoading={loadingAction === 'assign'}
+                                            disabled={!!loadingAction && loadingAction !== 'assign'}
+                                        >
                                             <Check size={20} className="sm:mr-2" />
                                             <span className="hidden sm:inline">Atribuir</span>
                                         </Button>
-                                        <Button variant="secondary" onClick={handleBlockSeat} isLoading={processing}>
+                                        <Button
+                                            variant="secondary"
+                                            onClick={handleBlockSeat}
+                                            isLoading={loadingAction === 'block'}
+                                            disabled={!!loadingAction && loadingAction !== 'block'}
+                                        >
                                             <Lock size={20} className="sm:mr-2" />
                                             <span className="hidden sm:inline">Bloquear</span>
                                         </Button>
                                     </>
                                 )}
                                 {actionType === 'release' && (
-                                    <Button variant="danger" onClick={handleReleaseSeat} isLoading={processing}>
+                                    <Button
+                                        variant="danger"
+                                        onClick={handleReleaseSeat}
+                                        isLoading={loadingAction === 'release'}
+                                        disabled={!!loadingAction && loadingAction !== 'release'}
+                                    >
                                         <Unlock size={20} className="sm:mr-2" />
                                         <span className="hidden sm:inline">Liberar</span>
                                     </Button>
@@ -676,7 +694,8 @@ export const TripSeatMap: React.FC = () => {
                         <Button
                             variant="danger"
                             onClick={confirmRemoval}
-                            isLoading={processing}
+                            isLoading={loadingAction === 'remove'}
+                            disabled={!!loadingAction && loadingAction !== 'remove'}
                         >
                             Remover
                         </Button>
