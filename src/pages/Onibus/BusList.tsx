@@ -7,6 +7,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { Plus, Edit, Trash2, Bus as BusIcon, Hash, Users, ArrowRight } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
+import { Spinner } from '@/components/ui/Spinner';
 
 export const BusList: React.FC = () => {
     const { buses, fetchOnibus, deleteOnibus, loading } = useBusStore();
@@ -53,11 +54,7 @@ export const BusList: React.FC = () => {
             </div>
 
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse border border-gray-200" />
-                    ))}
-                </div>
+                <div className="py-12"><Spinner size="lg" text="Carregando ônibus..." /></div>
             ) : buses.length === 0 ? (
                 <Card className="flex flex-col items-center justify-center py-20 text-center border-dashed border-2 border-gray-200 bg-gray-50/50">
                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm ring-4 ring-gray-100">

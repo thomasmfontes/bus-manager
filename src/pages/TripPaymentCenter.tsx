@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Trip, Passenger } from '@/types';
@@ -32,13 +32,16 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useBusStore } from '@/stores/useBusStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { Statement } from './Financeiro/Statement';
+import { Spinner } from '@/components/ui/Spinner';
 
 export const TripPaymentCenter = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { showToast } = useToast();
     const { user } = useAuthStore();
     const initialTripId = searchParams.get('v');
+    const selectSelf = searchParams.get('selectSelf') === 'true';
+    const pids = searchParams.get('pids');
 
     const [trip, setTrip] = useState<Trip | null>(null);
     const [loading, setLoading] = useState(true);
@@ -52,15 +55,41 @@ export const TripPaymentCenter = () => {
     const [paymentStatus, setPaymentStatus] = useState<'selection' | 'pix' | 'success'>('selection');
     const [selectedTripFilterId, setSelectedTripFilterId] = useState<string>(initialTripId || selectedTripId || 'all');
     const [customPayerName, setCustomPayerName] = useState('');
-    const [tripPayments, setTripPayments] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState<'payment' | 'history'>('payment');
     const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-    const [isQuickAccessExiting, setIsQuickAccessExiting] = useState(false);
+    // Capture if we started with pids once, regardless of URL cleanup
+    const hasInitialPids = useRef(!!new URLSearchParams(window.location.search).get('pids'));
+    const [showFloatingCart, setShowFloatingCart] = useState(!hasInitialPids.current);
+    const prevTripIdRef = useRef<string | null>(initialTripId || selectedTripId || null);
+
+    // Prevent background scrolling when summary is open AND has items
+    useEffect(() => {
+        if (isSummaryOpen && selectedPassengers.length > 0) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isSummaryOpen, selectedPassengers.length]);
 
     const userPassenger = useMemo(() => {
         if (!user?.id) return null;
         return passengers.find(p => p.id === user.id);
     }, [user, passengers]);
+
+    // Derived: Passengers who have already paid for the SELECTED trip
+    const tripPayments = useMemo(() => {
+        if (!trip?.id) return new Set<string>();
+        const paidIds = new Set<string>();
+        enrollments.forEach(e => {
+            if (e.viagem_id === trip.id && (e.pagamento === 'Pago' || e.pagamento === 'paid' || e.pagamento === 'Realizado')) {
+                paidIds.add(e.passageiro_id);
+            }
+        });
+        return paidIds;
+    }, [trip?.id, enrollments]);
 
     // Pre-fill payer name and search from URL/User
     useEffect(() => {
@@ -73,7 +102,43 @@ export const TripPaymentCenter = () => {
         if (user?.full_name && !customPayerName) {
             setCustomPayerName(user.full_name);
         }
-    }, [user, searchParams]);
+
+        if (selectSelf && !pids && userPassenger && selectedPassengers.length === 0 && !tripPayments.has(userPassenger.id)) {
+            setSelectedPassengers([userPassenger]);
+        }
+
+        // Load passengers from pids if provided
+        if (pids && selectedPassengers.length === 0) {
+            const pidList = pids.split(',');
+            const loadPassengers = async () => {
+                const { data, error } = await supabase
+                    .from('passageiros')
+                    .select('*')
+                    .in('id', pidList);
+
+                if (!error && data) {
+                    setSelectedPassengers(data);
+                    // Clear pids from URL after loading them into state to prevent re-application on trip change
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete('pids');
+                    newParams.delete('selectSelf');
+                    setSearchParams(newParams, { replace: true });
+                }
+            };
+            loadPassengers();
+        }
+    }, [user, searchParams, userPassenger, tripPayments, pids, setSearchParams]);
+
+    // Handle floating cart appearance delay
+    useEffect(() => {
+        if (hasInitialPids.current) {
+            const timer = setTimeout(() => {
+                setShowFloatingCart(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
 
     // Real-time search with debounce
     useEffect(() => {
@@ -219,41 +284,23 @@ export const TripPaymentCenter = () => {
         setTrip(t);
         setSelectedTripId(t.id); // Sync global context
         setStep('payment-flow');
+        // Clear specific parameters when manually selecting a trip
+        setSearchParams({ v: t.id }, { replace: true });
     };
 
     // Clear selected passengers when trip changes
     useEffect(() => {
+        // Only clear if the trip ID actually changed
+        if (trip?.id === prevTripIdRef.current) return;
+
+        console.log('Trip changed or initialized, resetting state');
+        prevTripIdRef.current = trip?.id || null;
+
         setSelectedPassengers([]);
         setSearchQuery('');
         setSearchResults([]);
         setPaymentStatus('selection');
-
-        // Fetch payments for this trip
-        const fetchTripPayments = async () => {
-            if (!trip?.id) return;
-
-            try {
-                const { data, error } = await supabase
-                    .from('pagamentos')
-                    .select('passageiros_ids')
-                    .eq('viagem_id', trip.id)
-                    .in('status', ['paid', 'Pago', 'Realizado']);
-
-                if (error) throw error;
-
-                const paidPassengerIds = new Set<string>();
-                data?.forEach(payment => {
-                    payment.passageiros_ids?.forEach((id: string) => paidPassengerIds.add(id));
-                });
-
-                setTripPayments(paidPassengerIds);
-            } catch (err) {
-                console.error('Error fetching trip payments:', err);
-            }
-        };
-
-        fetchTripPayments();
-    }, [trip?.id, supabase, trips]);
+    }, [trip?.id]);
 
     // Load passengers on mount/step change to enable client-side filtering
     useEffect(() => {
@@ -324,7 +371,7 @@ export const TripPaymentCenter = () => {
             return enrollments.some(e =>
                 e.viagem_id === trip.id &&
                 e.passageiro_id === pass.id &&
-                ((e.pagamento === 'Pago' || e.pagamento === 'Realizado') || e.assento)
+                e.assento !== 'DESISTENTE'
             );
         };
 
@@ -357,11 +404,7 @@ export const TripPaymentCenter = () => {
 
     const handleQuickAccessClick = () => {
         if (!userPassenger) return;
-        setIsQuickAccessExiting(true);
-        setTimeout(() => {
-            togglePassengerSelection(userPassenger);
-            setIsQuickAccessExiting(false);
-        }, 300);
+        togglePassengerSelection(userPassenger);
     };
 
     const totalAmount = useMemo(() => {
@@ -461,8 +504,7 @@ export const TripPaymentCenter = () => {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-gray-500 font-medium">Carregando centro de pagamentos...</p>
+                <Spinner size="xl" text="Carregando centro de pagamentos..." />
             </div>
         );
     }
@@ -589,6 +631,7 @@ export const TripPaymentCenter = () => {
                                                 setStep('trip-selection');
                                                 setSelectedTripId(null);
                                                 setSelectedTripFilterId('all');
+                                                setSearchParams({}, { replace: true });
                                             }}
                                             className="flex items-center gap-2 h-10 px-4 text-xs font-bold text-blue-600 bg-white rounded-xl border border-blue-100 shadow-sm transition-all active:scale-95"
                                         >
@@ -657,7 +700,7 @@ export const TripPaymentCenter = () => {
                                                         }}
                                                         className={cn(
                                                             "group relative bg-white rounded-2xl border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
-                                                            (getVacancies(t) <= 0 && !isUserOccupiedInTrip(t.id)) && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0"
+                                                            (getVacancies(t) <= 0 && !isUserOccupiedInTrip(t.id)) && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0 pointer-events-none"
                                                         )}
                                                     >
                                                         {/* Decorator Gradient Header */}
@@ -693,11 +736,11 @@ export const TripPaymentCenter = () => {
 
                                                                     <div className={cn(
                                                                         "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] whitespace-nowrap font-black uppercase tracking-widest shrink-0 shadow-sm",
-                                                                        (getVacancies(t) + (isUserOccupiedInTrip(t.id) ? 1 : 0)) > 5 ? "bg-blue-50 text-blue-600" :
-                                                                            (getVacancies(t) + (isUserOccupiedInTrip(t.id) ? 1 : 0)) > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                                                                        getVacancies(t) > 5 ? "bg-blue-50 text-blue-600" :
+                                                                            getVacancies(t) > 0 ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
                                                                     )}>
                                                                         <Users size={12} />
-                                                                        <span>{(getVacancies(t) + (isUserOccupiedInTrip(t.id) ? 1 : 0))} Vagas</span>
+                                                                        <span>{getVacancies(t)} Vagas</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -787,8 +830,8 @@ export const TripPaymentCenter = () => {
                                             </div>
 
                                             {/* Fast Selection for the Logged User */}
-                                            {!searchQuery && userPassenger && (!selectedPassengers.find(sp => sp.id === userPassenger.id) || isQuickAccessExiting) && !tripPayments.has(userPassenger.id) && (
-                                                <div className={cn("px-6 py-4 border-b border-gray-100 bg-gray-50/30", isQuickAccessExiting && "collapse-vertical")}>
+                                            {!searchQuery && userPassenger && !selectedPassengers.find(sp => sp.id === userPassenger.id) && !tripPayments.has(userPassenger.id) && (
+                                                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/30">
                                                     <button
                                                         onClick={handleQuickAccessClick}
                                                         className="w-full h-12 px-4 flex items-center gap-3 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:text-blue-600 transition-all active:scale-95 shadow-sm group"
@@ -877,8 +920,8 @@ export const TripPaymentCenter = () => {
                                                     {/* Side Panel (Summary) */}
                                                     <div
                                                         className={cn(
-                                                            "fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-[101] shadow-2xl transition-transform duration-500 ease-out flex flex-col",
-                                                            isSummaryOpen ? "translate-x-0" : "translate-x-full"
+                                                            "fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white z-[101] shadow-2xl transition-all duration-500 ease-out flex flex-col",
+                                                            isSummaryOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 invisible pointer-events-none"
                                                         )}
                                                     >
                                                         {/* Drawer Header */}
@@ -959,8 +1002,9 @@ export const TripPaymentCenter = () => {
                                                     <button
                                                         onClick={() => setIsSummaryOpen(true)}
                                                         className={cn(
-                                                            "fixed bottom-8 right-8 z-[90] w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-blue-500/40 transition-all hover:scale-110 active:scale-95 animate-bounce-subtle animate-pop-in",
-                                                            isSummaryOpen && "scale-0 opacity-0 pointer-events-none"
+                                                            "fixed bottom-8 right-8 z-[90] w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-blue-500/40 transition-all duration-500 hover:scale-110 active:scale-95",
+                                                            isSummaryOpen && "scale-0 opacity-0 pointer-events-none",
+                                                            !showFloatingCart ? "scale-0 opacity-0 translate-y-20" : "scale-100 opacity-100 translate-y-0 animate-pop-in animate-bounce-subtle"
                                                         )}
                                                     >
                                                         <ShoppingCart size={24} />

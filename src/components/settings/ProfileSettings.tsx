@@ -9,6 +9,7 @@ import { User, Lock, Save, Camera } from 'lucide-react';
 import { UserRole } from '@/types';
 import { cn } from '@/utils/cn';
 import { ImageCropper } from '@/components/ui/ImageCropper';
+import { Spinner } from '@/components/ui/Spinner';
 
 export const ProfileSettings: React.FC = () => {
     const { user } = useAuthStore();
@@ -204,7 +205,7 @@ export const ProfileSettings: React.FC = () => {
 
                             {uploadingAvatar && (
                                 <div className="absolute inset-0 bg-white/40 backdrop-blur-[4px] flex items-center justify-center rounded-full transition-all z-20">
-                                    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-sm" />
+                                    <Spinner size="lg" />
                                 </div>
                             )}
                         </div>

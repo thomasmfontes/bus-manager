@@ -1,7 +1,0 @@
---- Ônibus no Banco ---
-ID: 3a241d36-facd-470f-822c-7932e27c0ff1 (36 chars) | Nome: Água Rasa 1
-ID: f286c76f-c6e9-4694-8fc1-bf2543640d8f (36 chars) | Nome: Independência 1
-ID: b546649a-1d0c-4307-a51b-6743ee2284d2 (36 chars) | Nome: Vila Carioca 1
-ID: f710e7fb-1582-4b40-a877-2aeda9c042db (36 chars) | Nome: Glória 1
-ID: e07753d8-60a1-4ed5-8145-12cced715a3b (36 chars) | Nome: Água Rasa 2
-ID: 8be81e34-e5df-4187-a656-1613be67f9c8 (36 chars) | Nome: Vila Prudente 1

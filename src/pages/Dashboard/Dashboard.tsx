@@ -6,7 +6,9 @@ import { usePassengerStore } from '@/stores/usePassengerStore';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Bus, MapPin, Users, Calendar, ArrowRight, ChevronDown, Filter, Map as MapIcon, LayoutDashboard, AlertCircle, CreditCard, CheckCircle2 } from 'lucide-react';
+import { TripEnrollmentModal } from '@/components/viagens/TripEnrollmentModal';
+import { Spinner } from '@/components/ui/Spinner';
+import { Bus, MapPin, Users, Calendar, ArrowRight, ChevronDown, Filter, Map as MapIcon, LayoutDashboard } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 import { supabase } from '@/lib/supabase';
@@ -29,8 +31,6 @@ export const Dashboard: React.FC = () => {
     const [mapModalOpen, setMapModalOpen] = React.useState(false);
     const [calendarModalOpen, setCalendarModalOpen] = React.useState(false);
     const [paymentModalTrip, setPaymentModalTrip] = React.useState<any | null>(null);
-    const [modalStep, setModalStep] = React.useState<'interest' | 'payment'>('interest');
-    const [isSubmittingInterest, setIsSubmittingInterest] = React.useState(false);
     const [mapTarget, setMapTarget] = React.useState<{
         origin: string;
         destination: string;
@@ -46,19 +46,11 @@ export const Dashboard: React.FC = () => {
 
     const isUserOccupiedInTrip = (tripId: string) => {
         const { enrollments } = usePassengerStore.getState();
-        const activeTrip = trips.find(t => t.id === tripId);
-        if (!activeTrip) return false;
-        const activeBusIds = activeTrip.onibus_ids || (activeTrip.onibus_id ? [activeTrip.onibus_id] : []);
-
         return enrollments.some(e => {
             if (e.viagem_id !== tripId) return false;
             if (e.assento === 'DESISTENTE') return false;
 
-            const isUserOrPayer = e.passageiro_id === user?.id || e.pago_por === user?.id;
-            const hasValidSeat = e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id);
-            const isPaid = e.pagamento === 'Pago' || e.pagamento === 'Realizado';
-
-            return isUserOrPayer && (hasValidSeat || isPaid);
+            return e.passageiro_id === user?.id || e.pago_por === user?.id;
         });
     };
 
@@ -193,52 +185,14 @@ export const Dashboard: React.FC = () => {
             if (paidEnrollment) {
                 navigate(`/viagens/${trip.id}`);
             } else if (pendingEnrollment) {
-                setModalStep('payment');
-                setPaymentModalTrip(trip);
+                // If already has pending interest, go directly to payment center
+                navigate(`/pagamento?v=${trip.id}`);
             } else {
-                setModalStep('interest');
                 setPaymentModalTrip(trip);
             }
         } catch (err) {
             console.error('Error checking payment:', err);
             showToast('Erro ao verificar status de pagamento', 'error');
-        }
-    };
-
-    const handleInterestClick = async () => {
-        if (!paymentModalTrip || !user?.id) return;
-
-        setIsSubmittingInterest(true);
-        try {
-            // Check if already has a record (to avoid duplicates)
-            const { data: existing } = await supabase
-                .from('viagem_passageiros')
-                .select('id')
-                .eq('viagem_id', paymentModalTrip.id)
-                .eq('passageiro_id', user.id)
-                .maybeSingle();
-
-            if (!existing) {
-                const { error } = await supabase
-                    .from('viagem_passageiros')
-                    .insert([{
-                        viagem_id: paymentModalTrip.id,
-                        passageiro_id: user.id,
-                        pagamento: 'Pendente',
-                        valor_pago: 0
-                    }]);
-
-                if (error) throw error;
-            }
-
-            // Move to payment step
-            setModalStep('payment');
-            showToast('Interesse registrado! Agora você pode prosseguir para o pagamento.', 'success');
-        } catch (err) {
-            console.error('Error registering interest:', err);
-            showToast('Erro ao registrar interesse', 'error');
-        } finally {
-            setIsSubmittingInterest(false);
         }
     };
 
@@ -471,12 +425,16 @@ export const Dashboard: React.FC = () => {
                             const occupied = getOccupiedSeats(trip.id);
                             const total = getTotalSeats(trip.onibus_ids);
                             const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
+                            const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id);
 
                             return (
                                 <div
                                     key={trip.id}
-                                    onClick={() => handleTripClick(trip)}
-                                    className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-6 bg-white rounded-2xl hover:shadow-xl hover:border-blue-200 transition-all group border border-gray-100 gap-6 cursor-pointer active:scale-[0.99]"
+                                    onClick={() => !isSoldOut && handleTripClick(trip)}
+                                    className={cn(
+                                        "flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-6 bg-white rounded-2xl hover:shadow-xl hover:border-blue-200 transition-all group border border-gray-100 gap-6 cursor-pointer active:scale-[0.99]",
+                                        isSoldOut && "opacity-60 grayscale-[0.8] cursor-not-allowed pointer-events-none"
+                                    )}
                                 >
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-4">
@@ -600,143 +558,10 @@ export const Dashboard: React.FC = () => {
                             ></iframe>
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <p className="text-gray-400">Carregando mapa...</p>
+                                <Spinner size="lg" text="Carregando mapa..." />
                             </div>
                         )}
                     </div>
-                </div>
-            </Modal>
-
-            {/* Modal de Interesse/Pagamento - UI Premium */}
-            <Modal
-                isOpen={paymentModalTrip !== null}
-                onClose={() => setPaymentModalTrip(null)}
-                title={
-                    paymentModalTrip && (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) <= 0 && !isUserOccupiedInTrip(paymentModalTrip.id) && modalStep === 'interest'
-                        ? "Reservas Encerradas"
-                        : modalStep === 'interest'
-                            ? "Deseja participar?"
-                            : "Acesso Restrito"
-                }
-                size="sm"
-                footer={
-                    <div className="flex flex-col sm:flex-row gap-3 w-full">
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPaymentModalTrip(null)}
-                            className="flex-1 order-2 sm:order-1"
-                        >
-                            Voltar
-                        </Button>
-                        {paymentModalTrip && ((getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) > 0 || isUserOccupiedInTrip(paymentModalTrip.id) || modalStep === 'payment') && (
-                            modalStep === 'interest' ? (
-                                <Button
-                                    variant="primary"
-                                    onClick={handleInterestClick}
-                                    isLoading={isSubmittingInterest}
-                                    className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
-                                >
-                                    <CheckCircle2 size={18} className="mr-2" />
-                                    Demonstrar Interesse
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="primary"
-                                    onClick={() => {
-                                        const tripId = paymentModalTrip?.id;
-                                        setPaymentModalTrip(null);
-                                        navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
-                                    }}
-                                    className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
-                                >
-                                    <CreditCard size={18} className="mr-2" />
-                                    Ir para Pagamento
-                                </Button>
-                            )
-                        )}
-                    </div>
-                }
-            >
-                <div className="relative -mt-2 space-y-6">
-                    {paymentModalTrip && ((getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) > 0 || isUserOccupiedInTrip(paymentModalTrip.id) || modalStep === 'payment') ? (
-                        <>
-                            <div className="flex flex-col items-center text-center space-y-4">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
-                                    <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
-                                        {modalStep === 'interest' ? <Users size={40} className="text-white" /> : <CreditCard size={40} className="text-white" />}
-                                    </div>
-                                    <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
-                                        <AlertCircle size={24} className="text-amber-500" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-bold text-gray-900">
-                                        {modalStep === 'interest' ? 'Tenho Interesse!' : 'Pagamento Necessário'}
-                                    </h3>
-                                    <p className="text-gray-500 max-w-[280px]">
-                                        {modalStep === 'interest'
-                                            ? 'Demonstre seu interesse nesta excursão para que possamos entrar em contato e garantir sua vaga.'
-                                            : 'Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                        <Users size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-2xl font-black text-blue-600">
-                                        {Math.max(0, (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) + (isUserOccupiedInTrip(paymentModalTrip.id) ? 1 : 0))}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Route Info Section */}
-                            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                        <MapPin size={16} className="text-green-500" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </>
-                    ) : (
-                        paymentModalTrip && (
-                            <div className="flex flex-col items-center py-4 space-y-6">
-                                <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                                    <AlertCircle size={40} />
-                                </div>
-                                <div className="flex gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-800 text-center">
-                                    <p className="text-base font-bold leading-relaxed">
-                                        Reservas Encerradas: Todas as vagas para esta excursão já foram preenchidas.
-                                    </p>
-                                </div>
-                            </div>
-                        )
-                    )}
                 </div>
             </Modal>
 
@@ -744,6 +569,11 @@ export const Dashboard: React.FC = () => {
                 isOpen={calendarModalOpen}
                 onClose={() => setCalendarModalOpen(false)}
                 trip={selectedTripId && selectedTripId !== 'all' ? filteredTrips[0] : futureTrips[0]}
+            />
+            <TripEnrollmentModal
+                isOpen={paymentModalTrip !== null}
+                onClose={() => setPaymentModalTrip(null)}
+                trip={paymentModalTrip}
             />
         </div>
     );

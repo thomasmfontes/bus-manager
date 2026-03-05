@@ -10,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { enrollmentId } = req.body;
+    const { enrollmentId, requesterId } = req.body;
 
     if (!enrollmentId) {
         return res.status(400).json({ error: 'Missing required field: enrollmentId' });
@@ -18,6 +18,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         console.log(`🗑️ [API] Removendo (soft-delete) inscrição ${enrollmentId}`);
+
+        // 1. Get current enrollment and verify permission
+        const { data: enrollment, error: fetchErr } = await supabase
+            .from('viagem_passageiros')
+            .select('*')
+            .eq('id', enrollmentId)
+            .single();
+
+        if (fetchErr || !enrollment) {
+            return res.status(404).json({ error: 'Inscrição não encontrada.' });
+        }
+
+        // Security check
+        if (requesterId) {
+            const isPayer = enrollment.pago_por === requesterId;
+            const isOwner = enrollment.passageiro_id === requesterId;
+
+            if (!isPayer && !isOwner) {
+                // Check if admin
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', requesterId)
+                    .single();
+
+                if (profile?.role !== 'admin') {
+                    return res.status(403).json({ error: 'Você não tem permissão para realizar esta desistência.' });
+                }
+            }
+        }
 
         const { data: updated, error: updateError } = await supabase
             .from('viagem_passageiros')

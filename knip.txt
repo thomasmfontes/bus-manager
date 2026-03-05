@@ -1,0 +1,55 @@
+[93m[4mUnused files[24m[39m (17)
+dev-dist/sw.js                      
+dev-dist/workbox-7a5e81cd.js        
+api/admin/create.ts                 
+api/admin/delete.ts                 
+api/admin/reset-password.ts         
+api/data/export.ts                  
+api/payment/create.ts               
+api/payment/status.ts               
+api/payment/webhook.ts              
+api/enrollments/substitute.ts       
+api/seats/assign.ts                 
+api/seats/remove.ts                 
+api/trips/delete.ts                 
+src/utils/documentMask.ts           
+src/components/excursao/FormTabs.tsx
+src/components/ui/Select.tsx        
+src/components/ui/Textarea.tsx      
+[93m[4mUnused dependencies[24m[39m (7)
+@react-oauth/google  package.json:14:6
+@types/qrcode        package.json:16:6
+@types/uuid          package.json:17:6
+axios                package.json:18:6
+qrcode               package.json:20:6
+uuid                 package.json:28:6
+xlsx                 package.json:29:6
+[93m[4mUnused devDependencies[24m[39m (6)
+@typescript-eslint/eslint-plugin  package.json:37:6
+@typescript-eslint/parser         package.json:38:6
+@vercel/node                      package.json:39:6
+dotenv                            package.json:42:6
+eslint-plugin-react-hooks         package.json:44:6
+eslint-plugin-react-refresh       package.json:45:6
+[93m[4mUnlisted binaries[24m[39m (1)
+vercel  package.json
+[93m[4mUnused exports[24m[39m (11)
+isValidCPF         function  src/utils/validators.ts:30:17 
+isValidRG          function  src/utils/validators.ts:65:17 
+isValidPhone       function  src/utils/validators.ts:73:17 
+isValidBirthDate   function  src/utils/validators.ts:82:17 
+isRequired         function  src/utils/validators.ts:95:17 
+isValidFullName    function  src/utils/validators.ts:102:17
+errorMessages                src/utils/validators.ts:111:14
+generateSeatCodes            src/mocks/data.ts:4:14        
+formatDateTime     function  src/utils/formatters.ts:86:17 
+formatDate         function  src/utils/formatters.ts:101:17
+capitalize         function  src/utils/formatters.ts:115:17
+[93m[4mUnused exported types[24m[39m (7)
+ValidationResult    interface  src/utils/validators.ts:22:18
+PaymentTransaction  interface  src/types/index.ts:33:18     
+TripBus             interface  src/types/index.ts:47:18     
+Movimentacao        interface  src/types/index.ts:89:18     
+Profile             interface  src/types/index.ts:100:18    
+ClassValue          type       src/utils/cn.ts:1:13         
+CsvParseResult      interface  src/utils/csvParser.ts:21:18 

@@ -20,6 +20,7 @@ import ExcursaoForm from '@/pages/ExcursaoForm';
 import Success from '@/pages/Success';
 import { TripPaymentCenter } from '@/pages/TripPaymentCenter';
 import { Statement } from '@/pages/Financeiro/Statement';
+import { MyItineraries } from '@/pages/Passageiros/MyItineraries';
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 import { TermsOfUse } from '@/pages/TermsOfUse';
 import { UserRole } from '@/types';
@@ -187,6 +188,14 @@ export const router = createBrowserRouter([
                         element: (
                             <RoleProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.PASSAGEIRO]}>
                                 <Settings />
+                            </RoleProtectedRoute>
+                        ),
+                    },
+                    {
+                        path: 'meus-roteiros',
+                        element: (
+                            <RoleProtectedRoute allowedRoles={[UserRole.PASSAGEIRO]}>
+                                <MyItineraries />
                             </RoleProtectedRoute>
                         ),
                     },

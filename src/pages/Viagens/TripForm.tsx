@@ -9,6 +9,7 @@ import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
 import { X, Plus, AlertCircle, ArrowLeft } from 'lucide-react';
 import { BusInlineForm } from '@/components/onibus/BusInlineForm';
+import { Spinner } from '@/components/ui/Spinner';
 
 export const TripForm: React.FC = () => {
     const navigate = useNavigate();
@@ -201,8 +202,7 @@ export const TripForm: React.FC = () => {
                                         Selecione os Ônibus *
                                     </label>
                                     <div className="p-6 text-center bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center justify-center">
-                                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                        <p className="text-sm text-gray-500 mt-3">Carregando frota disponível...</p>
+                                        <Spinner size="lg" text="Carregando frota disponível..." />
                                     </div>
                                 </div>
                             );

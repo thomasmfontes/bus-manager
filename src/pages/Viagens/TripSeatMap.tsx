@@ -15,6 +15,7 @@ import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { TripEditModal } from '@/components/viagens/TripEditModal';
+import { Spinner } from '@/components/ui/Spinner';
 import { TripParticipantsList } from '@/components/viagens/TripParticipantsList';
 import { FaWhatsapp } from 'react-icons/fa';
 
@@ -146,7 +147,7 @@ export const TripSeatMap: React.FC = () => {
 
         try {
             console.log('✅ UI: Seat assigned, refreshing UI state...');
-            await atribuirAssento(selectedPassengerId, selectedSeat, id, currentBus.id);
+            await atribuirAssento(selectedPassengerId, selectedSeat, id!, currentBus.id);
             await fetchPassageiros(id);
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
@@ -187,7 +188,7 @@ export const TripSeatMap: React.FC = () => {
         }
 
         try {
-            await bloquearAssento(selectedSeat, id, currentBus.id);
+            await bloquearAssento(selectedSeat, id!, currentBus.id);
             showToast('Assento bloqueado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
@@ -196,6 +197,7 @@ export const TripSeatMap: React.FC = () => {
             showToast('Erro ao bloquear assento', 'error');
         }
     };
+
 
 
 
@@ -211,8 +213,8 @@ export const TripSeatMap: React.FC = () => {
         passengerName: ''
     });
 
+
     const handleRemoveEnrollment = async (passengerId: string, enrollmentId: string, passengerName?: string) => {
-        // Find the passenger name if not explicitly passed
         const name = passengerName || passengers.find(p => p.id === passengerId)?.nome_completo || 'este passageiro';
         setRemoveConfirmModal({
             isOpen: true,
@@ -222,17 +224,16 @@ export const TripSeatMap: React.FC = () => {
         });
     };
 
+
     const confirmRemoval = async () => {
         const { enrollmentId } = removeConfirmModal;
         if (!enrollmentId) return;
 
         try {
-            // Soft delete: keep the enrollment for financial logs, but mark as "DESISTENTE" in the seat
-            // We use an API route to bypass RLS, ensuring it updates even in production
             const response = await fetch('/api/seats/remove', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enrollmentId })
+                body: JSON.stringify({ enrollmentId, requesterId: user?.id })
             });
 
             if (!response.ok) {
@@ -244,7 +245,7 @@ export const TripSeatMap: React.FC = () => {
             console.log('✅ Passageiro removido (soft-delete):', result);
 
             showToast('Passageiro removido da lista!', 'success');
-            await fetchPassageiros(id);
+            await fetchPassageiros(id!);
         } catch (error: any) {
             console.error('Error removing passenger:', error);
             showToast(error.message || 'Erro ao remover inscrição', 'error');
@@ -331,6 +332,7 @@ export const TripSeatMap: React.FC = () => {
         ];
     }, [passengers, enrollments, id, user]);
 
+
     const currentAssignment = selectedSeat
         ? assignments.find((a) => a.assentoCodigo === selectedSeat)
         : null;
@@ -341,8 +343,8 @@ export const TripSeatMap: React.FC = () => {
 
     if (!trip) {
         return (
-            <div className="space-y-6">
-                <p className="text-gray-500">Carregando...</p>
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <Spinner size="xl" text="Carregando mapa de assentos..." />
             </div>
         );
     }
@@ -643,6 +645,7 @@ export const TripSeatMap: React.FC = () => {
                     </div>
                 )}
             </Modal>
+
 
             {/* Removal Confirmation Modal */}
             <Modal

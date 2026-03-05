@@ -145,3 +145,19 @@ export function calculateAge(birthDate: string | Date | undefined | null): numbe
         return null;
     }
 }
+
+/**
+ * Formata data curta com mês abreviado (Ex: 04 mar 2026)
+ */
+export function formatPrettyDate(date: string | Date): string {
+    try {
+        const d = date instanceof Date ? date : new Date(date);
+        const day = d.getDate().toString().padStart(2, '0');
+        const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        return `${day} ${month} ${year}`;
+    } catch {
+        return '';
+    }
+}

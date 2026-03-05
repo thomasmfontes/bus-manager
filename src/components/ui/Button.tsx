@@ -19,7 +19,7 @@ export const Button: React.FC<ButtonProps> = ({
     disabled,
     ...props
 }) => {
-    const baseStyles = 'btn-base flex items-center justify-center';
+    const baseStyles = 'btn-base flex items-center justify-center relative overflow-hidden';
 
     const variants = {
         primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus:ring-blue-500 shadow-sm hover:shadow-md transition-all',
@@ -46,8 +46,14 @@ export const Button: React.FC<ButtonProps> = ({
             disabled={disabled || isLoading}
             {...props}
         >
-            {isLoading && <Loader2 size={18} className="mr-2 animate-spin" />}
-            {children}
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin" />
+                </div>
+            )}
+            <span className={cn("transition-opacity flex items-center justify-center", isLoading ? "opacity-0" : "opacity-100")}>
+                {children}
+            </span>
         </button>
     );
 };

@@ -1,34 +1,60 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Plus, Trash2, Users, AlertCircle, CreditCard, Bus, Calendar, Filter, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { MapPin, Trash2, Bus, Calendar, Filter, ChevronDown, Plus } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 import { useTripStore } from '@/stores/useTripStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useBusStore } from '@/stores/useBusStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { Button } from '@/components/ui/Button';
-import { Modal, ConfirmModal } from '@/components/ui/Modal';
+import { ConfirmModal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { ProtectedAction } from '@/components/ProtectedAction';
 import { cn } from '@/utils/cn';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { Trip, UserRole } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
-
+import { TripEnrollmentModal } from '@/components/viagens/TripEnrollmentModal';
+import { Spinner } from '@/components/ui/Spinner';
 export const TripList: React.FC = () => {
     const { trips, fetchViagens, deleteViagem, loading, selectedTripId, setSelectedTripId } = useTripStore();
     const { buses, fetchOnibus } = useBusStore();
-    const { fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
+    const { fetchPassageiros } = usePassengerStore();
     const { showToast } = useToast();
     const navigate = useNavigate();
+
+    const getOccupiedSeats = (tripId: string) => {
+        const { enrollments } = usePassengerStore.getState();
+        return enrollments.filter((e) => {
+            if (e.viagem_id !== tripId) return false;
+            if (e.assento === 'DESISTENTE') return false;
+            return true;
+        }).length;
+    };
+
+    const getTotalSeats = (busIds?: string[]) => {
+        if (!busIds || busIds.length === 0) return 0;
+        return busIds.reduce((total, busId) => {
+            const bus = buses.find((b) => b.id === busId);
+            return total + (bus ? bus.capacidade : 0);
+        }, 0);
+    };
+
+    const getBusNames = (busIds?: string[]): string[] => {
+        if (!busIds || busIds.length === 0) return [];
+        return busIds.map(id => {
+            const bus = buses.find((b) => b.id === id);
+            return bus ? bus.nome : 'Ônibus não encontrado';
+        });
+    };
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
     const [paymentModalTrip, setPaymentModalTrip] = useState<Trip | null>(null);
-    const [modalStep, setModalStep] = useState<'interest' | 'payment'>('interest');
-    const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
+
+    const now = new Date();
 
     useEffect(() => {
         fetchViagens();
@@ -38,14 +64,10 @@ export const TripList: React.FC = () => {
 
     const isUserOccupiedInTrip = (tripId: string) => {
         const { enrollments } = usePassengerStore.getState();
-        const activeTrip = trips.find(t => t.id === tripId);
-        if (!activeTrip) return false;
-        const activeBusIds = activeTrip.onibus_ids || (activeTrip.onibus_id ? [activeTrip.onibus_id] : []);
-
         return enrollments.some(e =>
             e.viagem_id === tripId &&
-            (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
-            ((e.assento && e.onibus_id && activeBusIds.includes(e.onibus_id)) || (e.pagamento === 'Pago' || e.pagamento === 'Realizado'))
+            e.assento !== 'DESISTENTE' &&
+            (e.passageiro_id === user?.id || e.pago_por === user?.id)
         );
     };
 
@@ -74,12 +96,10 @@ export const TripList: React.FC = () => {
                 // Payment confirmed, go to map
                 navigate(`/viagens/${trip.id}`);
             } else if (pendingEnrollment) {
-                // Already enrolled as pending, show payment step
-                setModalStep('payment');
-                setPaymentModalTrip(trip);
+                // Already enrolled as pending, go directly to payment
+                navigate(`/pagamento?v=${trip.id}`);
             } else {
-                // No enrollment, show interest step
-                setModalStep('interest');
+                // No enrollment, show modal
                 setPaymentModalTrip(trip);
             }
         } catch (err) {
@@ -88,40 +108,6 @@ export const TripList: React.FC = () => {
         }
     };
 
-    const handleInterestClick = async () => {
-        if (!paymentModalTrip || !user?.id) return;
-
-        setIsSubmittingInterest(true);
-        try {
-            const { data: existing } = await supabase
-                .from('viagem_passageiros')
-                .select('id')
-                .eq('viagem_id', paymentModalTrip.id)
-                .eq('passageiro_id', user.id)
-                .maybeSingle();
-
-            if (!existing) {
-                const { error } = await supabase
-                    .from('viagem_passageiros')
-                    .insert([{
-                        viagem_id: paymentModalTrip.id,
-                        passageiro_id: user.id,
-                        pagamento: 'Pendente',
-                        valor_pago: 0
-                    }]);
-
-                if (error) throw error;
-            }
-
-            setModalStep('payment');
-            showToast('Interesse registrado! Agora você pode prosseguir para o pagamento.', 'success');
-        } catch (err) {
-            console.error('Error registering interest:', err);
-            showToast('Erro ao registrar interesse', 'error');
-        } finally {
-            setIsSubmittingInterest(false);
-        }
-    };
 
     const handleDelete = async () => {
         if (!deleteId) return;
@@ -135,40 +121,6 @@ export const TripList: React.FC = () => {
         }
     };
 
-    const getBusNames = (busIds?: string[]): string[] => {
-        if (!busIds || busIds.length === 0) return [];
-        return busIds.map(id => {
-            const bus = buses.find((b) => b.id === id);
-            return bus ? bus.nome : 'Ônibus não encontrado';
-        });
-    };
-
-    const getOccupiedSeats = (tripId: string) => {
-        const { enrollments } = usePassengerStore.getState();
-
-        // Count any active (non-desistente) enrollment as occupying a spot
-        return enrollments.filter((e) => {
-            if (e.viagem_id !== tripId) return false;
-
-            // Exclude soft-deleted (cancelled) seats from occupancy count
-            if (e.assento === 'DESISTENTE') return false;
-
-            return true; // If they expressed interest, they take a spot until cancelled
-        }).length;
-    };
-
-    const getTotalSeats = (busIds?: string[]) => {
-        if (!busIds || busIds.length === 0) return 0;
-        return busIds.reduce((total, busId) => {
-            const bus = buses.find((b) => b.id === busId);
-            return total + (bus ? bus.capacidade : 0);
-        }, 0);
-    };
-
-    const now = new Date();
-    const isSoldOut = paymentModalTrip ? (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) <= 0 && !isUserOccupiedInTrip(paymentModalTrip.id) && modalStep === 'interest' : false;
-    const isPastTrip = paymentModalTrip ? new Date(paymentModalTrip.data_ida) < now : false;
-    const availableSeats = paymentModalTrip ? (getTotalSeats(paymentModalTrip.onibus_ids) - getOccupiedSeats(paymentModalTrip.id)) + (isUserOccupiedInTrip(paymentModalTrip.id) ? 1 : 0) : 0;
     const sortedTrips = [...trips].sort((a, b) => {
         const dateA = new Date(a.data_ida).getTime();
         const dateB = new Date(b.data_ida).getTime();
@@ -219,7 +171,7 @@ export const TripList: React.FC = () => {
         const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
         const month = months[date.getMonth()];
         const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
+        return `${day} ${month} ${year} `;
     };
 
 
@@ -252,8 +204,6 @@ export const TripList: React.FC = () => {
                         </Link>
                     </ProtectedAction>
                 </div>
-
-                {/* Unified Toolbar Container (Matched to Dashboard) */}
                 <div className="flex flex-col gap-4 bg-white/50 p-2 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm">
                     {/* Filter Tabs Block - Only for Admins */}
                     {user?.role === UserRole.ADMIN && (
@@ -305,11 +255,11 @@ export const TripList: React.FC = () => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <Card>
                 {loading ? (
-                    <p className="text-gray-500">Carregando...</p>
+                    <div className="py-12"><Spinner size="lg" text="Carregando viagens..." /></div>
                 ) : trips.length === 0 ? (
                     <div className="text-center py-8">
                         <p className="text-gray-500 mb-4">Nenhuma viagem cadastrada</p>
@@ -339,12 +289,16 @@ export const TripList: React.FC = () => {
                                         const occupied = getOccupiedSeats(trip.id);
                                         const total = getTotalSeats(trip.onibus_ids);
                                         const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
+                                        const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id);
 
                                         return (
                                             <tr
                                                 key={trip.id}
-                                                onClick={() => handleTripClick(trip)}
-                                                className="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                                                onClick={() => !isSoldOut && handleTripClick(trip)}
+                                                className={cn(
+                                                    "group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer",
+                                                    isSoldOut && "opacity-60 grayscale-[0.5] cursor-not-allowed pointer-events-none"
+                                                )}
                                             >
                                                 <td className="py-5 px-6 rounded-l-2xl">
                                                     <span className="font-black text-gray-900 group-hover:text-blue-600 transition-colors">{trip.nome}</span>
@@ -390,7 +344,7 @@ export const TripList: React.FC = () => {
                                                                     "h-full transition-all duration-1000",
                                                                     occupancyRate > 90 ? "bg-orange-500" : "bg-blue-600"
                                                                 )}
-                                                                style={{ width: `${Math.min(occupancyRate, 100)}%` }}
+                                                                style={{ width: `${Math.min(occupancyRate, 100)}% ` }}
                                                             />
                                                         </div>
                                                     </div>
@@ -420,12 +374,16 @@ export const TripList: React.FC = () => {
                                 const occupied = getOccupiedSeats(trip.id);
                                 const total = getTotalSeats(trip.onibus_ids);
                                 const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
+                                const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id);
 
                                 return (
                                     <div
                                         key={trip.id}
-                                        onClick={() => handleTripClick(trip)}
-                                        className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group"
+                                        onClick={() => !isSoldOut && handleTripClick(trip)}
+                                        className={cn(
+                                            "bg-white border border-gray-100 rounded-2xl p-6 shadow-sm active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group",
+                                            isSoldOut && "opacity-60 grayscale-[0.5] cursor-not-allowed pointer-events-none"
+                                        )}
                                     >
                                         {user?.role === UserRole.ADMIN && (
                                             <div className="absolute top-0 right-0 p-4">
@@ -498,7 +456,7 @@ export const TripList: React.FC = () => {
                                                                 "h-full transition-all duration-1000 shadow-sm",
                                                                 occupancyRate > 90 ? "bg-orange-500" : "bg-blue-600"
                                                             )}
-                                                            style={{ width: `${Math.min(occupancyRate, 100)}%` }}
+                                                            style={{ width: `${Math.min(occupancyRate, 100)}% ` }}
                                                         />
                                                     </div>
                                                 </div>
@@ -520,137 +478,11 @@ export const TripList: React.FC = () => {
                 message="Tem certeza que deseja excluir esta viagem? Esta ação não pode ser desfeita."
             />
 
-            {/* Modal de Pagamento Obrigatório - UI Premium */}
-            <Modal
+            <TripEnrollmentModal
                 isOpen={paymentModalTrip !== null}
                 onClose={() => setPaymentModalTrip(null)}
-                title={isSoldOut ? "Reservas Encerradas" : modalStep === 'interest' ? "Deseja participar?" : "Acesso Restrito"}
-                size="sm"
-                footer={
-                    <div className="flex flex-col sm:flex-row gap-3 w-full">
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPaymentModalTrip(null)}
-                            className="flex-1 order-2 sm:order-1"
-                        >
-                            Voltar
-                        </Button>
-                        {!isSoldOut && paymentModalTrip && (
-                            modalStep === 'interest' ? (
-                                <Button
-                                    variant="primary"
-                                    onClick={handleInterestClick}
-                                    isLoading={isSubmittingInterest}
-                                    className="flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg"
-                                >
-                                    <CheckCircle2 size={18} className="mr-2" />
-                                    Demonstrar Interesse
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="primary"
-                                    disabled={isPastTrip}
-                                    onClick={() => {
-                                        const tripId = paymentModalTrip.id;
-                                        setPaymentModalTrip(null);
-                                        navigate(`/pagamento?v=${tripId}&search=${encodeURIComponent(user?.full_name || '')}`);
-                                    }}
-                                    className={cn(
-                                        "flex-1 order-1 sm:order-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none shadow-blue-200 shadow-lg",
-                                        isPastTrip && "opacity-50 grayscale cursor-not-allowed"
-                                    )}
-                                >
-                                    <CreditCard size={18} className="mr-2" />
-                                    {isPastTrip ? 'Viagem Encerrada' : 'Ir para Pagamento'}
-                                </Button>
-                            )
-                        )}
-                    </div>
-                }
-            >
-                <div className="relative -mt-2 space-y-6">
-                    {paymentModalTrip && !isSoldOut ? (
-                        <>
-                            {/* Header Ilustrativo */}
-                            <div className="flex flex-col items-center text-center space-y-4">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl opacity-50 scale-150 animate-pulse" />
-                                    <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl shadow-blue-200">
-                                        {modalStep === 'interest' ? <Users size={40} className="text-white" /> : <CreditCard size={40} className="text-white" />}
-                                    </div>
-                                    <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-blue-50">
-                                        <AlertCircle size={24} className="text-amber-500" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-bold text-gray-900">
-                                        {modalStep === 'interest' ? 'Tenho Interesse!' : 'Pagamento Necessário'}
-                                    </h3>
-                                    <p className="text-gray-500 max-w-[280px]">
-                                        {modalStep === 'interest'
-                                            ? 'Demonstre seu interesse nesta excursão para que possamos entrar em contato e garantir sua vaga.'
-                                            : 'Para garantir sua vaga e escolher um assento, precisamos confirmar seu pagamento.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Vagas Disponíveis Card */}
-                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                        <Users size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vagas Disponíveis</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-2xl font-black text-blue-600">
-                                        {Math.max(0, availableSeats)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border-2 border-white shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Origem</p>
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.nome}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                                        <MapPin size={16} className="text-green-500" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Destino</p>
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{paymentModalTrip.destino}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </>
-                    ) : (
-                        paymentModalTrip && (
-                            <div className="flex flex-col items-center py-4 space-y-6">
-                                <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                                    <AlertCircle size={40} />
-                                </div>
-                                <div className="flex gap-3 px-6 py-4 bg-red-50 border border-red-100 rounded-2xl text-red-800 text-center">
-                                    <p className="text-base font-bold leading-relaxed">
-                                        Reservas Encerradas: Todas as vagas para esta excursão já foram preenchidas.
-                                    </p>
-                                </div>
-                            </div>
-                        )
-                    )}
-                </div>
-            </Modal>
+                trip={paymentModalTrip}
+            />
         </div>
     );
 };

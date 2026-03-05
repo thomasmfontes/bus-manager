@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useToast } from '@/components/ui/Toast';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface CsvUploaderProps {
     isOpen: boolean;
@@ -153,7 +154,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ isOpen, onClose, onImp
 
                         {isProcessing && (
                             <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 rounded-lg animate-pulse">
-                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                <Spinner size="sm" />
                                 <p className="text-sm font-medium text-gray-600">Processando arquivo...</p>
                             </div>
                         )}

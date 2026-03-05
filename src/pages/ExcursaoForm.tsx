@@ -12,6 +12,7 @@ import { supabase } from "../lib/supabase";
 import { useCongregacaoStore } from "../stores/useCongregacaoStore";
 import { useInstrumentoStore } from "../stores/useInstrumentoStore";
 import { useAuthStore } from "../stores/useAuthStore";
+import { Spinner } from '@/components/ui/Spinner';
 
 export default function ExcursaoForm() {
     const navigate = useNavigate();
@@ -444,10 +445,7 @@ export default function ExcursaoForm() {
 
             <div>
                 {loadingTrip ? (
-                    <div className="flex flex-col items-center justify-center p-12 space-y-4">
-                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-gray-500 font-medium">Carregando informações da viagem...</p>
-                    </div>
+                    <Spinner size="xl" text="Carregando informações da viagem..." fullScreen />
                 ) : !trip && tripId ? (
                     <div className="text-center p-12 bg-red-50 rounded-2xl border border-red-100">
                         <p className="text-red-600 font-bold mb-2">Viagem não encontrada</p>

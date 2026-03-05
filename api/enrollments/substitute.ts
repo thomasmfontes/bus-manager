@@ -114,21 +114,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (paymentsToUpdate && paymentsToUpdate.length > 0) {
                 for (const payment of paymentsToUpdate) {
-                    const newIds = (payment.passageiros_ids || []).map((id: string) =>
-                        id === oldPassengerId ? targetPassengerId : id
+                    const currentIds = payment.passageiros_ids || [];
+                    const newIds = currentIds.map((id: string) =>
+                        String(id).toLowerCase() === String(oldPassengerId).toLowerCase() ? targetPassengerId : id
                     );
 
-                    await supabase
+                    console.log(`📝 [API] Atualizando pagamento ${payment.id}: [${currentIds}] -> [${newIds}]`);
+
+                    const { error: payUpdateErr } = await supabase
                         .from('pagamentos')
                         .update({ passageiros_ids: newIds })
                         .eq('id', payment.id);
 
-                    // Update the ledger
-                    await supabase
+                    if (payUpdateErr) {
+                        console.error(`❌ [API] Erro ao atualizar pagamento ${payment.id}:`, payUpdateErr);
+                    }
+
+                    // Update the ledger (join table)
+                    const { error: junctionUpdateErr } = await supabase
                         .from('pagamento_passageiro')
                         .update({ passageiro_id: targetPassengerId })
                         .eq('pagamento_id', payment.id)
                         .eq('passageiro_id', oldPassengerId);
+
+                    if (junctionUpdateErr) {
+                        console.error(`❌ [API] Erro ao atualizar junção pagamento_passageiro:`, junctionUpdateErr);
+                    }
                 }
             }
         }

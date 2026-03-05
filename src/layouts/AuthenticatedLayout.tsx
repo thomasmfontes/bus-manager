@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings, CircleDollarSign, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Bus, MapPin, Users, LogOut, Menu, X, Settings, CircleDollarSign, CreditCard, Compass } from 'lucide-react';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
 import { cn } from '@/utils/cn';
 import { UserRole } from '@/types';
@@ -77,6 +77,12 @@ export const AuthenticatedLayout: React.FC = () => {
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { path: '/onibus', icon: Bus, label: 'Ônibus' },
         { path: '/viagens', icon: MapPin, label: 'Viagens' },
+        {
+            path: '/meus-roteiros',
+            icon: Compass,
+            label: 'Meus Roteiros',
+            showForPassenger: true
+        },
         { path: '/passageiros', icon: Users, label: 'Passageiros' },
         { path: '/financeiro', icon: CircleDollarSign, label: 'Financeiro' },
         {
@@ -172,6 +178,13 @@ export const AuthenticatedLayout: React.FC = () => {
                                 if (['/passageiros', '/onibus', '/financeiro', '/extrato'].includes(item.path)) {
                                     return false;
                                 }
+                                // Only show 'Meus Roteiros' for passengers
+                                if (item.path === '/meus-roteiros' && user?.role !== UserRole.PASSAGEIRO) {
+                                    return false;
+                                }
+                            } else {
+                                // Hide 'Meus Roteiros' for admins to keep it focused
+                                if (item.path === '/meus-roteiros') return false;
                             }
                             return true;
                         })
@@ -246,7 +259,6 @@ export const AuthenticatedLayout: React.FC = () => {
             {/* Main Content */}
             <main
                 className={cn(
-                    'min-h-screen',
                     user ? 'lg:ml-72' : 'lg:ml-0',
                     'pt-20 px-2 pb-8 lg:px-4'
                 )}

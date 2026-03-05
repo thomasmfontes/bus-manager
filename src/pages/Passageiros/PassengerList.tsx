@@ -9,6 +9,7 @@ import { CsvUploader } from '@/components/passengers/CsvUploader';
 import { Plus, Edit, Trash2, Search, Upload, Trash, Users } from 'lucide-react';
 import { ProtectedAction } from '@/components/ProtectedAction';
 import { calculateAge } from '@/utils/formatters';
+import { Spinner } from '@/components/ui/Spinner';
 
 export const PassengerList: React.FC = () => {
     const { passengers, fetchPassageiros, createPassageiro, deletePassageiro, deleteAllPassageiros, loading } = usePassengerStore();
@@ -154,9 +155,8 @@ export const PassengerList: React.FC = () => {
                 )}
 
                 {loading ? (
-                    <div className="text-center py-12">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600"></div>
-                        <p className="text-gray-500 mt-3">Carregando...</p>
+                    <div className="py-12">
+                        <Spinner size="lg" text="Carregando passageiros..." />
                     </div>
                 ) : filteredPassengers.length === 0 ? (
                     <div className="text-center py-12">
@@ -283,7 +283,7 @@ export const PassengerList: React.FC = () => {
             <ConfirmModal
                 isOpen={deleteId !== null}
                 onClose={() => setDeleteId(null)}
-                onConfirm={() => deleteId && handleDelete(deleteId)}
+                onConfirm={() => { if (deleteId) handleDelete(deleteId); }}
                 title="Confirmar Exclusão"
                 message="Tem certeza que deseja excluir este passageiro? Esta ação não pode ser desfeita."
             />

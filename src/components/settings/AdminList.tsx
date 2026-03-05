@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { Trash2, UserPlus, Shield, Loader2 } from 'lucide-react';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface AdminProfile {
     id: string;
@@ -196,8 +197,8 @@ export const AdminList: React.FC = () => {
                 <div className="space-y-4">
                     <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Administradores Ativos</h3>
                     {loading ? (
-                        <div className="text-center py-8">
-                            <p className="text-gray-500">Carregando...</p>
+                        <div className="py-8">
+                            <Spinner text="Carregando administradores..." />
                         </div>
                     ) : admins.length === 0 ? (
                         <div className="text-center py-8 px-4 bg-gray-50 rounded-xl border border-gray-100">

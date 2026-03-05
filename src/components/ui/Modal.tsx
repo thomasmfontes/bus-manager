@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from './Button';
@@ -94,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({
 interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: () => void | Promise<void>;
     title: string;
     message: string;
 }
@@ -106,6 +106,17 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     title,
     message,
 }) => {
+    const [isConfirming, setIsConfirming] = useState(false);
+
+    const handleConfirm = async () => {
+        setIsConfirming(true);
+        try {
+            await onConfirm();
+        } finally {
+            setIsConfirming(false);
+        }
+    };
+
     return (
         <Modal
             isOpen={isOpen}
@@ -114,10 +125,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             size="sm"
             footer={
                 <>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button variant="secondary" onClick={onClose} disabled={isConfirming}>
                         Cancelar
                     </Button>
-                    <Button variant="danger" onClick={onConfirm}>
+                    <Button variant="danger" onClick={handleConfirm} isLoading={isConfirming}>
                         Confirmar
                     </Button>
                 </>

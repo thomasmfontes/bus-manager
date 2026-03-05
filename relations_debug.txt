@@ -1,5 +1,0 @@
---- Relações Viagem-Ônibus ---
-Viagem: cce847da-0aa4-412b-87a0-30de4efcd7a4 | Ônibus: 8be81e34-e5df-4187-a656-1613be67f9c8 (36 chars)
-Viagem: 0ac93294-f304-4b33-a5d0-951d072d7343 | Ônibus: b546649a-1d0c-4307-a51b-6743ee2284d2 (36 chars)
-Viagem: 52fc850c-befc-4bf3-bf9d-13874c46c35b | Ônibus: e07753d8-60a1-4ed5-8145-12cced715a3b (36 chars)
-Viagem: 8c4cf170-b100-4c9a-8869-4a533b8a22a1 | Ônibus: f710e7fb-1582-4b40-a877-2aeda9c042db (36 chars)

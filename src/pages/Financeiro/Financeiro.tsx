@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { useToast } from '@/components/ui/Toast';
+import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/utils/cn';
 import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, CheckCircle2, Clock, Users } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
@@ -217,7 +218,7 @@ export const Financeiro: React.FC = () => {
                 </div>
 
                 {loadingPassengers ? (
-                    <div className="p-12 text-center text-gray-500">Carregando dados...</div>
+                    <Spinner size="lg" text="Carregando dados..." fullScreen />
                 ) : filteredPassengers.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">Nenhum passageiro encontrado.</div>
                 ) : (

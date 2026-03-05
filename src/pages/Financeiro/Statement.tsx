@@ -3,16 +3,15 @@ import { supabase } from '@/lib/supabase';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
-import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Calendar, Filter, ChevronDown, CheckCircle2, Users, ArrowRightLeft } from 'lucide-react';
+import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Filter, ChevronDown, CheckCircle2, Users, ArrowRightLeft } from 'lucide-react';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
-import { GoHistory } from 'react-icons/go';
-import { CiGlobe } from 'react-icons/ci';
 import { formatCurrency } from '@/utils/formatters';
 import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { UserRole } from '@/types';
 import { SubstitutionModal } from '@/components/viagens/SubstitutionModal';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface StatementProps {
     userId?: string;
@@ -26,7 +25,6 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
     const { passengers, fetchPassageiros } = usePassengerStore();
     const { user } = useAuthStore();
     const isAdmin = user?.role === UserRole.ADMIN;
-    const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('all');
 
     const [payments, setPayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -147,20 +145,8 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
     };
 
     const tripsInView = useMemo(() => {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-
-        return trips
-            .filter(trip => {
-                const tripDate = new Date(trip.data_ida);
-                tripDate.setHours(0, 0, 0, 0);
-
-                if (timeFilter === 'future') return tripDate >= now;
-                if (timeFilter === 'past') return tripDate < now;
-                return true;
-            })
-            .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime());
-    }, [trips, timeFilter]);
+        return [...trips].sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime());
+    }, [trips]);
 
 
     // Helper to group payments by date
@@ -206,33 +192,6 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
 
             {/* Filters Container */}
             <div className="flex flex-col gap-4 bg-white/50 p-2 sm:p-3 rounded-2xl border border-gray-100 backdrop-blur-sm shadow-sm group">
-                {/* Time Filter Tabs - Only for Admins */}
-                {isAdmin && !userId && (
-                    <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
-                        {[
-                            { id: 'future', label: 'Próximas', icon: Calendar },
-                            { id: 'past', label: 'Passadas', icon: GoHistory },
-                            { id: 'all', label: 'Todas', icon: CiGlobe }
-                        ].map((filterItem) => (
-                            <button
-                                key={filterItem.id}
-                                onClick={() => {
-                                    setTimeFilter(filterItem.id as any);
-                                    setSelectedTripId(null);
-                                }}
-                                className={cn(
-                                    "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200",
-                                    timeFilter === filterItem.id
-                                        ? "bg-white text-gray-900 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-700"
-                                )}
-                            >
-                                <filterItem.icon size={18} />
-                                <span className="hidden sm:inline">{filterItem.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                )}
 
                 <div className="flex flex-col lg:flex-row items-center gap-3 w-full">
                     <div className="flex p-1 bg-gray-100/80 rounded-xl w-full sm:w-fit">
@@ -259,28 +218,26 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                     </div>
 
                     {/* Integrated Trip Selector */}
-                    {isAdmin && !userId && (
-                        <div className="relative group w-full flex-1">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors pointer-events-none">
-                                <Filter size={18} />
-                            </div>
-                            <select
-                                value={selectedTripId || 'all'}
-                                onChange={(e) => setSelectedTripId(e.target.value === 'all' ? null : e.target.value)}
-                                className="w-full pl-11 pr-10 h-11 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-gray-100 focus:border-gray-900 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
-                            >
-                                <option value="all">Filtro de Viagem...</option>
-                                {tripsInView.map(trip => (
-                                    <option key={trip.id} value={trip.id}>
-                                        {trip.nome} — {formatPrettyDate(trip.data_ida)}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
-                                <ChevronDown size={18} />
-                            </div>
+                    <div className="relative group w-full flex-1">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors pointer-events-none">
+                            <Filter size={18} />
                         </div>
-                    )}
+                        <select
+                            value={selectedTripId || 'all'}
+                            onChange={(e) => setSelectedTripId(e.target.value === 'all' ? null : e.target.value)}
+                            className="w-full pl-11 pr-10 h-11 border border-gray-200 rounded-xl bg-white shadow-sm hover:border-gray-300 focus:ring-4 focus:ring-gray-100 focus:border-gray-900 transition-all outline-none font-medium text-gray-700 appearance-none cursor-pointer text-sm"
+                        >
+                            <option value="all">Filtro de Viagem...</option>
+                            {tripsInView.map(trip => (
+                                <option key={trip.id} value={trip.id}>
+                                    {trip.nome} — {formatPrettyDate(trip.data_ida)}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors">
+                            <ChevronDown size={18} />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -290,22 +247,7 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                 hideHeader && "border-none shadow-none bg-transparent"
             )}>
                 {loading ? (
-                    <div className="p-8 space-y-8">
-                        {Array.from({ length: 2 }).map((_, i) => (
-                            <div key={i} className="space-y-4 animate-pulse">
-                                <div className="h-4 bg-gray-100 rounded w-48" />
-                                <div className="space-y-6">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-10 h-10 bg-gray-100 rounded-full" />
-                                        <div className="flex-1 space-y-2">
-                                            <div className="h-3 bg-gray-100 rounded w-32" />
-                                            <div className="h-4 bg-gray-100 rounded w-64" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <div className="py-12"><Spinner size="lg" text="Carregando extrato..." /></div>
                 ) : Object.keys(groupedPayments).length === 0 ? (
                     <div className="py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
