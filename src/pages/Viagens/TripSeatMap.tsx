@@ -40,6 +40,7 @@ export const TripSeatMap: React.FC = () => {
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'map' | 'participants'>('map');
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -145,6 +146,7 @@ export const TripSeatMap: React.FC = () => {
             busId: currentBus.id
         });
 
+        setProcessing(true);
         try {
             console.log('✅ UI: Seat assigned, refreshing UI state...');
             await atribuirAssento(selectedPassengerId, selectedSeat, id!, currentBus.id);
@@ -155,6 +157,8 @@ export const TripSeatMap: React.FC = () => {
             setSelectedPassengerId('');
         } catch (error) {
             showToast('Erro ao atribuir assento', 'error');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -170,6 +174,7 @@ export const TripSeatMap: React.FC = () => {
         );
         if (!enrollment) return;
 
+        setProcessing(true);
         try {
             await liberarAssento(enrollment.passageiro_id, enrollment.id);
             showToast('Assento liberado com sucesso!', 'success');
@@ -178,6 +183,8 @@ export const TripSeatMap: React.FC = () => {
             await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -187,6 +194,7 @@ export const TripSeatMap: React.FC = () => {
             return;
         }
 
+        setProcessing(true);
         try {
             await bloquearAssento(selectedSeat, id!, currentBus.id);
             showToast('Assento bloqueado com sucesso!', 'success');
@@ -195,6 +203,8 @@ export const TripSeatMap: React.FC = () => {
             await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao bloquear assento', 'error');
+        } finally {
+            setProcessing(false);
         }
     };
 
@@ -229,6 +239,7 @@ export const TripSeatMap: React.FC = () => {
         const { enrollmentId } = removeConfirmModal;
         if (!enrollmentId) return;
 
+        setProcessing(true);
         try {
             const response = await fetch('/api/seats/remove', {
                 method: 'POST',
@@ -246,10 +257,12 @@ export const TripSeatMap: React.FC = () => {
 
             showToast('Passageiro removido da lista!', 'success');
             await fetchPassageiros();
+            setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }));
         } catch (error: any) {
             console.error('Error removing passenger:', error);
             showToast(error.message || 'Erro ao remover inscrição', 'error');
         } finally {
+            setProcessing(false);
             setRemoveConfirmModal(prev => ({ ...prev, isOpen: false }));
         }
     };
@@ -531,7 +544,7 @@ export const TripSeatMap: React.FC = () => {
                         )}
                         {/* Passageiro: only assign button */}
                         {user?.role === UserRole.PASSAGEIRO && user.id && actionType === 'assign' && (
-                            <Button onClick={handleAssignSeat}>
+                            <Button onClick={handleAssignSeat} isLoading={processing}>
                                 <Check size={20} className="sm:mr-2" />
                                 <span className="hidden sm:inline">Atribuir</span>
                             </Button>
@@ -541,18 +554,18 @@ export const TripSeatMap: React.FC = () => {
                             <>
                                 {actionType === 'assign' && (
                                     <>
-                                        <Button onClick={handleAssignSeat}>
+                                        <Button onClick={handleAssignSeat} isLoading={processing}>
                                             <Check size={20} className="sm:mr-2" />
                                             <span className="hidden sm:inline">Atribuir</span>
                                         </Button>
-                                        <Button variant="secondary" onClick={handleBlockSeat}>
+                                        <Button variant="secondary" onClick={handleBlockSeat} isLoading={processing}>
                                             <Lock size={20} className="sm:mr-2" />
                                             <span className="hidden sm:inline">Bloquear</span>
                                         </Button>
                                     </>
                                 )}
                                 {actionType === 'release' && (
-                                    <Button variant="danger" onClick={handleReleaseSeat}>
+                                    <Button variant="danger" onClick={handleReleaseSeat} isLoading={processing}>
                                         <Unlock size={20} className="sm:mr-2" />
                                         <span className="hidden sm:inline">Liberar</span>
                                     </Button>
@@ -663,6 +676,7 @@ export const TripSeatMap: React.FC = () => {
                         <Button
                             variant="danger"
                             onClick={confirmRemoval}
+                            isLoading={processing}
                         >
                             Remover
                         </Button>
