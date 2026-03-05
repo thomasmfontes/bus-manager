@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 // Woovi (OpenPix) API Wrapper
 const createWooviPayment = async (amount: number, correlationID: string, tripName: string, customerData: { name: string, email?: string }) => {
@@ -8,7 +8,10 @@ const createWooviPayment = async (amount: number, correlationID: string, tripNam
     const baseUrl = isSandbox ? 'https://api.woovi-sandbox.com' : 'https://api.woovi.com';
     const appId = isSandbox ? process.env.WOOVI_APP_ID_SANDBOX : process.env.WOOVI_APP_ID_PROD;
 
-    if (!appId) throw new Error('Woovi App ID not configured');
+    if (!appId) {
+        console.error(`[Woovi] Configuration missing. Env: ${process.env.WOOVI_ENV}, SandAppId: ${!!process.env.WOOVI_APP_ID_SANDBOX}, ProdAppId: ${!!process.env.WOOVI_APP_ID_PROD}`);
+        throw new Error('Configuração do gateway de pagamento pendente (App ID não encontrado).');
+    }
 
     const response = await fetch(`${baseUrl}/api/v1/charge`, {
         method: 'POST',
@@ -29,8 +32,15 @@ const createWooviPayment = async (amount: number, correlationID: string, tripNam
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create Woovi charge');
+        const errorBody = await response.text();
+        let errorMessage = 'Falha ao criar cobrança no Woovi';
+        try {
+            const errorData = JSON.parse(errorBody);
+            errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+            console.error('Woovi returned non-JSON error:', errorBody);
+        }
+        throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -111,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 3. Pre-generate our Internal ID for strict correlation
-        const internalId = uuidv4();
+        const internalId = crypto.randomUUID();
         const totalAmountCents = Math.round(resolvedPassengerIds.length * trip.preco * 100);
 
         // 4. Initial Record in 'pagamentos'
