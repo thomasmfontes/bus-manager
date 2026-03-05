@@ -148,7 +148,7 @@ export const TripSeatMap: React.FC = () => {
         try {
             console.log('✅ UI: Seat assigned, refreshing UI state...');
             await atribuirAssento(selectedPassengerId, selectedSeat, id!, currentBus.id);
-            await fetchPassageiros(id);
+            await fetchPassageiros();
             showToast('Assento atribuído com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
@@ -175,7 +175,7 @@ export const TripSeatMap: React.FC = () => {
             showToast('Assento liberado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
-            await fetchPassageiros(id);
+            await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao liberar assento', 'error');
         }
@@ -192,7 +192,7 @@ export const TripSeatMap: React.FC = () => {
             showToast('Assento bloqueado com sucesso!', 'success');
             setModalOpen(false);
             setSelectedSeat(null);
-            await fetchPassageiros(id);
+            await fetchPassageiros();
         } catch (error) {
             showToast('Erro ao bloquear assento', 'error');
         }
@@ -245,7 +245,7 @@ export const TripSeatMap: React.FC = () => {
             console.log('✅ Passageiro removido (soft-delete):', result);
 
             showToast('Passageiro removido da lista!', 'success');
-            await fetchPassageiros(id!);
+            await fetchPassageiros();
         } catch (error: any) {
             console.error('Error removing passenger:', error);
             showToast(error.message || 'Erro ao remover inscrição', 'error');
@@ -434,7 +434,7 @@ export const TripSeatMap: React.FC = () => {
                 isOpen={editModalOpen}
                 onClose={() => setEditModalOpen(false)}
                 trip={trip}
-                onSuccess={() => id && fetchPassageiros(id)}
+                onSuccess={() => fetchPassageiros()}
             />
 
             {/* Tabs Selector */}
