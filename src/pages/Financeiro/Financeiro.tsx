@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { useToast } from '@/components/ui/Toast';
@@ -9,65 +9,84 @@ import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 
 export const Financeiro: React.FC = () => {
-    const { passengers, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
+    const { passengers, enrollments, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
     const { trips, fetchViagens, selectedTripId, setSelectedTripId } = useTripStore();
     const { showToast } = useToast();
 
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
+    const now = new Date();
 
     useEffect(() => {
         fetchPassageiros();
         fetchViagens();
     }, [fetchPassageiros, fetchViagens]);
 
-    // Only show passengers that are assigned to a trip in an enrollment - EXCLUDE BLOQUEADO technical user
-    const tripPassengers = passengers.filter(p => {
-        const e = p.enrollment;
-        if (!e || !e.viagem_id || p.nome_completo === 'BLOQUEADO') return false;
+    // 1. Process all enrollments to create financial entries
+    const financialEntries = useMemo(() => {
 
-        const isDesistente = e.assento === 'DESISTENTE';
-        const isPaid = e.pagamento === 'paid' || e.pagamento === 'Realizado' || e.pagamento === 'Pago';
+        return enrollments
+            .map(enroll => {
+                const passenger = passengers.find(p => p.id === enroll.passageiro_id);
+                const trip = trips.find(t => t.id === enroll.viagem_id);
 
-        if (isDesistente && !isPaid) {
-            return false;
-        }
+                if (!passenger || !trip || passenger.nome_completo === 'BLOQUEADO') return null;
 
-        return true;
-    });
-    const now = new Date();
+                const isDesistente = enroll.assento === 'DESISTENTE';
+                const isPaid = enroll.pagamento === 'paid' || enroll.pagamento === 'Realizado' || enroll.pagamento === 'Pago';
 
-    const filteredPassengers = tripPassengers.filter(p => {
-        const e = p.enrollment!; // We know it exists from the filter above
-        const passengerTrip = trips.find(t => t.id === e.viagem_id);
-        const matchesTime = timeFilter === 'all' || (passengerTrip && (
-            timeFilter === 'future' ? new Date(passengerTrip.data_ida) >= now : new Date(passengerTrip.data_ida) < now
-        ));
+                // Exclusion logic: hide withdrawn participants who haven't paid
+                if (isDesistente && !isPaid) {
+                    return null;
+                }
 
-        const matchesTrip = (!selectedTripId || selectedTripId === 'all') || e.viagem_id === selectedTripId;
-        const matchesStatus = statusFilter === 'all' ||
-            (statusFilter === 'paid' && (e.pagamento === 'paid' || e.pagamento === 'Realizado' || e.pagamento === 'Pago')) ||
-            (statusFilter === 'pending' && (e.pagamento === 'pending' || e.pagamento === 'Pendente' || !e.pagamento));
-        const matchesSearch = p.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (String(e.assento) || '').toLowerCase().includes(searchTerm.toLowerCase());
+                // Filtering by time
+                const matchesTime = timeFilter === 'all' || (
+                    timeFilter === 'future' ? new Date(trip.data_ida) >= now : new Date(trip.data_ida) < now
+                );
+                if (!matchesTime) return null;
 
-        return matchesTime && matchesTrip && matchesStatus && matchesSearch;
-    });
+                // Filtering by selected trip
+                const matchesTrip = (!selectedTripId || selectedTripId === 'all') || enroll.viagem_id === selectedTripId;
+                if (!matchesTrip) return null;
 
-    const groupedPassengers = trips
-        .map(trip => {
-            const passengersInTrip = filteredPassengers.filter(p => p.enrollment?.viagem_id === trip.id);
-            const totalArrecadado = passengersInTrip.reduce((sum, p) => sum + (p.enrollment?.valor_pago || 0), 0);
-            const totalMeta = (trip as any).meta_financeira || (passengersInTrip.length * (trip.preco || 0));
-            return {
-                trip,
-                passengers: passengersInTrip,
-                totalArrecadado,
-                totalMeta
-            };
-        })
-        .filter(group => group.passengers.length > 0);
+                // Filtering by status
+                const matchesStatus = statusFilter === 'all' ||
+                    (statusFilter === 'paid' && isPaid) ||
+                    (statusFilter === 'pending' && (!isPaid));
+                if (!matchesStatus) return null;
+
+                // Filtering by search (name or seat)
+                const matchesSearch = passenger.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (String(enroll.assento) || '').toLowerCase().includes(searchTerm.toLowerCase());
+                if (!matchesSearch) return null;
+
+                return {
+                    passenger,
+                    enrollment: enroll,
+                    trip
+                };
+            })
+            .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    }, [enrollments, passengers, trips, timeFilter, selectedTripId, statusFilter, searchTerm]);
+
+    const groupedPassengers = useMemo(() => {
+        return trips
+            .map(trip => {
+                const entriesInTrip = financialEntries.filter(e => e.enrollment.viagem_id === trip.id);
+                const totalArrecadado = entriesInTrip.reduce((sum, e) => sum + (e.enrollment.valor_pago || 0), 0);
+                const totalMeta = (trip as any).meta_financeira || (entriesInTrip.length * (trip.preco || 0));
+                return {
+                    trip,
+                    entries: entriesInTrip,
+                    totalArrecadado,
+                    totalMeta
+                };
+            })
+            .filter(group => group.entries.length > 0)
+            .sort((a, b) => new Date(a.trip.data_ida).getTime() - new Date(b.trip.data_ida).getTime());
+    }, [trips, financialEntries]);
 
     const handleUpdateStatus = async (id: string, newStatus: string) => {
         try {
@@ -219,7 +238,7 @@ export const Financeiro: React.FC = () => {
 
                 {loadingPassengers ? (
                     <Spinner size="lg" text="Carregando dados..." fullScreen />
-                ) : filteredPassengers.length === 0 ? (
+                ) : financialEntries.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">Nenhum passageiro encontrado.</div>
                 ) : (
                     <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
@@ -282,13 +301,14 @@ export const Financeiro: React.FC = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                        {group.passengers.map((p: any) => {
-                                            const e = p.enrollment;
+                                        {group.entries.map((entry) => {
+                                            const p = entry.passenger;
+                                            const e = entry.enrollment;
                                             const currentStatus = e?.pagamento || 'Pendente';
                                             const isPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
 
                                             return (
-                                                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
+                                                <tr key={`${p.id}-${e.id}`} className="hover:bg-gray-50/50 transition-colors group">
                                                     <td className="px-6 py-5">
                                                         <div className="font-semibold text-gray-900">{p.nome_completo}</div>
                                                     </td>
@@ -359,14 +379,15 @@ export const Financeiro: React.FC = () => {
 
                                     {/* Mobile Passenger List */}
                                     <div className="space-y-2">
-                                        {group.passengers.map((p: any) => {
-                                            const e = p.enrollment;
+                                        {group.entries.map((entry) => {
+                                            const p = entry.passenger;
+                                            const e = entry.enrollment;
                                             const currentStatus = e?.pagamento || 'Pendente';
                                             const isPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
 
                                             return (
                                                 <div
-                                                    key={p.id}
+                                                    key={`${p.id}-${e.id}`}
                                                     className={cn(
                                                         "relative overflow-hidden bg-white rounded-2xl border transition-all p-4 space-y-3",
                                                         isPaid ? "border-emerald-100 shadow-sm" : "border-gray-100 shadow-sm"
