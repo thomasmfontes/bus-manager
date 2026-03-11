@@ -75,24 +75,44 @@ export const useSeatAssignmentStore = create<SeatAssignmentState>((set) => ({
     },
 
     // Libera o assento de um passageiro (remove o assento da inscrição)
+    // Se for o passageiro 'BLOQUEADO', remove a inscrição inteira
     liberarAssento: async (passageiroId: string, enrollmentId?: string) => {
         set({ loading: true });
         try {
-            if (enrollmentId) {
-                const { error } = await supabase
-                    .from('viagem_passageiros')
-                    .update({ assento: null, onibus_id: null })
-                    .eq('id', enrollmentId);
-                if (error) throw error;
+            // 1. Verificar se é a identidade 'BLOQUEADO'
+            const { data: passenger } = await supabase
+                .from('passageiros')
+                .select('nome_completo')
+                .eq('id', passageiroId)
+                .single();
+
+            const isBlocked = passenger?.nome_completo === 'BLOQUEADO';
+
+            if (isBlocked) {
+                // Para bloqueados, deletamos o registro para não contar na ocupação
+                const query = supabase.from('viagem_passageiros').delete();
+                if (enrollmentId) {
+                    const { error } = await query.eq('id', enrollmentId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await query.eq('passageiro_id', passageiroId).eq('assento', null); // Fallback safe
+                    if (error) throw error;
+                }
             } else {
-                // Legacy: update all enrollments for this passenger? 
-                // No, just find the first one with a seat or something
-                // For safety, let's keep it as identity-based if no enrollmentId is passed
-                const { error } = await supabase
-                    .from('viagem_passageiros')
-                    .update({ assento: null, onibus_id: null })
-                    .eq('passageiro_id', passageiroId);
-                if (error) throw error;
+                // Para passageiros reais, apenas removemos o assento
+                if (enrollmentId) {
+                    const { error } = await supabase
+                        .from('viagem_passageiros')
+                        .update({ assento: null, onibus_id: null })
+                        .eq('id', enrollmentId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase
+                        .from('viagem_passageiros')
+                        .update({ assento: null, onibus_id: null })
+                        .eq('passageiro_id', passageiroId);
+                    if (error) throw error;
+                }
             }
             set({ loading: false });
         } catch (error) {
