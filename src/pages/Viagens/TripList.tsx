@@ -289,7 +289,7 @@ export const TripList: React.FC = () => {
                                         const occupied = getOccupiedSeats(trip.id);
                                         const total = getTotalSeats(trip.onibus_ids);
                                         const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
-                                        const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id);
+                                        const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id) && user?.role !== UserRole.ADMIN;
 
                                         return (
                                             <tr
@@ -374,7 +374,7 @@ export const TripList: React.FC = () => {
                                 const occupied = getOccupiedSeats(trip.id);
                                 const total = getTotalSeats(trip.onibus_ids);
                                 const occupancyRate = total > 0 ? (occupied / total) * 100 : 0;
-                                const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id);
+                                const isSoldOut = total > 0 && occupied >= total && !isUserOccupiedInTrip(trip.id) && user?.role !== UserRole.ADMIN;
 
                                 return (
                                     <div
