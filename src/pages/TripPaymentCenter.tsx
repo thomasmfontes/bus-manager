@@ -275,6 +275,16 @@ export const TripPaymentCenter = () => {
         });
     };
 
+    // Helper to check if a passenger is already part of a trip list (even if not paid)
+    const isAccountedFor = (passId: string) => {
+        if (!trip) return false;
+        return enrollments.some(e =>
+            e.viagem_id === trip.id &&
+            e.passageiro_id === passId &&
+            e.assento !== 'DESISTENTE'
+        );
+    };
+
     const isPastTrip = useMemo(() => {
         if (!trip) return false;
         return new Date(trip.data_ida) < new Date();
@@ -367,20 +377,12 @@ export const TripPaymentCenter = () => {
             return;
         }
 
-        const isAccountedFor = (pass: Passenger) => {
-            return enrollments.some(e =>
-                e.viagem_id === trip.id &&
-                e.passageiro_id === pass.id &&
-                e.assento !== 'DESISTENTE'
-            );
-        };
-
         const isCurrentlySelected = selectedPassengers.some(item => item.id === p.id);
 
         // If trying to add (not remove) and not already accounted for by admin/payment
-        if (!isCurrentlySelected && !isAccountedFor(p)) {
+        if (!isCurrentlySelected && !isAccountedFor(p.id)) {
             const vacancies = getVacancies(trip);
-            const cartNewOccupantsCount = selectedPassengers.filter(item => !isAccountedFor(item)).length;
+            const cartNewOccupantsCount = selectedPassengers.filter(item => !isAccountedFor(item.id)).length;
 
             if (vacancies - cartNewOccupantsCount <= 0) {
                 showToast('Não há vagas/cotas suficientes para adicionar este passageiro.', 'error');
@@ -420,7 +422,8 @@ export const TripPaymentCenter = () => {
             return;
         }
 
-        if (getVacancies(trip) < selectedPassengers.length) {
+        const newPassengersCount = selectedPassengers.filter(p => !isAccountedFor(p.id)).length;
+        if (getVacancies(trip) < newPassengersCount) {
             showToast('Não há vagas/cotas suficientes para este roteiro.', 'error');
             return;
         }
