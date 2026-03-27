@@ -24,6 +24,7 @@ interface QRTicketModalProps {
     onClose: () => void;
     trip: Trip;
     enrollment: TripEnrollment;
+    passengerName?: string;
 }
 
 export const QRTicketModal: React.FC<QRTicketModalProps> = ({
@@ -31,6 +32,7 @@ export const QRTicketModal: React.FC<QRTicketModalProps> = ({
     onClose,
     trip,
     enrollment,
+    passengerName,
 }) => {
     const { buses } = useBusStore();
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -123,8 +125,14 @@ export const QRTicketModal: React.FC<QRTicketModalProps> = ({
                     </div>
 
                     <h2 className="text-xl font-black leading-tight">{trip.nome}</h2>
+                    
+                    {passengerName && (
+                        <p className="text-sm font-bold opacity-90 mt-0.5 uppercase tracking-tight">
+                            {passengerName}
+                        </p>
+                    )}
 
-                    <div className="flex items-center gap-2 mt-1 opacity-80">
+                    <div className="flex items-center gap-2 mt-2 opacity-80">
                         <MapPin size={12} />
                         <span className="text-xs font-bold">{trip.destino}</span>
                     </div>

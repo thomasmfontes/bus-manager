@@ -302,7 +302,7 @@ export const AttendanceScannerModal: React.FC<AttendanceScannerModalProps> = ({
                                     className={cn(
                                         'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all',
                                         trecho === t
-                                            ? 'bg-white text-blue-600 shadow-sm border border-gray-100'
+                                            ? (t === 'ida' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-purple-600 text-white shadow-lg shadow-purple-200')
                                             : 'text-gray-400 hover:text-gray-600'
                                     )}
                                 >
@@ -317,11 +317,14 @@ export const AttendanceScannerModal: React.FC<AttendanceScannerModalProps> = ({
                     <div className="relative">
                         {/* Viewfinder Overlay */}
                         {showCamera && (
-                            <div className="relative w-full aspect-square rounded-[32px] overflow-hidden bg-gray-50 ring-8 ring-gray-100/50">
+                            <div className={cn(
+                                "relative w-full aspect-square rounded-[32px] overflow-hidden bg-gray-50 ring-8 transition-all duration-500",
+                                trecho === 'ida' ? "ring-blue-500/20" : "ring-purple-500/20"
+                            )}>
                                 {/* Initializing placeholder / Scanning load state */}
                                 {(!isCameraReady || scanState === 'scanning') && !isClosing && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-[20]">
-                                        <RefreshCw size={50} className="text-blue-500 animate-spin" />
+                                        <RefreshCw size={50} className={cn("animate-spin", trecho === 'ida' ? "text-blue-500" : "text-purple-500")} />
                                     </div>
                                 )}
                                 <style dangerouslySetInnerHTML={{

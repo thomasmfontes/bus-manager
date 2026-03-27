@@ -39,7 +39,7 @@ export const MyItineraries: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [userEnrollments, setUserEnrollments] = useState<TripEnrollment[]>([]);
     const [dependents, setDependents] = useState<Record<string, { passenger: Passenger; enrollment: TripEnrollment }[]>>({});
-    const [qrModal, setQrModal] = useState<{ trip: Trip; enrollment: TripEnrollment } | null>(null);
+    const [qrModal, setQrModal] = useState<{ trip: Trip; enrollment: TripEnrollment; passengerName?: string } | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -280,20 +280,37 @@ export const MyItineraries: React.FC = () => {
                                             <div className="flex flex-wrap gap-2">
                                                 {tripDeps.map(({ passenger, enrollment }) => {
                                                     const depWithdrawn = enrollment.assento === 'DESISTENTE';
+                                                    const canViewTicket = !depWithdrawn && isPaid;
+
                                                     return (
-                                                        <div key={passenger.id} className={cn(
-                                                            "px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-xs font-bold shadow-sm flex items-center gap-2",
-                                                            depWithdrawn ? "text-gray-400 opacity-70" : "text-gray-700"
-                                                        )}>
-                                                            <div className={cn(
-                                                                "w-1.5 h-1.5 rounded-full",
-                                                                depWithdrawn ? "bg-gray-300" : "bg-indigo-500"
-                                                            )} />
+                                                        <button 
+                                                            key={passenger.id} 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (canViewTicket) setQrModal({ trip, enrollment, passengerName: passenger.nome_completo });
+                                                            }}
+                                                            disabled={!canViewTicket}
+                                                            className={cn(
+                                                                "px-3 py-1.5 border rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-all outline-none",
+                                                                depWithdrawn ? "bg-white border-gray-100 text-gray-400 opacity-70 cursor-not-allowed" :
+                                                                canViewTicket ? "bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50 hover:shadow-md active:scale-95 cursor-pointer" :
+                                                                "bg-white border-gray-100 text-gray-700 cursor-default"
+                                                            )}
+                                                            title={canViewTicket ? "Ver passagem" : ""}
+                                                        >
+                                                            {canViewTicket ? (
+                                                                <Ticket size={12} className="text-indigo-500 shrink-0" />
+                                                            ) : (
+                                                                <div className={cn(
+                                                                    "w-1.5 h-1.5 rounded-full shrink-0",
+                                                                    depWithdrawn ? "bg-gray-300" : "bg-indigo-500"
+                                                                )} />
+                                                            )}
                                                             <span className={depWithdrawn ? "line-through" : ""}>
                                                                 {passenger.nome_completo.split(' ')[0]}
                                                             </span>
                                                             {depWithdrawn && <span className="text-[10px] font-normal">(Desistente)</span>}
-                                                        </div>
+                                                        </button>
                                                     );
                                                 })}
                                             </div>
@@ -319,7 +336,11 @@ export const MyItineraries: React.FC = () => {
                                         {myEnrollment && !isWithdrawn && isPaid && (
                                             <Button
                                                 variant="secondary"
-                                                onClick={() => setQrModal({ trip, enrollment: myEnrollment })}
+                                                onClick={() => setQrModal({ 
+                                                    trip, 
+                                                    enrollment: myEnrollment, 
+                                                    passengerName: user?.full_name 
+                                                })}
                                                 className="flex-1 h-10 rounded-xl text-xs font-bold transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100"
                                             >
                                                 <Ticket size={14} className="mr-1.5" />
@@ -372,6 +393,7 @@ export const MyItineraries: React.FC = () => {
                     onClose={() => setQrModal(null)}
                     trip={qrModal.trip}
                     enrollment={qrModal.enrollment}
+                    passengerName={qrModal.passengerName}
                 />
             )}
         </div>
