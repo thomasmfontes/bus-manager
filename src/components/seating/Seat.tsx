@@ -39,15 +39,12 @@ export const Seat: React.FC<SeatProps> = ({
             <button
                 onClick={onClick}
                 className={cn(
-                    'w-12 h-12 rounded-lg border-2 text-xs font-bold',
-                    'transition-all duration-200',
-                    'flex items-center justify-center',
-                    'focus:outline-none focus:ring-2 focus:ring-blue-500',
+                    'w-10 h-10 sm:w-12 sm:h-12 rounded-lg border-2 text-[10px] sm:text-xs font-bold transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 relative',
                     status !== SeatStatus.OCUPADO && 'hover:scale-110 active:scale-95',
                     getStatusStyles()
                 )}
             >
-                {status === SeatStatus.OCUPADO && <User size={14} className="absolute top-1 right-1" />}
+                {status === SeatStatus.OCUPADO && <User size={12} className="absolute top-0.5 right-0.5 sm:size-3.5" />}
                 <span>{code}</span>
             </button>
 

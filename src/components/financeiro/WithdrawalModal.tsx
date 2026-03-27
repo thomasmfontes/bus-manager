@@ -49,13 +49,13 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
         >
             <div 
                 className={cn(
-                    "relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden",
+                    "relative w-full max-w-[calc(100vw-32px)] sm:max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden",
                     isClosing ? "animate-out zoom-out-95 duration-200" : "animate-in zoom-in-95 duration-200"
                 )}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-emerald-50/30">
+                <div className="p-5 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-emerald-50/30">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
                             <DollarSign size={20} />
@@ -74,7 +74,7 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
                 </div>
 
                 {/* Content */}
-                <div className="p-6 space-y-6">
+                <div className="p-5 sm:p-6 space-y-5 sm:space-y-6">
                     <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100/50">
                         <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest block mb-1">Valor do Saque</span>
                         <p className="text-2xl font-black text-emerald-900 font-mono">R$ {amount.toFixed(2)}</p>

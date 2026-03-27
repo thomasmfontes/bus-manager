@@ -63,18 +63,18 @@ export const SeatMap: React.FC<SeatMapProps> = ({
             if (seatNumber > bus.capacidade) {
                 // Render a placeholder to maintain grid alignment
                 seats.push(
-                    <div key={`ghost-${seatCode}`} className="w-12 h-12" />
+                    <div key={`ghost-${seatCode}`} className="w-10 h-10 sm:w-12 sm:h-12" />
                 );
             } else if (isExcluded) {
                 // Bathroom indicator
                 seats.push(
                     <div
                         key={seatCode}
-                        className="w-12 h-12 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg border-2 border-blue-300 shadow-sm"
+                        className="w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg border-2 border-blue-300 shadow-sm"
                         title="Banheiro"
                     >
-                        <Droplet size={16} className="text-blue-600" />
-                        <span className="text-[8px] font-bold text-blue-700">WC</span>
+                        <Droplet size={14} className="text-blue-600 sm:size-4" />
+                        <span className="text-[7px] sm:text-[8px] font-bold text-blue-700">WC</span>
                     </div>
                 );
             } else {
@@ -96,7 +96,7 @@ export const SeatMap: React.FC<SeatMapProps> = ({
             // Add corridor space
             if (corridorAfterColumn !== undefined && col === corridorAfterColumn - 1) {
                 seats.push(
-                    <div key={`corridor-${rowNumber}`} className="w-4" />
+                    <div key={`corridor-${rowNumber}`} className="w-2 sm:w-4" />
                 );
             }
         }
@@ -159,7 +159,7 @@ export const SeatMap: React.FC<SeatMapProps> = ({
             </div>
 
             {/* Seat Grid Container */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 overflow-x-hidden">
                 {/* Front Indicator */}
                 <div className="mb-6 pb-4 border-b-2 border-blue-500">
                     <div className="text-center">
@@ -171,9 +171,9 @@ export const SeatMap: React.FC<SeatMapProps> = ({
                 </div>
 
                 {/* Seats */}
-                <div className="flex flex-col items-center gap-2.5">
+                <div className="flex flex-col items-center gap-2 sm:gap-2.5">
                     {Array.from({ length: rows }, (_, i) => (
-                        <div key={i + 1} className="flex gap-2">
+                        <div key={i + 1} className="flex gap-1.5 sm:gap-2">
                             {renderRow(i + 1)}
                         </div>
                     ))}
