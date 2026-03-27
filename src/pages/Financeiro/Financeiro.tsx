@@ -4,9 +4,10 @@ import { useTripStore } from '@/stores/useTripStore';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/utils/cn';
-import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, CheckCircle2, Clock, Users } from 'lucide-react';
+import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, CheckCircle2, Clock, Users, DollarSign } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
+import { WithdrawalModal } from '@/components/financeiro/WithdrawalModal';
 
 export const Financeiro: React.FC = () => {
     const { passengers, enrollments, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
@@ -17,6 +18,11 @@ export const Financeiro: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
     const now = new Date();
+    const [withdrawalModal, setWithdrawalModal] = useState<{ isOpen: boolean; tripName: string; amount: number }>({
+        isOpen: false,
+        tripName: '',
+        amount: 0
+    });
 
     useEffect(() => {
         fetchPassageiros();
@@ -270,6 +276,15 @@ export const Financeiro: React.FC = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-6">
+                                                        {group.totalArrecadado >= group.totalMeta && group.totalMeta > 0 && (
+                                                            <button
+                                                                onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalArrecadado })}
+                                                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 active:scale-95 translate-y-[-4px]"
+                                                            >
+                                                                <DollarSign size={14} />
+                                                                Solicitar Saque
+                                                            </button>
+                                                        )}
                                                         <div className="flex flex-col items-end gap-1.5 min-w-[320px]">
                                                             <div className="flex items-center gap-3 bg-white/80 px-4 py-1.5 rounded-xl border border-emerald-100 shadow-sm transition-all hover:border-emerald-200">
                                                                 <div className="flex items-center gap-2">
@@ -380,6 +395,17 @@ export const Financeiro: React.FC = () => {
                                                 <p className="text-sm font-mono font-black text-gray-600">R$ {group.totalMeta.toFixed(2)}</p>
                                             </div>
                                         </div>
+                                        {group.totalArrecadado >= group.totalMeta && group.totalMeta > 0 && (
+                                            <div className="px-4 pb-4">
+                                                <button
+                                                    onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalArrecadado })}
+                                                    className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 active:scale-95"
+                                                >
+                                                    <DollarSign size={16} />
+                                                    Solicitar Saque
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Mobile Passenger List */}
@@ -450,6 +476,13 @@ export const Financeiro: React.FC = () => {
                         </div>
                     </div>
                 )}
+                {/* Withdrawal Modal */}
+                <WithdrawalModal
+                    isOpen={withdrawalModal.isOpen}
+                    onClose={() => setWithdrawalModal(prev => ({ ...prev, isOpen: false }))}
+                    tripName={withdrawalModal.tripName}
+                    amount={withdrawalModal.amount}
+                />
             </div>
         </div>
     );
