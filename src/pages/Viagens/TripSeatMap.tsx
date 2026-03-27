@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users, Camera } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -18,6 +18,7 @@ import { TripEditModal } from '@/components/viagens/TripEditModal';
 import { Spinner } from '@/components/ui/Spinner';
 import { TripParticipantsList } from '@/components/viagens/TripParticipantsList';
 import { FaWhatsapp } from 'react-icons/fa';
+import { AttendanceScannerModal } from '@/components/viagens/AttendanceScannerModal';
 
 export const TripSeatMap: React.FC = () => {
     const navigate = useNavigate();
@@ -41,6 +42,7 @@ export const TripSeatMap: React.FC = () => {
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'map' | 'participants'>('map');
     const [loadingAction, setLoadingAction] = useState<'assign' | 'block' | 'release' | 'remove' | null>(null);
+    const [scannerOpen, setScannerOpen] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -452,26 +454,33 @@ export const TripSeatMap: React.FC = () => {
 
             {/* Tabs Selector */}
             {user?.role === UserRole.ADMIN && (
-                <div className="flex bg-gray-100 p-1 rounded-2xl w-full sm:w-fit mx-auto sm:mx-0">
+                <div className="flex bg-gray-100 p-1 rounded-2xl w-full sm:w-fit">
                     <button
                         onClick={() => setActiveTab('map')}
                         className={cn(
-                            "flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                            "flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
                             activeTab === 'map' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
                         )}
                     >
                         <BusIcon size={18} />
-                        Mapa
+                        <span className="hidden sm:inline">Mapa</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('participants')}
                         className={cn(
-                            "flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                            "flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
                             activeTab === 'participants' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
                         )}
                     >
                         <Users size={18} />
-                        Passageiros
+                        <span className="hidden sm:inline">Passageiros</span>
+                    </button>
+                    <button
+                        onClick={() => setScannerOpen(true)}
+                        className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700"
+                    >
+                        <Camera size={18} />
+                        <span className="hidden sm:inline">Scanner</span>
                     </button>
                 </div>
             )}
@@ -717,6 +726,17 @@ export const TripSeatMap: React.FC = () => {
                     </div>
                 </div>
             </Modal >
+
+            {/* Attendance Scanner Modal */}
+            {trip && (
+                <AttendanceScannerModal
+                    isOpen={scannerOpen}
+                    onClose={() => setScannerOpen(false)}
+                    tripId={trip.id}
+                    tripNome={trip.nome}
+                    hasVolta={true}
+                />
+            )}
         </div>
     );
 };

@@ -150,10 +150,13 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
         }
     },
     updatePassageiro: async (id, passenger, enrollmentId, enrollmentData) => {
-        set({ loading: true });
         try {
-            // 1. Update Identity
+            // 1. Update Identity (Local)
             if (Object.keys(passenger).length > 0) {
+                set(state => ({
+                    passengers: state.passengers.map(p => p.id === id ? { ...p, ...passenger } : p)
+                }));
+
                 const { error: identityError } = await supabase
                     .from('passageiros')
                     .update(passenger)
@@ -161,21 +164,30 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
                 if (identityError) throw identityError;
             }
 
-            // 2. Update Enrollment
+            // 2. Update Enrollment (Local & DB)
             if (enrollmentId && enrollmentData && Object.keys(enrollmentData).length > 0) {
+                set(state => ({
+                    // Update global enrollments array
+                    enrollments: state.enrollments.map(e => e.id === enrollmentId ? { ...e, ...enrollmentData } : e),
+                    // Update current passenger list item (nested enrollment)
+                    passengers: state.passengers.map(p => {
+                        if (p.id === id && p.enrollment?.id === enrollmentId) {
+                            return { ...p, enrollment: { ...p.enrollment, ...enrollmentData } };
+                        }
+                        return p;
+                    })
+                }));
+
                 const { error: enrollError } = await supabase
                     .from('viagem_passageiros')
                     .update(enrollmentData)
                     .eq('id', enrollmentId);
                 if (enrollError) throw enrollError;
             }
-
-            // Refresh local state (this is less efficient but safer for complex joins)
-            // Determine which viagem we are currently viewing or just refresh all
-            const firstEnrollment = get().passengers.find(p => p.id === id)?.enrollment;
-            await get().fetchPassageiros(firstEnrollment?.viagem_id);
         } catch (error) {
             console.error('Error updating passageiro:', error);
+            // Fallback: full refresh on error to ensure consistency
+            await get().fetchPassageiros();
             throw error;
         } finally {
             set({ loading: false });

@@ -71,6 +71,17 @@ export interface Passenger {
     enrollment?: TripEnrollment;
 }
 
+// Attendance record (presence at bus door per leg)
+export interface AttendanceRecord {
+    id: string;
+    enrollment_id: string;
+    viagem_id: string;
+    passageiro_id: string;
+    trecho: 'ida' | 'volta';
+    confirmado_em: string;
+    confirmado_por?: string;
+}
+
 // Trip Enrollment (Relationship between Passenger and Trip)
 export interface TripEnrollment {
     id: string;
@@ -83,6 +94,8 @@ export interface TripEnrollment {
     pago_por?: string;
     created_at?: string;
     updated_at?: string;
+    // Virtual: loaded attendance records for this enrollment
+    attendance?: AttendanceRecord[];
 }
 
 // Movimentação types

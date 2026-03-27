@@ -34,7 +34,10 @@ export const Financeiro: React.FC = () => {
                 if (!passenger || !trip || passenger.nome_completo === 'BLOQUEADO') return null;
 
                 const isDesistente = enroll.assento === 'DESISTENTE';
-                const isPaid = enroll.pagamento === 'paid' || enroll.pagamento === 'Realizado' || enroll.pagamento === 'Pago';
+                
+                // Unified case-insensitive payment check
+                const pStatus = (enroll.pagamento || '').toString().toLowerCase();
+                const isPaid = pStatus === 'pago' || pStatus === 'paid' || pStatus === 'realizado';
 
                 // Exclusion logic: hide withdrawn participants who haven't paid
                 if (isDesistente && !isPaid) {
@@ -96,7 +99,8 @@ export const Financeiro: React.FC = () => {
             const trip = trips.find(t => t.id === passenger.enrollment?.viagem_id);
             const tripPreco = trip?.preco || 0;
 
-            const isPaid = newStatus === 'paid' || newStatus === 'Realizado' || newStatus === 'Pago';
+            const pStatus = newStatus.toLowerCase();
+            const isPaid = pStatus === 'pago' || pStatus === 'paid' || pStatus === 'realizado';
             const statusToSave = isPaid ? 'Pago' : 'Pendente';
             const valor_pago = isPaid ? tripPreco : 0;
 
@@ -305,7 +309,8 @@ export const Financeiro: React.FC = () => {
                                             const p = entry.passenger;
                                             const e = entry.enrollment;
                                             const currentStatus = e?.pagamento || 'Pendente';
-                                            const isPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
+                                            const pStatus = currentStatus.toString().toLowerCase();
+                                            const isPaid = pStatus === 'pago' || pStatus === 'paid' || pStatus === 'realizado';
 
                                             return (
                                                 <tr key={`${p.id}-${e.id}`} className="hover:bg-gray-50/50 transition-colors group">
@@ -383,7 +388,8 @@ export const Financeiro: React.FC = () => {
                                             const p = entry.passenger;
                                             const e = entry.enrollment;
                                             const currentStatus = e?.pagamento || 'Pendente';
-                                            const isPaid = currentStatus === 'paid' || currentStatus === 'Realizado' || currentStatus === 'Pago';
+                                            const pStatus = currentStatus.toString().toLowerCase();
+                                            const isPaid = pStatus === 'pago' || pStatus === 'paid' || pStatus === 'realizado';
 
                                             return (
                                                 <div

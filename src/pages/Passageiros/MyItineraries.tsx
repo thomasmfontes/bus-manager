@@ -20,11 +20,13 @@ import {
     ChevronRight,
     CheckCircle2,
     Compass,
-    AlertCircle
+    AlertCircle,
+    Ticket,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 import seatIcon from '@/assets/seat-custom.png';
+import { QRTicketModal } from '@/components/passengers/QRTicketModal';
 
 export const MyItineraries: React.FC = () => {
     const { user } = useAuthStore();
@@ -37,6 +39,7 @@ export const MyItineraries: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [userEnrollments, setUserEnrollments] = useState<TripEnrollment[]>([]);
     const [dependents, setDependents] = useState<Record<string, { passenger: Passenger; enrollment: TripEnrollment }[]>>({});
+    const [qrModal, setQrModal] = useState<{ trip: Trip; enrollment: TripEnrollment } | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -299,20 +302,36 @@ export const MyItineraries: React.FC = () => {
                                 }
 
                                 {/* Bottom Action Section */}
-                                <div className="mt-auto p-6 flex items-center justify-between border-t border-gray-50">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest leading-none">Valor Total Pago</p>
-                                        <p className="text-xl font-black text-gray-900">
-                                            {formatCurrency(trip.preco * (tripDeps.length + (myEnrollment ? 1 : 0)))}
-                                        </p>
+                                <div className="mt-auto px-6 py-4 flex flex-col gap-3 border-t border-gray-50">
+                                    {/* Price row */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest leading-none">Valor Total Pago</p>
+                                            <p className="text-xl font-black text-gray-900">
+                                                {formatCurrency(trip.preco * (tripDeps.length + (myEnrollment ? 1 : 0)))}
+                                            </p>
+                                        </div>
                                     </div>
 
+                                    {/* Button row */}
                                     <div className="flex gap-2">
+                                        {/* QR Ticket button — only for own enrollment, not withdrawn, and MUST BE PAID */}
+                                        {myEnrollment && !isWithdrawn && isPaid && (
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => setQrModal({ trip, enrollment: myEnrollment })}
+                                                className="flex-1 h-10 rounded-xl text-xs font-bold transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100"
+                                            >
+                                                <Ticket size={14} className="mr-1.5" />
+                                                Passagem
+                                            </Button>
+                                        )}
+
                                         {!showPay ? (
                                             <Button
                                                 variant="secondary"
                                                 onClick={() => navigate(`/viagens/${trip.id}`)}
-                                                className="h-10 px-4 rounded-xl text-xs font-bold transition-all hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
+                                                className="flex-1 h-10 rounded-xl text-xs font-bold transition-all hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
                                             >
                                                 Mapa
                                                 <ChevronRight size={14} className="ml-1" />
@@ -331,7 +350,7 @@ export const MyItineraries: React.FC = () => {
                                                         .join(',');
                                                     navigate(`/pagamento?v=${trip.id}&pids=${pendingPids}`);
                                                 }}
-                                                className="h-10 px-6 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
+                                                className="flex-1 h-10 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
                                             >
                                                 <CreditCard size={14} className="mr-2" />
                                                 Pagar
@@ -345,6 +364,16 @@ export const MyItineraries: React.FC = () => {
                 </div>
             )
             }
-        </div >
+
+            {/* QR Ticket Modal */}
+            {qrModal && (
+                <QRTicketModal
+                    isOpen={true}
+                    onClose={() => setQrModal(null)}
+                    trip={qrModal.trip}
+                    enrollment={qrModal.enrollment}
+                />
+            )}
+        </div>
     );
 };

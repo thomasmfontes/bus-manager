@@ -272,4 +272,30 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors;
   }
+
+  /* Bottom-sheet slide animations (mobile modals) */
+  .sheet-slide-up {
+    animation: sheetSlideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  .sheet-slide-down {
+    animation: sheetSlideDown 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  @keyframes sheetSlideUp {
+    from { transform: translateY(100%); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1;   }
+  }
+
+  @keyframes sheetSlideDown {
+    from { transform: translateY(0);    opacity: 1; }
+    to   { transform: translateY(100%); opacity: 0; }
+  }
+
+  /* Backdrop fade for bottom-sheet modals */
+  .backdrop-fade-in  { animation: backdropFadeIn  0.3s ease forwards; }
+  .backdrop-fade-out { animation: backdropFadeOut 0.28s ease forwards; }
+
+  @keyframes backdropFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes backdropFadeOut { from { opacity: 1; } to { opacity: 0; } }
 }
