@@ -80,7 +80,7 @@ export const AuthenticatedLayout: React.FC = () => {
         {
             path: '/meus-roteiros',
             icon: Compass,
-            label: 'Meus Roteiros',
+            label: 'Passagens',
             showForPassenger: true
         },
         { path: '/passageiros', icon: Users, label: 'Passageiros' },
@@ -178,12 +178,12 @@ export const AuthenticatedLayout: React.FC = () => {
                                 if (['/passageiros', '/onibus', '/financeiro', '/extrato'].includes(item.path)) {
                                     return false;
                                 }
-                                // Only show 'Meus Roteiros' for passengers
+                                // Only show 'Passagens' for passengers
                                 if (item.path === '/meus-roteiros' && user?.role !== UserRole.PASSAGEIRO) {
                                     return false;
                                 }
                             } else {
-                                // Hide 'Meus Roteiros' for admins to keep it focused
+                                // Hide 'Passagens' for admins to keep it focused
                                 if (item.path === '/meus-roteiros') return false;
                             }
                             return true;

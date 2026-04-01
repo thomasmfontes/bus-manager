@@ -157,7 +157,7 @@ export const MyItineraries: React.FC = () => {
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                         <Compass className="text-white" size={20} />
                     </div>
-                    Meus Roteiros
+                    Passagens
                 </h1>
                 <p className="text-gray-500 text-sm ml-[52px] font-medium">Acompanhe suas viagens e detalhes de reserva.</p>
             </div>
