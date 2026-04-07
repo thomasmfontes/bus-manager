@@ -135,7 +135,12 @@ export const TripList: React.FC = () => {
     const tripsByTime = sortedTrips.filter(t => {
         const effectiveFilter = user?.role === UserRole.ADMIN ? timeFilter : 'future';
         if (effectiveFilter === 'all') return true;
-        const isFuture = new Date(t.data_ida) >= now;
+        
+        // A viagem some do "Próximas" apenas 24 horas após a partida
+        const tripDate = new Date(t.data_ida);
+        const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+        const isFuture = cutoffDate >= now;
+        
         return effectiveFilter === 'future' ? isFuture : !isFuture;
     });
 
@@ -260,12 +265,26 @@ export const TripList: React.FC = () => {
             <Card>
                 {loading ? (
                     <div className="py-12"><Spinner size="lg" text="Carregando viagens..." /></div>
-                ) : trips.length === 0 ? (
-                    <div className="text-center py-8">
-                        <p className="text-gray-500 mb-4">Nenhuma viagem cadastrada</p>
-                        <Link to="/viagens/nova">
-                            <Button>Cadastrar Primeira Viagem</Button>
-                        </Link>
+                ) : tripsInView.length === 0 ? (
+                    <div className="text-center py-16">
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-50 rounded-full mb-6 ring-8 ring-gray-50/50">
+                            <Calendar className="text-gray-300" size={36} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {trips.length === 0 ? "Nenhuma viagem cadastrada" : "Nenhuma viagem encontrada"}
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-8 max-w-sm mx-auto leading-relaxed">
+                            {trips.length === 0
+                                ? "Comece criando sua primeira rota para gerenciar passageiros, ônibus e ocupação de forma eficiente."
+                                : "Não encontramos nenhuma viagem que corresponda aos filtros selecionados ou à sua busca no momento."}
+                        </p>
+                        {user?.role === UserRole.ADMIN && (
+                            <Link to="/viagens/nova">
+                                <Button className="px-8 rounded-xl shadow-lg shadow-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 border-none hover:from-blue-700 hover:to-indigo-700">
+                                    {trips.length === 0 ? "Cadastrar Primeira Viagem" : "Criar Nova Viagem"}
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 ) : (
                     <>

@@ -97,8 +97,17 @@ export const Dashboard: React.FC = () => {
         });
     };
 
-    const futureTrips = getSortedTrips(trips.filter(t => new Date(t.data_ida) >= now), 'future');
-    const pastTrips = getSortedTrips(trips.filter(t => new Date(t.data_ida) < now), 'past');
+    const futureTrips = getSortedTrips(trips.filter(t => {
+        const tripDate = new Date(t.data_ida);
+        const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+        return cutoffDate >= now;
+    }), 'future');
+
+    const pastTrips = getSortedTrips(trips.filter(t => {
+        const tripDate = new Date(t.data_ida);
+        const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+        return cutoffDate < now;
+    }), 'past');
     const allTrips = getSortedTrips(trips, 'all');
 
     // For Passengers, force future trips only. For Admins, use the timeFilter.

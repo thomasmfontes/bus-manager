@@ -51,9 +51,12 @@ export const Financeiro: React.FC = () => {
                 }
 
                 // Filtering by time
-                const matchesTime = timeFilter === 'all' || (
-                    timeFilter === 'future' ? new Date(trip.data_ida) >= now : new Date(trip.data_ida) < now
-                );
+                const matchesTime = timeFilter === 'all' || (() => {
+                    const tripDate = new Date(trip.data_ida);
+                    const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+                    const isInGracePeriod = cutoffDate >= now;
+                    return timeFilter === 'future' ? isInGracePeriod : !isInGracePeriod;
+                })();
                 if (!matchesTime) return null;
 
                 // Filtering by selected trip
@@ -188,7 +191,9 @@ export const Financeiro: React.FC = () => {
                             {trips
                                 .filter(t => {
                                     if (timeFilter === 'all') return true;
-                                    const isFuture = new Date(t.data_ida) >= now;
+                                    const tripDate = new Date(t.data_ida);
+                                    const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+                                    const isFuture = cutoffDate >= now;
                                     return timeFilter === 'future' ? isFuture : !isFuture;
                                 })
                                 .sort((a, b) => new Date(a.data_ida).getTime() - new Date(b.data_ida).getTime())

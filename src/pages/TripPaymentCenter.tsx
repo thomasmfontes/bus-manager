@@ -178,8 +178,12 @@ export const TripPaymentCenter = () => {
     // Memoize and format trips for display
     const trips = useMemo(() => {
         const now = new Date();
-        // The selection list only shows future trips
-        return storeTrips.filter(t => new Date(t.data_ida) >= now);
+        // The selection list only shows future trips (including 24h grace period)
+        return storeTrips.filter(t => {
+            const tripDate = new Date(t.data_ida);
+            const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+            return cutoffDate >= now;
+        });
     }, [storeTrips]);
 
     // Initialize from URL or Global Store
@@ -287,7 +291,9 @@ export const TripPaymentCenter = () => {
 
     const isPastTrip = useMemo(() => {
         if (!trip) return false;
-        return new Date(trip.data_ida) < new Date();
+        const tripDate = new Date(trip.data_ida);
+        const cutoffDate = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000);
+        return cutoffDate < new Date();
     }, [trip]);
 
     const selectTrip = (t: Trip) => {
