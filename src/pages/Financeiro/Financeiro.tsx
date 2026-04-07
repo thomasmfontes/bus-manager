@@ -281,7 +281,11 @@ export const Financeiro: React.FC = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-6">
-                                                        {group.totalArrecadado >= group.totalMeta && group.totalMeta > 0 && (
+                                                        {(() => {
+                                                            const tripDate = new Date(group.trip.data_ida);
+                                                            const isFuture = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000) >= now;
+                                                            return isFuture && group.totalArrecadado >= group.totalMeta && group.totalMeta > 0;
+                                                        })() && (
                                                             <button
                                                                 onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalArrecadado })}
                                                                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 active:scale-95 translate-y-[-4px]"
@@ -400,7 +404,11 @@ export const Financeiro: React.FC = () => {
                                                 <p className="text-sm font-mono font-black text-gray-600">R$ {group.totalMeta.toFixed(2)}</p>
                                             </div>
                                         </div>
-                                        {group.totalArrecadado >= group.totalMeta && group.totalMeta > 0 && (
+                                        {(() => {
+                                            const tripDate = new Date(group.trip.data_ida);
+                                            const isFuture = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000) >= now;
+                                            return isFuture && group.totalArrecadado >= group.totalMeta && group.totalMeta > 0;
+                                        })() && (
                                             <div className="px-4 pb-4">
                                                 <button
                                                     onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalArrecadado })}
