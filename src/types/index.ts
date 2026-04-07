@@ -37,6 +37,7 @@ export interface PaymentTransaction {
     status: 'pending' | 'paid' | 'failed' | 'refunded';
     gateway_id?: string;
     passageiros_ids: string[];
+    payer_id?: string;
     payer_name?: string;
     payer_email?: string;
     created_at?: string;

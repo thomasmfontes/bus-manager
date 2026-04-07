@@ -54,7 +54,13 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
                     travelerIds.push(blockedData.id);
                 }
 
-                query = query.in('id', travelerIds);
+                const validUuids = travelerIds.filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || ''));
+
+                if (validUuids.length > 0) {
+                    query = query.in('id', validUuids);
+                } else {
+                    query = query.in('id', ['00000000-0000-0000-0000-000000000000']); // Forçar retorno vazio se não tiver uuids
+                }
             }
 
             const { data, error } = await query.order('nome_completo', { ascending: true });

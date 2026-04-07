@@ -94,22 +94,18 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                 query = query.eq('viagem_id', selectedTripId);
             }
 
-            // If userId is provided, filter for that user (as included passenger)
-            if (userId) {
-                // 1. Find all passenger IDs they PAID for (from enrollments)
-                const { data: enrollments } = await supabase
-                    .from('viagem_passageiros')
-                    .select('passageiro_id')
-                    .eq('pago_por', userId);
-
-                const paidPassengerIds = (enrollments || []).map(e => e.passageiro_id);
-
-                // 3. Collect all related identity IDs
-                // - Their own ID
-                // - Any IDs they paid for
-                const allRelatedIds = [...new Set([userId, ...paidPassengerIds])];
-
-                query = query.overlaps('passageiros_ids', allRelatedIds);
+            // If userId is provided, ensure it's a valid UUID to prevent Postgres errors
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId || '');
+            if (userId && isUUID) {
+                // We show payments where:
+                // 1. The user is the payer (payer_id)
+                // 2. The user is one of the passengers (passageiros_ids contains userId)
+                
+                // Construct the OR filter for Supabase
+                const orFilter = `payer_id.eq.${userId},passageiros_ids.cs.{"${userId}"}`;
+                query = query.or(orFilter);
+            } else if (userId && !isUUID) {
+                console.warn('⚠️ Invalid UUID passed as userId to Statement:', userId);
             }
 
             const { data, error } = await query;
