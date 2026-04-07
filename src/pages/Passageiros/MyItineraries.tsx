@@ -197,11 +197,16 @@ export const MyItineraries: React.FC = () => {
                         // Otherwise, show the "Mapa" button.
                         const showPay = hasActivePending;
 
+                        const tripDate = new Date(trip.data_ida);
+                        const isPast = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000) < new Date();
+
                         return (
                             <Card
                                 key={trip.id}
                                 className={cn(
-                                    "group bg-white border-gray-100 transition-all duration-500 overflow-hidden flex flex-col hover:shadow-2xl hover:shadow-blue-500/10"
+                                    "bg-white border-gray-100 transition-all duration-500 overflow-hidden flex flex-col",
+                                    !isPast && "group hover:shadow-2xl hover:shadow-blue-500/10",
+                                    isPast && "opacity-60 grayscale-[0.4] cursor-not-allowed select-none pointer-events-none"
                                 )}
                             >
                                 {/* Card Header with Status Badge */}
@@ -287,16 +292,16 @@ export const MyItineraries: React.FC = () => {
                                                             key={passenger.id} 
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (canViewTicket) setQrModal({ trip, enrollment, passengerName: passenger.nome_completo });
+                                                                if (canViewTicket && !isPast) setQrModal({ trip, enrollment, passengerName: passenger.nome_completo });
                                                             }}
-                                                            disabled={!canViewTicket}
+                                                            disabled={!canViewTicket || isPast}
                                                             className={cn(
                                                                 "px-3 py-1.5 border rounded-lg text-xs font-bold shadow-sm flex items-center gap-2 transition-all outline-none",
-                                                                depWithdrawn ? "bg-white border-gray-100 text-gray-400 opacity-70 cursor-not-allowed" :
+                                                                (depWithdrawn || isPast) ? "bg-white border-gray-100 text-gray-400 opacity-70 cursor-not-allowed" :
                                                                 canViewTicket ? "bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50 hover:shadow-md active:scale-95 cursor-pointer" :
                                                                 "bg-white border-gray-100 text-gray-700 cursor-default"
                                                             )}
-                                                            title={canViewTicket ? "Ver passagem" : ""}
+                                                            title={canViewTicket && !isPast ? "Ver passagem" : ""}
                                                         >
                                                             {canViewTicket ? (
                                                                 <Ticket size={12} className="text-indigo-500 shrink-0" />
@@ -336,12 +341,17 @@ export const MyItineraries: React.FC = () => {
                                         {myEnrollment && !isWithdrawn && isPaid && (
                                             <Button
                                                 variant="secondary"
+                                                disabled={isPast}
                                                 onClick={() => setQrModal({ 
                                                     trip, 
                                                     enrollment: myEnrollment, 
-                                                    passengerName: user?.full_name 
+                                                    passengerName: user?.full_name || '' 
                                                 })}
-                                                className="flex-1 h-10 rounded-xl text-xs font-bold transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100"
+                                                className={cn(
+                                                    "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
+                                                    !isPast && "hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100",
+                                                    isPast && "bg-gray-50 border-gray-100 text-gray-400"
+                                                )}
                                             >
                                                 <Ticket size={14} className="mr-1.5" />
                                                 Passagem
@@ -351,8 +361,13 @@ export const MyItineraries: React.FC = () => {
                                         {!showPay ? (
                                             <Button
                                                 variant="secondary"
+                                                disabled={isPast}
                                                 onClick={() => navigate(`/viagens/${trip.id}`)}
-                                                className="flex-1 h-10 rounded-xl text-xs font-bold transition-all hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
+                                                className={cn(
+                                                    "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
+                                                    !isPast && "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100",
+                                                    isPast && "bg-gray-50 border-gray-100 text-gray-400"
+                                                )}
                                             >
                                                 Mapa
                                                 <ChevronRight size={14} className="ml-1" />
@@ -360,6 +375,7 @@ export const MyItineraries: React.FC = () => {
                                         ) : (
                                             <Button
                                                 variant="primary"
+                                                disabled={isPast}
                                                 onClick={() => {
                                                     const pendingPids = userEnrollments
                                                         .filter(e =>
@@ -371,7 +387,11 @@ export const MyItineraries: React.FC = () => {
                                                         .join(',');
                                                     navigate(`/pagamento?v=${trip.id}&pids=${pendingPids}`);
                                                 }}
-                                                className="flex-1 h-10 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
+                                                className={cn(
+                                                    "flex-1 h-10 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 border-none transition-all",
+                                                    !isPast && "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                                                    isPast && "bg-gray-200 text-gray-500 shadow-none"
+                                                )}
                                             >
                                                 <CreditCard size={14} className="mr-2" />
                                                 Pagar
