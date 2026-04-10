@@ -142,6 +142,7 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
                         pagamento: enrollmentData?.pagamento || 'Pendente',
                         valor_pago: enrollmentData?.valor_pago || 0,
                         pago_por: enrollmentData?.pago_por,
+                        status: enrollmentData?.status || 'APPROVED',
                     }]);
 
                 if (enrollError) throw enrollError;

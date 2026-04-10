@@ -10,7 +10,8 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users, Camera } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users, Camera, Clock } from 'lucide-react';
+import { IoHandRightOutline } from 'react-icons/io5';
 import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -40,7 +41,7 @@ export const TripSeatMap: React.FC = () => {
     const [selectedPassengerId, setSelectedPassengerId] = useState('');
     const [actionType, setActionType] = useState<'assign' | 'release' | 'block'>('assign');
     const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'map' | 'participants'>('map');
+    const [activeTab, setActiveTab] = useState<'map' | 'participants' | 'waiting'>('map');
     const [loadingAction, setLoadingAction] = useState<'assign' | 'block' | 'release' | 'remove' | null>(null);
     const [scannerOpen, setScannerOpen] = useState(false);
 
@@ -475,6 +476,18 @@ export const TripSeatMap: React.FC = () => {
                         <Users size={18} />
                         <span className="hidden sm:inline">Passageiros</span>
                     </button>
+                    {trip.requires_approval && (
+                        <button
+                            onClick={() => setActiveTab('waiting')}
+                            className={cn(
+                                "flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                                activeTab === 'waiting' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                            )}
+                        >
+                            <IoHandRightOutline size={18} />
+                            <span className="hidden sm:inline">Aguardando</span>
+                        </button>
+                    )}
                     <button
                         onClick={() => setScannerOpen(true)}
                         className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700"
@@ -510,12 +523,25 @@ export const TripSeatMap: React.FC = () => {
                         </div>
                     )}
                 </>
+            ) : activeTab === 'waiting' ? (
+                <TripParticipantsList
+                    trip={trip}
+                    passengers={passengers}
+                    enrollments={enrollments}
+                    onDeleteEnrollment={handleRemoveEnrollment}
+                    initialStatusFilter="Aprovacao"
+                    hideTabs={true}
+                    hideBusFilter={true}
+                    showSummaryTotals={false}
+                />
             ) : (
                 <TripParticipantsList
                     trip={trip}
                     passengers={passengers}
                     enrollments={enrollments}
                     onDeleteEnrollment={handleRemoveEnrollment}
+                    showApprovalTab={false}
+                    showWaitingCount={false}
                 />
             )}
 

@@ -40,13 +40,16 @@ export const Financeiro: React.FC = () => {
                 if (!passenger || !trip || passenger.nome_completo === 'BLOQUEADO') return null;
 
                 const isDesistente = enroll.assento === 'DESISTENTE';
+                const isPendingApproval = enroll.status === 'PENDING';
+                const isRejected = enroll.status === 'REJECTED';
                 
                 // Unified case-insensitive payment check
                 const pStatus = (enroll.pagamento || '').toString().toLowerCase();
                 const isPaid = pStatus === 'pago' || pStatus === 'paid' || pStatus === 'realizado';
 
                 // Exclusion logic: hide withdrawn participants who haven't paid
-                if (isDesistente && !isPaid) {
+                // AND hide those waiting for approval or rejected
+                if ((isDesistente && !isPaid) || isPendingApproval || isRejected) {
                     return null;
                 }
 

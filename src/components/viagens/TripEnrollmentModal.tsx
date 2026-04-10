@@ -66,7 +66,7 @@ export const TripEnrollmentModal: React.FC<TripEnrollmentModalProps> = ({ isOpen
 
     const getOccupiedSeats = (tripId: string) => {
         const { enrollments } = usePassengerStore.getState();
-        return enrollments.filter(e => e.viagem_id === tripId && e.assento !== 'DESISTENTE').length;
+        return enrollments.filter(e => e.viagem_id === tripId && e.assento !== 'DESISTENTE' && e.status === 'APPROVED').length;
     };
 
     const isUserOccupiedInTrip = (tripId: string) => {
@@ -145,7 +145,8 @@ export const TripEnrollmentModal: React.FC<TripEnrollmentModalProps> = ({ isOpen
                 passageiro_id: p.id,
                 pagamento: 'Pendente',
                 pago_por: user.id,
-                valor_pago: 0
+                valor_pago: 0,
+                status: trip.requires_approval ? 'PENDING' : 'APPROVED'
             }));
 
             const isSelfSelected = selectedInterestPassengers.some(p => p.id === user.id);
@@ -158,8 +159,14 @@ export const TripEnrollmentModal: React.FC<TripEnrollmentModalProps> = ({ isOpen
             if (error) throw error;
 
             onClose();
-            showToast('Interesse registrado com sucesso!', 'success');
-            navigate(`/pagamento?v=${trip.id}&pids=${pids}${isSelfSelected ? '&selectSelf=true' : '&skipSelf=true'}`);
+
+            if (trip.requires_approval) {
+                showToast('Solicitação enviada! Aguardando aprovação do organizador.', 'success');
+                // Fica na mesma página (Dashboard/Itineraries)
+            } else {
+                showToast('Interesse registrado com sucesso!', 'success');
+                navigate(`/pagamento?v=${trip.id}&pids=${pids}${isSelfSelected ? '&selectSelf=true' : '&skipSelf=true'}`);
+            }
         } catch (err) {
             console.error('Error confirming interest:', err);
             showToast('Erro ao registrar interesse', 'error');
@@ -238,10 +245,12 @@ export const TripEnrollmentModal: React.FC<TripEnrollmentModalProps> = ({ isOpen
 
                             <div className="space-y-2">
                                 <h3 className="text-2xl font-bold text-gray-900">
-                                    Tenho Interesse!
+                                    {trip.requires_approval ? 'Solicitar Participação' : 'Tenho Interesse!'}
                                 </h3>
                                 <p className="text-gray-500 max-w-[280px]">
-                                    Demonstre seu interesse nesta excursão para que possamos entrar em contato e garantir sua vaga.
+                                    {trip.requires_approval 
+                                        ? 'Esta excursão requer a aprovação manual do organizador.' 
+                                        : 'Demonstre seu interesse nesta excursão para que possamos entrar em contato e garantir sua vaga.'}
                                 </p>
                             </div>
                         </div>

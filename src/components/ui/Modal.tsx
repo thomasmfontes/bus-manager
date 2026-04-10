@@ -25,18 +25,26 @@ export const Modal: React.FC<ModalProps> = ({
     className,
     showCloseButton = true,
 }) => {
+    const [shouldRender, setShouldRender] = useState(isOpen);
+    const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+
     useEffect(() => {
         if (isOpen) {
+            setShouldRender(true);
+            setIsAnimatingOut(false);
             document.body.style.overflow = 'hidden';
-        } else {
+        } else if (shouldRender) {
+            setIsAnimatingOut(true);
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+                setIsAnimatingOut(false);
+            }, 200); // matching fade-out/slide-out-up duration in index.css
             document.body.style.overflow = 'unset';
+            return () => clearTimeout(timer);
         }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
     }, [isOpen]);
 
-    if (!isOpen) return null;
+    if (!shouldRender) return null;
 
     const sizes = {
         sm: 'max-w-md',
@@ -46,17 +54,23 @@ export const Modal: React.FC<ModalProps> = ({
     };
 
     const modalContent = (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+        <div className={cn(
+            "fixed inset-0 z-[9999] flex items-center justify-center p-4",
+            isAnimatingOut ? "fade-out" : "fade-in"
+        )}>
             {/* Backdrop with blur */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity cursor-pointer"
+                className={cn(
+                    "absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity cursor-pointer",
+                    isAnimatingOut ? "opacity-0" : "opacity-100"
+                )}
                 onClick={showCloseButton ? onClose : undefined}
             />
 
             {/* Modal Container */}
             <div className={cn(
                 'relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col',
-                'animate-in zoom-in-95 duration-300',
+                isAnimatingOut ? "slide-out-up" : "animate-in",
                 sizes[size],
                 className
             )}>

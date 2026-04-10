@@ -68,14 +68,12 @@ export const Dashboard: React.FC = () => {
         const trip = trips.find(t => t.id === tripId);
         if (!trip) return 0;
 
-        // Count any active (non-desistente) enrollment as occupying a spot
         return enrollments.filter((e) => {
             if (e.viagem_id !== tripId) return false;
-
-            // Exclude soft-deleted (cancelled) seats from occupancy count
             if (e.assento === 'DESISTENTE') return false;
-
-            return true; // If they expressed interest, they take a spot until cancelled
+            // Waitlist (pending/rejected approval) does not occupy a seat
+            if (e.status === 'PENDING' || e.status === 'REJECTED') return false;
+            return true;
         }).length;
     };
 
@@ -182,18 +180,29 @@ export const Dashboard: React.FC = () => {
         try {
             const { data: results, error } = await supabase
                 .from('viagem_passageiros')
-                .select('id, pagamento')
+                .select('id, pagamento, status')
                 .eq('viagem_id', trip.id)
                 .or(`pago_por.eq.${user?.id},passageiro_id.eq.${user?.id}`);
 
             if (error) throw error;
 
+            const pendingApproval = results?.find(r => r.status === 'PENDING' || r.status === 'REJECTED');
+            
+            if (pendingApproval) {
+                if (pendingApproval.status === 'PENDING') {
+                    showToast('Sua solicitação de participação ainda está aguardando aprovação do organizador.', 'warning');
+                } else {
+                    showToast('A sua solicitação para participar desta viagem não foi aprovada.', 'error');
+                }
+                return;
+            }
+
             const paidEnrollment = results?.find(r => ['Pago', 'Realizado'].includes(r.pagamento));
-            const pendingEnrollment = results?.find(r => r.pagamento === 'Pendente');
+            const pendingPayment = results?.find(r => r.pagamento === 'Pendente');
 
             if (paidEnrollment) {
                 navigate(`/viagens/${trip.id}`);
-            } else if (pendingEnrollment) {
+            } else if (pendingPayment) {
                 // If already has pending interest, go directly to payment center
                 navigate(`/pagamento?v=${trip.id}`);
             } else {

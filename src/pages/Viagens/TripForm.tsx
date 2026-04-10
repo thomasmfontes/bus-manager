@@ -27,6 +27,7 @@ export const TripForm: React.FC = () => {
         origem_endereco: '',
         destino_endereco: '',
         meta_financeira: '' as string | number,
+        requires_approval: false,
     });
 
     const [isBusModalOpen, setIsBusModalOpen] = useState(false);
@@ -82,6 +83,7 @@ export const TripForm: React.FC = () => {
                 origem_endereco: formData.origem_endereco,
                 destino_endereco: formData.destino_endereco,
                 meta_financeira: typeof formData.meta_financeira === 'string' ? parseFloat(formData.meta_financeira) || 0 : formData.meta_financeira,
+                requires_approval: formData.requires_approval,
             });
             showToast('Viagem cadastrada com sucesso!', 'success');
             navigate('/viagens');
@@ -190,6 +192,26 @@ export const TripForm: React.FC = () => {
                             min="0"
                             step="0.01"
                         />
+                    </div>
+
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                        <div className="flex items-center h-5 mt-1">
+                            <input
+                                id="requires_approval"
+                                type="checkbox"
+                                checked={formData.requires_approval}
+                                onChange={(e) => setFormData({ ...formData, requires_approval: e.target.checked })}
+                                className="w-5 h-5 rounded border-gray-300 text-[var(--accent-color)] focus:ring-[var(--accent-color)] cursor-pointer"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="requires_approval" className="text-sm font-bold text-gray-900 cursor-pointer">
+                                Exige Aprovação do Organizador
+                            </label>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                Se marcado, os passageiros ficarão em uma lista de espera e não ocuparão lugares até a aprovação manual.
+                            </p>
+                        </div>
                     </div>
 
 

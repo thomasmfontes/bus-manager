@@ -30,6 +30,8 @@ export const TripList: React.FC = () => {
         return enrollments.filter((e) => {
             if (e.viagem_id !== tripId) return false;
             if (e.assento === 'DESISTENTE') return false;
+            // Waitlist (pending/rejected approval) does not occupy a seat
+            if (e.status === 'PENDING' || e.status === 'REJECTED') return false;
             return true;
         }).length;
     };
@@ -83,7 +85,7 @@ export const TripList: React.FC = () => {
             // Check if there's a confirmed payment for this passenger in this trip
             const { data: results, error } = await supabase
                 .from('viagem_passageiros')
-                .select('id, pagamento')
+                .select('id, pagamento, status')
                 .eq('viagem_id', trip.id)
                 .or(`passageiro_id.eq.${user?.id},pago_por.eq.${user?.id}`);
 
@@ -96,8 +98,14 @@ export const TripList: React.FC = () => {
                 // Payment confirmed, go to map
                 navigate(`/viagens/${trip.id}`);
             } else if (pendingEnrollment) {
-                // Already enrolled as pending, go directly to payment
-                navigate(`/pagamento?v=${trip.id}`);
+                if (pendingEnrollment.status === 'PENDING') {
+                    showToast('Sua solicitação de participação ainda está aguardando aprovação do organizador.', 'warning');
+                } else if (pendingEnrollment.status === 'REJECTED') {
+                    showToast('A sua solicitação para participar desta viagem não foi aprovada.', 'error');
+                } else {
+                    // Approved and pending payment -> go to payment
+                    navigate(`/pagamento?v=${trip.id}`);
+                }
             } else {
                 // No enrollment, show modal
                 setPaymentModalTrip(trip);

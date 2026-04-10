@@ -25,6 +25,7 @@ export interface Trip {
     chave_pix?: string;
     titular_pix?: string;
     gateway_api_key?: string;
+    requires_approval?: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -93,6 +94,7 @@ export interface TripEnrollment {
     pagamento?: string;
     valor_pago?: number;
     pago_por?: string;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED';
     created_at?: string;
     updated_at?: string;
     // Virtual: loaded attendance records for this enrollment

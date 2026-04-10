@@ -126,7 +126,13 @@ export const MyItineraries: React.FC = () => {
 
             // Set status based on any enrollment related to this trip (prefer user's own if exists)
             if (e.passageiro_id === user?.id || !data.status || data.status === 'Pendente') {
-                data.status = e.pagamento || 'Pendente';
+                if (e.status === 'PENDING') {
+                    data.status = 'Aguardando Aprovação';
+                } else if (e.status === 'REJECTED') {
+                    data.status = 'Recusado';
+                } else {
+                    data.status = e.pagamento || 'Pendente';
+                }
             }
         });
 
@@ -190,7 +196,8 @@ export const MyItineraries: React.FC = () => {
                         const hasActivePending = userEnrollments.some(e =>
                             e.viagem_id === trip.id &&
                             e.pagamento === 'Pendente' &&
-                            e.assento !== 'DESISTENTE'
+                            e.assento !== 'DESISTENTE' &&
+                            e.status === 'APPROVED'
                         );
 
                         // If there's at least one active passenger pending payment, show the "Pagar" button.
@@ -224,10 +231,12 @@ export const MyItineraries: React.FC = () => {
                                         "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm",
                                         isWithdrawn ? "bg-gray-100 text-gray-500 border border-gray-200" :
                                             isPaid ? "bg-green-50 text-green-600 border border-green-100" :
+                                                status === 'Aguardando Aprovação' ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                                                    status === 'Recusado' ? "bg-red-50 text-red-600 border border-red-100" :
                                                 isPending ? "bg-amber-50 text-amber-600 border border-amber-100" :
                                                     "bg-gray-50 text-gray-500 border border-gray-100"
                                     )}>
-                                        {isWithdrawn ? <AlertCircle size={12} /> : isPaid ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                                        {isWithdrawn || status === 'Recusado' ? <AlertCircle size={12} /> : isPaid ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                                         {isWithdrawn ? "Desistente" : status}
                                     </div>
                                 </div>
@@ -336,68 +345,71 @@ export const MyItineraries: React.FC = () => {
                                     </div>
 
                                     {/* Button row */}
-                                    <div className="flex gap-2">
-                                        {/* QR Ticket button — only for own enrollment, not withdrawn, and MUST BE PAID */}
-                                        {myEnrollment && !isWithdrawn && isPaid && (
-                                            <Button
-                                                variant="secondary"
-                                                disabled={isPast}
-                                                onClick={() => setQrModal({ 
-                                                    trip, 
-                                                    enrollment: myEnrollment, 
-                                                    passengerName: user?.full_name || '' 
-                                                })}
-                                                className={cn(
-                                                    "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
-                                                    !isPast && "hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100",
-                                                    isPast && "bg-gray-50 border-gray-100 text-gray-400"
-                                                )}
-                                            >
-                                                <Ticket size={14} className="mr-1.5" />
-                                                Passagem
-                                            </Button>
-                                        )}
+                                    {status !== 'Aguardando Aprovação' && status !== 'Recusado' && (
+                                        <div className="flex gap-2">
+                                            {/* QR Ticket button — only for own enrollment, not withdrawn, and MUST BE PAID */}
+                                            {myEnrollment && !isWithdrawn && isPaid && (
+                                                <Button
+                                                    variant="secondary"
+                                                    disabled={isPast}
+                                                    onClick={() => setQrModal({ 
+                                                        trip, 
+                                                        enrollment: myEnrollment, 
+                                                        passengerName: user?.full_name || '' 
+                                                    })}
+                                                    className={cn(
+                                                        "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
+                                                        !isPast && "hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100",
+                                                        isPast && "bg-gray-50 border-gray-100 text-gray-400"
+                                                    )}
+                                                >
+                                                    <Ticket size={14} className="mr-1.5" />
+                                                    Passagem
+                                                </Button>
+                                            )}
 
-                                        {!showPay ? (
-                                            <Button
-                                                variant="secondary"
-                                                disabled={isPast}
-                                                onClick={() => navigate(`/viagens/${trip.id}`)}
-                                                className={cn(
-                                                    "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
-                                                    !isPast && "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100",
-                                                    isPast && "bg-gray-50 border-gray-100 text-gray-400"
-                                                )}
-                                            >
-                                                Mapa
-                                                <ChevronRight size={14} className="ml-1" />
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                variant="primary"
-                                                disabled={isPast}
-                                                onClick={() => {
+                                            {!showPay ? (
+                                                <Button
+                                                    variant="secondary"
+                                                    disabled={isPast}
+                                                    onClick={() => navigate(`/viagens/${trip.id}`)}
+                                                    className={cn(
+                                                        "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
+                                                        !isPast && "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100",
+                                                        isPast && "bg-gray-50 border-gray-100 text-gray-400"
+                                                    )}
+                                                >
+                                                    Mapa
+                                                    <ChevronRight size={14} className="ml-1" />
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="primary"
+                                                    disabled={isPast}
+                                                    onClick={() => {
                                                     const pendingPids = userEnrollments
-                                                        .filter(e =>
-                                                            e.viagem_id === trip.id &&
-                                                            e.pagamento === 'Pendente' &&
-                                                            e.assento !== 'DESISTENTE'
-                                                        )
-                                                        .map(e => e.passageiro_id)
-                                                        .join(',');
-                                                    navigate(`/pagamento?v=${trip.id}&pids=${pendingPids}`);
-                                                }}
-                                                className={cn(
-                                                    "flex-1 h-10 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 border-none transition-all",
-                                                    !isPast && "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
-                                                    isPast && "bg-gray-200 text-gray-500 shadow-none"
-                                                )}
-                                            >
-                                                <CreditCard size={14} className="mr-2" />
-                                                Pagar
-                                            </Button>
-                                        )}
-                                    </div>
+                                                            .filter(e =>
+                                                                e.viagem_id === trip.id &&
+                                                                e.pagamento === 'Pendente' &&
+                                                                e.assento !== 'DESISTENTE' &&
+                                                                e.status === 'APPROVED'
+                                                            )
+                                                            .map(e => e.passageiro_id)
+                                                            .join(',');
+                                                        navigate(`/pagamento?v=${trip.id}&pids=${pendingPids}`);
+                                                    }}
+                                                    className={cn(
+                                                        "flex-1 h-10 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 border-none transition-all",
+                                                        !isPast && "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                                                        isPast && "bg-gray-200 text-gray-500 shadow-none"
+                                                    )}
+                                                >
+                                                    <CreditCard size={14} className="mr-2" />
+                                                    Pagar
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
                         );

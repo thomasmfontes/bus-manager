@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Trip, Passenger } from '@/types';
+import { Trip, Passenger, UserRole } from '@/types';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,7 @@ import { useBusStore } from '@/stores/useBusStore';
 import { useTripStore } from '@/stores/useTripStore';
 import { Statement } from './Financeiro/Statement';
 import { Spinner } from '@/components/ui/Spinner';
+import { TripEnrollmentModal } from '@/components/viagens/TripEnrollmentModal';
 
 export const TripPaymentCenter = () => {
     const navigate = useNavigate();
@@ -61,6 +62,7 @@ export const TripPaymentCenter = () => {
     const hasInitialPids = useRef(!!new URLSearchParams(window.location.search).get('pids'));
     const [showFloatingCart, setShowFloatingCart] = useState(!hasInitialPids.current);
     const prevTripIdRef = useRef<string | null>(initialTripId || selectedTripId || null);
+    const [paymentModalTrip, setPaymentModalTrip] = useState<Trip | null>(null);
 
     // Prevent background scrolling when summary is open AND has items
     useEffect(() => {
@@ -220,6 +222,17 @@ export const TripPaymentCenter = () => {
         if (selectedTripId) {
             const autoSelected = tryAutoSelect(selectedTripId);
             if (autoSelected) {
+                const myEnrollment = enrollments.find(e =>
+                    e.viagem_id === selectedTripId &&
+                    (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
+                    e.assento !== 'DESISTENTE'
+                );
+                const t = storeTrips.find(t => t.id === selectedTripId);
+
+                if (t?.requires_approval && (myEnrollment?.status === 'PENDING' || myEnrollment?.status === 'REJECTED')) {
+                    setStep('trip-selection');
+                    return;
+                }
                 setStep('payment-flow');
             }
         }
@@ -234,18 +247,29 @@ export const TripPaymentCenter = () => {
                 const isUserEnrolled = isUserOccupiedInTrip(t.id);
 
                 if (hasVacancies || isUserEnrolled) {
+                    const myEnrollment = enrollments.find(e =>
+                        e.viagem_id === selectedTripId &&
+                        (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
+                        e.assento !== 'DESISTENTE'
+                    );
+
+                    if (t.requires_approval && (myEnrollment?.status === 'PENDING' || myEnrollment?.status === 'REJECTED')) {
+                        setTrip(null);
+                        setStep('trip-selection');
+                        setSelectedTripFilterId(selectedTripId); // keep filter on that trip so its card is visible
+                        return;
+                    }
+
                     setTrip(t);
                     setStep('payment-flow');
                     setSelectedTripFilterId(selectedTripId);
                 } else {
-                    // Force deselect if they try to select a sold-out trip globally
                     setTrip(null);
                     setStep('trip-selection');
                     setSelectedTripFilterId('all');
                 }
             }
         } else if (step === 'payment-flow') {
-            // Only reset if we were showing a specific trip flow
             setTrip(null);
             setStep('trip-selection');
             setSelectedTripFilterId('all');
@@ -255,10 +279,9 @@ export const TripPaymentCenter = () => {
     const getVacancies = (t: Trip) => {
         const occupied = enrollments.filter((e) => {
             if (e.viagem_id !== t.id) return false;
-
-            // Exclude soft-deleted (cancelled) seats from occupancy count
             if (e.assento === 'DESISTENTE') return false;
-
+            // Waitlist (pending/rejected approval) does not occupy a seat
+            if (e.status === 'PENDING' || e.status === 'REJECTED') return false;
             return true;
         }).length;
 
@@ -376,8 +399,13 @@ export const TripPaymentCenter = () => {
     const togglePassengerSelection = (p: Passenger) => {
         if (!trip) return;
 
+        // ENSURE we only look at the enrollment for THE CURRENT TRIP
+        const pEnrollment = (p.enrollment?.viagem_id === trip.id ? p.enrollment : null) || 
+                           enrollments.find(e => e.passageiro_id === p.id && e.viagem_id === trip.id && e.assento !== 'DESISTENTE');
+                           
+        const isPaid = pEnrollment?.pagamento === 'Pago' || pEnrollment?.pagamento === 'Realizado';
+
         // Only block if they are already paid FOR THIS trip
-        const isPaid = p.enrollment?.viagem_id === trip.id && (p.enrollment?.pagamento === 'Pago' || p.enrollment?.pagamento === 'Realizado');
         if (isPaid) {
             showToast('Este passageiro já está pago neste roteiro', 'info');
             return;
@@ -385,14 +413,26 @@ export const TripPaymentCenter = () => {
 
         const isCurrentlySelected = selectedPassengers.some(item => item.id === p.id);
 
-        // If trying to add (not remove) and not already accounted for by admin/payment
-        if (!isCurrentlySelected && !isAccountedFor(p.id)) {
-            const vacancies = getVacancies(trip);
-            const cartNewOccupantsCount = selectedPassengers.filter(item => !isAccountedFor(item.id)).length;
-
-            if (vacancies - cartNewOccupantsCount <= 0) {
-                showToast('Não há vagas/cotas suficientes para adicionar este passageiro.', 'error');
+        // If trying to add (not remove)
+        if (!isCurrentlySelected) {
+            if (trip.requires_approval && (!pEnrollment || pEnrollment.status !== 'APPROVED')) {
+                showToast('Este passageiro precisa solicitar aprovação prévia para esta viagem.', 'error');
                 return;
+            }
+
+            if (pEnrollment?.status === 'PENDING' || pEnrollment?.status === 'REJECTED') {
+                showToast('A solicitação deste passageiro está pendente ou foi recusada.', 'error');
+                return;
+            }
+
+            if (!isAccountedFor(p.id)) {
+                const vacancies = getVacancies(trip);
+                const cartNewOccupantsCount = selectedPassengers.filter(item => !isAccountedFor(item.id)).length;
+
+                if (vacancies - cartNewOccupantsCount <= 0) {
+                    showToast('Não há vagas/cotas suficientes para adicionar este passageiro.', 'error');
+                    return;
+                }
             }
         }
 
@@ -698,22 +738,56 @@ export const TripPaymentCenter = () => {
                                         <div key={selectedTripFilterId} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 pt-4 pb-12 fade-in duration-700">
                                             {trips
                                                 .filter(t => selectedTripFilterId === 'all' || t.id === selectedTripFilterId)
-                                                .map(t => (
+                                                .map(t => {
+                                                    const myEnrollment = enrollments.find(e =>
+                                                        e.viagem_id === t.id &&
+                                                        (e.passageiro_id === user?.id || e.pago_por === user?.id) &&
+                                                        e.assento !== 'DESISTENTE'
+                                                    );
+                                                    const isPending = t.requires_approval && myEnrollment?.status === 'PENDING';
+                                                    const isRejected = t.requires_approval && myEnrollment?.status === 'REJECTED';
+                                                    const isBlocked = isPending || isRejected;
+
+                                                    return (
                                                     <div
                                                         key={t.id}
                                                         onClick={() => {
-                                                            const vacs = getVacancies(t);
-                                                            const occupied = isUserOccupiedInTrip(t.id);
-                                                            if (vacs > 0 || occupied) selectTrip(t);
-                                                            else showToast('Lotação Esgotada para este roteiro', 'warning');
+                                                            if (user?.role === UserRole.ADMIN) {
+                                                                navigate(`/viagens/${t.id}`);
+                                                                return;
+                                                            }
+                                                            if (isPending) {
+                                                                showToast('Sua solicitação de participação ainda está aguardando aprovação do organizador.', 'warning');
+                                                                return;
+                                                            }
+                                                            if (isRejected) {
+                                                                showToast('A sua solicitação para participar desta viagem não foi aprovada.', 'error');
+                                                                return;
+                                                            }
+
+                                                            // If already participated/occupied, go straight to selection
+                                                            if (isUserOccupiedInTrip(t.id)) {
+                                                                selectTrip(t);
+                                                            } else {
+                                                                // Otherwise, show info modal first (consistent with Dash)
+                                                                setPaymentModalTrip(t);
+                                                            }
                                                         }}
                                                         className={cn(
-                                                            "group relative bg-white rounded-2xl border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
-                                                            (getVacancies(t) <= 0 && !isUserOccupiedInTrip(t.id)) && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0 pointer-events-none"
+                                                            "group relative bg-white rounded-2xl border transition-all duration-500 cursor-pointer overflow-hidden flex flex-col",
+                                                            isPending && "border-amber-200 bg-amber-50/30 hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-2",
+                                                            isRejected && "border-red-200 bg-red-50/20 hover:shadow-xl hover:shadow-red-500/10 hover:-translate-y-2",
+                                                            !isBlocked && "border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 hover:border-blue-200/50 hover:-translate-y-2",
+                                                            (getVacancies(t) <= 0 && !isUserOccupiedInTrip(t.id) && !isBlocked) && "opacity-75 grayscale-[0.5] cursor-not-allowed hover:translate-y-0 pointer-events-none"
                                                         )}
                                                     >
                                                         {/* Decorator Gradient Header */}
-                                                        <div className="h-20 bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700 p-6 flex flex-col justify-center relative overflow-hidden">
+                                                        <div className={cn(
+                                                            "h-20 p-6 flex flex-col justify-center relative overflow-hidden",
+                                                            isPending ? "bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-400" :
+                                                            isRejected ? "bg-gradient-to-br from-red-500 via-red-500 to-rose-600" :
+                                                            "bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700"
+                                                        )}>
                                                             {/* Abstract Shapes */}
                                                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/15 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse" />
                                                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-sky-400/20 rounded-full blur-2xl -ml-12 -mb-12" />
@@ -721,7 +795,7 @@ export const TripPaymentCenter = () => {
                                                             <div className="relative flex justify-between items-center">
                                                                 <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl border border-white/30 shadow-sm">
                                                                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] leading-none">
-                                                                        {t.data_ida ? new Date(t.data_ida).toLocaleDateString('pt-BR', { month: 'long' }) : 'Próxima'}
+                                                                        {isPending ? 'Aguardando Aprovação' : isRejected ? 'Solicitação Recusada' : (t.data_ida ? new Date(t.data_ida).toLocaleDateString('pt-BR', { month: 'long' }) : 'Próxima')}
                                                                     </p>
                                                                 </div>
                                                                 <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:bg-white group-hover:text-blue-600 group-hover:scale-110 transition-all duration-300">
@@ -795,17 +869,24 @@ export const TripPaymentCenter = () => {
                                                                 <div
                                                                     className={cn(
                                                                         "h-12 px-6 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] flex items-center justify-center transition-all duration-300",
+                                                                        isPending ? "bg-amber-400 text-white" :
+                                                                        isRejected ? "bg-red-100 text-red-600" :
                                                                         (getVacancies(t) > 0 || isUserOccupiedInTrip(t.id))
                                                                             ? "bg-gray-900 text-white group-hover:bg-blue-600 group-hover:shadow-xl group-hover:shadow-blue-500/40"
                                                                             : "bg-gray-100 text-gray-400 cursor-not-allowed"
                                                                     )}
                                                                 >
-                                                                    {(getVacancies(t) > 0 || isUserOccupiedInTrip(t.id)) ? "Selecionar" : "Esgotado"}
+                                                                    {isPending ? 'Aguardando' :
+                                                                     isRejected ? 'Recusado' :
+                                                                     t.requires_approval && !enrollments.some(e => e.viagem_id === t.id && (e.passageiro_id === user?.id || e.pago_por === user?.id) && e.status === 'APPROVED' && (e.pagamento === 'Pendente' || e.pagamento === 'pending'))
+                                                                        ? 'Solicitar'
+                                                                        : (getVacancies(t) > 0 || isUserOccupiedInTrip(t.id)) ? 'Selecionar' : 'Esgotado'}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                         </div>
                                     )}
                                 </div>
@@ -860,15 +941,17 @@ export const TripPaymentCenter = () => {
                                                 {searchResults.map(p => {
                                                     const isSelected = selectedPassengers.find(item => item.id === p.id);
                                                     const isPaid = tripPayments.has(p.id);
+                                                    const pEnrollment = p.enrollment || enrollments.find(e => e.passageiro_id === p.id && e.viagem_id === trip?.id && e.assento !== 'DESISTENTE');
+                                                    const isPendingApproval = trip?.requires_approval && (!pEnrollment || pEnrollment.status !== 'APPROVED');
 
                                                     return (
                                                         <div
                                                             key={p.id}
-                                                            onClick={() => !isPaid && togglePassengerSelection(p)}
+                                                            onClick={() => !isPaid && !isPendingApproval && togglePassengerSelection(p)}
                                                             className={cn(
                                                                 "flex items-center justify-between p-4 rounded-2xl transition-all cursor-pointer group",
                                                                 isSelected ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-white hover:bg-gray-50 border border-transparent hover:border-gray-100',
-                                                                isPaid && 'opacity-40 cursor-not-allowed grayscale'
+                                                                (isPaid || isPendingApproval) && 'opacity-40 cursor-not-allowed grayscale'
                                                             )}
                                                         >
                                                             <div className="flex items-center gap-3">
@@ -883,7 +966,7 @@ export const TripPaymentCenter = () => {
                                                                         {p.nome_completo}
                                                                     </p>
                                                                     <p className={cn("text-[10px] uppercase font-black tracking-widest", isSelected ? 'text-blue-100' : 'text-gray-400')}>
-                                                                        {isPaid ? 'Pagamento Confirmado' : p.cpf_rg || 'Sem Documento'}
+                                                                        {isPaid ? 'Pagamento Confirmado' : isPendingApproval ? 'Aprovação Pendente' : p.cpf_rg || 'Sem Documento'}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -1166,6 +1249,12 @@ export const TripPaymentCenter = () => {
                     </div>
                 )}
             </div>
+            {/* Trip Enrollment Modal (Info Modal) */}
+            <TripEnrollmentModal
+                isOpen={!!paymentModalTrip}
+                onClose={() => setPaymentModalTrip(null)}
+                trip={paymentModalTrip}
+            />
         </div >
     );
 };

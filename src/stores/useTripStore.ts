@@ -84,6 +84,7 @@ export const useTripStore = create<TripState>()(
                             chave_pix: trip.chave_pix,
                             titular_pix: trip.titular_pix,
                             gateway_api_key: trip.gateway_api_key,
+                            requires_approval: trip.requires_approval,
                         }])
                         .select()
                         .single();
@@ -136,6 +137,7 @@ export const useTripStore = create<TripState>()(
                     if (trip.chave_pix !== undefined) updates.chave_pix = trip.chave_pix;
                     if (trip.titular_pix !== undefined) updates.titular_pix = trip.titular_pix;
                     if (trip.gateway_api_key !== undefined) updates.gateway_api_key = trip.gateway_api_key;
+                    if (trip.requires_approval !== undefined) updates.requires_approval = trip.requires_approval;
 
                     const { data: updatedData, error: tripError } = await supabase
                         .from('viagens')
