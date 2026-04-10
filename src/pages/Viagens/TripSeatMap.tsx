@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SeatMap } from '@/components/seating/SeatMap';
 import { SeatLegend } from '@/components/seating/SeatLegend';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users, Camera, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Bus as BusIcon, Check, X, Unlock, Lock, AlertCircle, ExternalLink, Pencil, Users, Camera } from 'lucide-react';
 import { IoHandRightOutline } from 'react-icons/io5';
 import { cn } from '@/utils/cn';
 import { SeatStatus, UserRole } from '@/types';
