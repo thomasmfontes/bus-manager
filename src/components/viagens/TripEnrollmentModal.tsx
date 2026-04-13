@@ -364,7 +364,6 @@ export const TripEnrollmentModal: React.FC<TripEnrollmentModalProps> = ({ isOpen
                                     value={passengerSearch}
                                     onChange={(e) => setPassengerSearch(e.target.value)}
                                     className="w-full h-12 pl-11 pr-4 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 transition-all outline-none font-bold text-sm"
-                                    autoFocus
                                 />
                             </div>
 
