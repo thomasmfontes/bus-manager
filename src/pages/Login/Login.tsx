@@ -9,8 +9,8 @@ export const Login: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-soft-xl p-5 md:p-8 w-full max-w-2xl border border-gray-100 fade-in duration-500">
                 <div className="text-center mb-5 md:mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-3 md:mb-4 shadow-lg">
-                        <Bus className="text-white w-8 h-8 md:w-10 md:h-10" strokeWidth={2} />
+                    <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-2xl mb-4 md:mb-5 shadow-lg overflow-hidden border border-gray-100 bg-white">
+                        <img src="/baixados.png" alt="Bus Manager" className="w-full h-full object-cover" />
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">Bus Manager</h1>
                     <p className="text-gray-600 text-base md:text-lg">Sistema de Gerenciamento de Assentos</p>
