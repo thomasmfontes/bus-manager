@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bus, Shield, Users } from 'lucide-react';
+import { Shield, Users } from 'lucide-react';
 
 export const Login: React.FC = () => {
     const navigate = useNavigate();
