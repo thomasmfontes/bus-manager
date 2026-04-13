@@ -63,7 +63,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
         <ToastContext.Provider value={{ showToast }}>
             {children}
             <div className={cn(
-                "fixed z-[100] flex flex-col gap-3 pointer-events-none",
+                "fixed z-[99999] flex flex-col gap-3 pointer-events-none",
                 "bottom-4 inset-x-4 sm:bottom-6 sm:right-6 sm:left-auto sm:max-w-md",
                 "transition-all duration-300"
             )}>
