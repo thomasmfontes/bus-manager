@@ -148,13 +148,18 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
     // Helper to group payments by date
     const groupedPayments = useMemo(() => {
         return (payments || []).reduce((groups: { [key: string]: any[] }, payment) => {
-            const date = new Date(payment.created_at).toISOString().split('T')[0];
+            const d = new Date(payment.created_at);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const date = `${year}-${month}-${day}`;
+            
             if (!groups[date]) {
                 groups[date] = [];
             }
             groups[date].push(payment);
             return groups;
-        }, {});
+        }, {} as Record<string, any[]>);
     }, [payments]);
 
     // Helper to format date in Itaú style (long date)
