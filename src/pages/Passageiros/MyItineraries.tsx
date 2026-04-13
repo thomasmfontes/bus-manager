@@ -217,18 +217,18 @@ export const MyItineraries: React.FC = () => {
                                 )}
                             >
                                 {/* Card Header with Status Badge */}
-                                <div className="p-6 border-b border-gray-50 flex items-start justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <h3 className="text-lg font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">
+                                <div className="p-5 border-b border-gray-50 flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <h3 className="text-base font-black text-gray-900 leading-tight truncate group-hover:text-blue-600 transition-colors">
                                             {trip.nome}
                                         </h3>
-                                        <div className="flex items-center gap-2 text-gray-400 font-bold">
-                                            <MapPin size={12} />
-                                            <span className="text-[10px] uppercase tracking-widest">{trip.destino}</span>
+                                        <div className="flex items-center gap-1.5 text-gray-400 font-bold min-w-0">
+                                            <MapPin size={11} className="shrink-0" />
+                                            <span className="text-[10px] uppercase tracking-widest truncate">{trip.destino}</span>
                                         </div>
                                     </div>
                                     <div className={cn(
-                                        "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm",
+                                        "shrink-0 px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm whitespace-nowrap",
                                         isWithdrawn ? "bg-gray-100 text-gray-500 border border-gray-200" :
                                             isPaid ? "bg-green-50 text-green-600 border border-green-100" :
                                                 status === 'Aguardando Aprovação' ? "bg-orange-50 text-orange-600 border border-orange-100" :
@@ -310,7 +310,7 @@ export const MyItineraries: React.FC = () => {
                                                                 canViewTicket ? "bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50 hover:shadow-md active:scale-95 cursor-pointer" :
                                                                 "bg-white border-gray-100 text-gray-700 cursor-default"
                                                             )}
-                                                            title={canViewTicket && !isPast ? "Ver passagem" : ""}
+                                                            title={canViewTicket && !isPast ? "Passagem" : ""}
                                                         >
                                                             {canViewTicket ? (
                                                                 <Ticket size={12} className="text-indigo-500 shrink-0" />
@@ -346,7 +346,7 @@ export const MyItineraries: React.FC = () => {
 
                                     {/* Button row */}
                                     {status !== 'Aguardando Aprovação' && status !== 'Recusado' && (
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-col sm:flex-row gap-2">
                                             {/* QR Ticket button — only for own enrollment, not withdrawn, and MUST BE PAID */}
                                             {myEnrollment && !isWithdrawn && isPaid && (
                                                 <Button
@@ -358,12 +358,12 @@ export const MyItineraries: React.FC = () => {
                                                         passengerName: user?.full_name || '' 
                                                     })}
                                                     className={cn(
-                                                        "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
+                                                        "w-full sm:flex-1 h-11 rounded-xl text-sm font-bold transition-all",
                                                         !isPast && "hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100",
                                                         isPast && "bg-gray-50 border-gray-100 text-gray-400"
                                                     )}
                                                 >
-                                                    <Ticket size={14} className="mr-1.5" />
+                                                    <Ticket size={16} className="mr-2 shrink-0" />
                                                     Passagem
                                                 </Button>
                                             )}
@@ -374,13 +374,13 @@ export const MyItineraries: React.FC = () => {
                                                     disabled={isPast}
                                                     onClick={() => navigate(`/viagens/${trip.id}`)}
                                                     className={cn(
-                                                        "flex-1 h-10 rounded-xl text-xs font-bold transition-all",
+                                                        "w-full sm:flex-1 h-11 rounded-xl text-sm font-bold transition-all",
                                                         !isPast && "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100",
                                                         isPast && "bg-gray-50 border-gray-100 text-gray-400"
                                                     )}
                                                 >
-                                                    Mapa
-                                                    <ChevronRight size={14} className="ml-1" />
+                                                    Ver Mapa
+                                                    <ChevronRight size={16} className="ml-1.5 shrink-0" />
                                                 </Button>
                                             ) : (
                                                 <Button
@@ -399,12 +399,12 @@ export const MyItineraries: React.FC = () => {
                                                         navigate(`/pagamento?v=${trip.id}&pids=${pendingPids}`);
                                                     }}
                                                     className={cn(
-                                                        "flex-1 h-10 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 border-none transition-all",
+                                                        "w-full sm:flex-1 h-11 rounded-xl text-sm font-black shadow-lg shadow-blue-500/20 border-none transition-all",
                                                         !isPast && "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
                                                         isPast && "bg-gray-200 text-gray-500 shadow-none"
                                                     )}
                                                 >
-                                                    <CreditCard size={14} className="mr-2" />
+                                                    <CreditCard size={16} className="mr-2 shrink-0" />
                                                     Pagar
                                                 </Button>
                                             )}
