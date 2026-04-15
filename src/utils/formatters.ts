@@ -81,6 +81,36 @@ export function formatCurrency(value: string | number): string {
 }
 
 /**
+ * Calcula a taxa da Woovi sobre um pagamento PIX.
+ * Plano atual: 0,80% por pagamento, mín. R$ 0,50, máx. R$ 5,00.
+ * @param valorBruto - Valor bruto em reais (ex: 45.00)
+ * @returns Taxa em reais
+ */
+export function calcTaxaWoovi(valorBruto: number): number {
+    if (!valorBruto || valorBruto <= 0) return 0;
+    const taxa = valorBruto * 0.008;
+    return parseFloat(Math.min(5.00, Math.max(0.50, taxa)).toFixed(2));
+}
+
+/**
+ * Calcula o valor líquido a receber após dedução da taxa Woovi.
+ * @param valorBruto - Valor bruto em reais
+ * @returns Valor líquido em reais
+ */
+export function calcLiquidoWoovi(valorBruto: number): number {
+    return parseFloat((valorBruto - calcTaxaWoovi(valorBruto)).toFixed(2));
+}
+
+/**
+ * Converte fee_cents (centavos vindos do webhook da Woovi) para reais.
+ * @param feeCents - Taxa em centavos (ex: 50 = R$ 0,50)
+ * @returns Taxa em reais
+ */
+export function feeCentsToReais(feeCents: number): number {
+    return parseFloat(((feeCents || 0) / 100).toFixed(2));
+}
+
+/**
  * Formata data/hora para PT-BR
  */
 export function formatDateTime(date: Date | string): string {

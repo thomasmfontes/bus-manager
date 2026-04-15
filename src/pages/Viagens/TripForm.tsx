@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BusMultiSelect } from '@/components/ui/BusMultiSelect';
 import { useToast } from '@/components/ui/Toast';
-import { X, Plus, AlertCircle, ArrowLeft } from 'lucide-react';
+import { X, Plus, AlertCircle, ArrowLeft, Calculator } from 'lucide-react';
 import { BusInlineForm } from '@/components/onibus/BusInlineForm';
 import { Spinner } from '@/components/ui/Spinner';
+import { PriceCalculatorModal } from '@/components/viagens/PriceCalculatorModal';
 
 export const TripForm: React.FC = () => {
     const navigate = useNavigate();
@@ -31,6 +32,7 @@ export const TripForm: React.FC = () => {
     });
 
     const [isBusModalOpen, setIsBusModalOpen] = useState(false);
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
 
     useEffect(() => {
@@ -155,14 +157,14 @@ export const TripForm: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
-                            label="Endereço de Saída Precisão (Opcional)"
+                            label="Endereço de Saída"
                             labelClassName="font-bold ml-1"
                             value={formData.origem_endereco}
                             onChange={(e) => setFormData({ ...formData, origem_endereco: e.target.value })}
                             placeholder="Ex: Rua X, 123, Bairro, Cidade, SP"
                         />
                         <Input
-                            label="Endereço de Destino Precisão (Opcional)"
+                            label="Endereço de Destino"
                             labelClassName="font-bold ml-1"
                             value={formData.destino_endereco}
                             onChange={(e) => setFormData({ ...formData, destino_endereco: e.target.value })}
@@ -171,17 +173,38 @@ export const TripForm: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                            type="number"
-                            label="Preço por Pessoa"
-                            labelClassName="font-bold ml-1"
-                            value={formData.preco}
-                            onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : '' })}
-                            placeholder="0.00"
-                            min="0"
-                            step="0.01"
-                            required
-                        />
+                        {/* Price field — opens calculator modal on click */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-bold text-gray-700 ml-1">
+                                Preço por Pessoa <span className="text-red-500">*</span>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setIsPriceModalOpen(true)}
+                                className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-emerald-400 hover:bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all group text-left shadow-sm"
+                            >
+                                {formData.preco && Number(formData.preco) > 0 ? (
+                                    <span className="text-lg font-black text-gray-900 font-mono">
+                                        R$ {Number(formData.preco).toFixed(2)}
+                                    </span>
+                                ) : (
+                                    <span className="text-gray-400 font-medium">Clique para calcular o preço...</span>
+                                )}
+                                <Calculator
+                                    size={18}
+                                    className="text-gray-300 group-hover:text-emerald-500 transition-colors flex-shrink-0"
+                                />
+                            </button>
+                            {/* Hidden native input for form validation */}
+                            <input
+                                type="number"
+                                value={formData.preco}
+                                required
+                                readOnly
+                                className="sr-only"
+                                tabIndex={-1}
+                            />
+                        </div>
                         <Input
                             type="number"
                             label="Meta Financeira Total (Opcional)"
@@ -322,6 +345,13 @@ export const TripForm: React.FC = () => {
                     }
                     setIsBusModalOpen(false);
                 }}
+            />
+
+            <PriceCalculatorModal
+                isOpen={isPriceModalOpen}
+                onClose={() => setIsPriceModalOpen(false)}
+                onConfirm={(precoFinal) => setFormData(prev => ({ ...prev, preco: precoFinal }))}
+                initialPrice={formData.preco ? Number(formData.preco) : undefined}
             />
         </div>
     );

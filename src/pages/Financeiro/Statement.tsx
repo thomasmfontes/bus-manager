@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/utils/cn';
 import { CreditCard, Clock, ArrowDownLeft, ArrowUpRight, ChevronRight, AlertCircle, Filter, ChevronDown, CheckCircle2, Users, ArrowRightLeft } from 'lucide-react';
 import { AiOutlineUnorderedList } from 'react-icons/ai';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, feeCentsToReais } from '@/utils/formatters';
 import { useTripStore } from '@/stores/useTripStore';
 import { usePassengerStore } from '@/stores/usePassengerStore';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -341,27 +341,57 @@ export const Statement = ({ userId, hideHeader = false, noAnimation = false }: S
                     const isPaid = selectedPayment.status === 'paid' || selectedPayment.status === 'Pago' || selectedPayment.status === 'Realizado';
                     return (
                         <div className="space-y-6">
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                                <div>
-                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Valor Total</p>
-                                    <p className={cn(
-                                        "text-2xl font-black",
-                                        isPaid ? "text-green-600" : "text-gray-900"
-                                    )}>
-                                        {formatCurrency(selectedPayment.valor_total)}
-                                    </p>
-                                </div>
-                                <div className={cn(
-                                    "px-3 py-1 rounded-full text-xs font-black border",
-                                    isPaid ? "bg-green-100 text-green-700 border-green-200" :
-                                        (selectedPayment.status === 'expired' ? "bg-gray-100 text-gray-500 border-gray-200" :
-                                            (selectedPayment.status === 'failed' ? "bg-red-100 text-red-700 border-red-200" : "bg-blue-100 text-blue-700 border-blue-200"))
-                                )}>
-                                    {isPaid ? 'PAGO' :
-                                        (selectedPayment.status === 'expired' ? 'EXPIRADO' :
-                                            (selectedPayment.status === 'failed' ? 'FALHOU' : 'PENDENTE'))}
-                                </div>
-                            </div>
+                            {/* Value + fee breakdown card */}
+                            {(() => {
+                                const hasFee = isAdmin && isPaid && selectedPayment.fee_cents > 0;
+                                const taxa = hasFee ? feeCentsToReais(selectedPayment.fee_cents) : 0;
+                                const liquido = hasFee ? selectedPayment.valor_total - taxa : 0;
+                                return (
+                                    <div className="bg-gray-50 rounded-2xl overflow-hidden">
+                                        {/* Top: total + badge */}
+                                        <div className="flex items-start justify-between p-4">
+                                            <div>
+                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">
+                                                    {hasFee ? 'Cobrado do passageiro' : 'Valor Total'}
+                                                </p>
+                                                <p className={cn(
+                                                    "text-2xl font-black",
+                                                    isPaid ? "text-green-600" : "text-gray-900"
+                                                )}>
+                                                    {formatCurrency(selectedPayment.valor_total)}
+                                                </p>
+                                            </div>
+                                            <div className={cn(
+                                                "px-3 py-1 rounded-full text-xs font-black border",
+                                                isPaid ? "bg-green-100 text-green-700 border-green-200" :
+                                                    (selectedPayment.status === 'expired' ? "bg-gray-100 text-gray-500 border-gray-200" :
+                                                        (selectedPayment.status === 'failed' ? "bg-red-100 text-red-700 border-red-200" : "bg-blue-100 text-blue-700 border-blue-200"))
+                                            )}>
+                                                {isPaid ? 'PAGO' :
+                                                    (selectedPayment.status === 'expired' ? 'EXPIRADO' :
+                                                        (selectedPayment.status === 'failed' ? 'FALHOU' : 'PENDENTE'))}
+                                            </div>
+                                        </div>
+                                        {/* Receipt-style breakdown */}
+                                        {hasFee && (
+                                            <div className="border-t border-dashed border-gray-200 mx-4" />
+                                        )}
+                                        {hasFee && (
+                                            <div className="px-4 pb-4 pt-3 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Taxa</span>
+                                                    <span className="text-sm font-black text-red-400 font-mono">− {formatCurrency(taxa)}</span>
+                                                </div>
+                                                <div className="h-[1px] bg-gray-200" />
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-black text-emerald-700 uppercase tracking-wider">Líquido</span>
+                                                    <span className="text-base font-black text-emerald-700 font-mono">{formatCurrency(liquido)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             <div>
                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-tighter mb-1">Status</h4>

@@ -4,10 +4,12 @@ import { useTripStore } from '@/stores/useTripStore';
 import { useToast } from '@/components/ui/Toast';
 import { Spinner } from '@/components/ui/Spinner';
 import { cn } from '@/utils/cn';
-import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, CheckCircle2, Clock, Users, DollarSign } from 'lucide-react';
+import { Search, Filter, CircleDollarSign, ChevronDown, MapPin, Calendar, CheckCircle2, Clock, Users, DollarSign, TrendingDown } from 'lucide-react';
 import { GoHistory } from 'react-icons/go';
 import { CiGlobe } from 'react-icons/ci';
 import { WithdrawalModal } from '@/components/financeiro/WithdrawalModal';
+import { supabase } from '@/lib/supabase';
+import { feeCentsToReais } from '@/utils/formatters';
 
 export const Financeiro: React.FC = () => {
     const { passengers, enrollments, fetchPassageiros, updatePassageiro, loading: loadingPassengers } = usePassengerStore();
@@ -18,16 +20,41 @@ export const Financeiro: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [timeFilter, setTimeFilter] = useState<'future' | 'past' | 'all'>('future');
     const now = new Date();
-    const [withdrawalModal, setWithdrawalModal] = useState<{ isOpen: boolean; tripName: string; amount: number }>({
+    const [withdrawalModal, setWithdrawalModal] = useState<{ isOpen: boolean; tripName: string; amount: number; totalBruto?: number; taxaWoovi?: number }>({
         isOpen: false,
         tripName: '',
         amount: 0
     });
 
+    // Map of tripId -> total fee in reais (from real Woovi fee_cents)
+    const [feesByTrip, setFeesByTrip] = useState<Record<string, number>>({});
+
     useEffect(() => {
         fetchPassageiros();
         fetchViagens();
     }, [fetchPassageiros, fetchViagens]);
+
+    // Fetch real Woovi fees from pagamentos table
+    useEffect(() => {
+        const fetchFees = async () => {
+            const { data, error } = await supabase
+                .from('pagamentos')
+                .select('viagem_id, fee_cents')
+                .eq('status', 'paid');
+
+            if (error || !data) return;
+
+            // Sum fee_cents by trip
+            const fees: Record<string, number> = {};
+            data.forEach(p => {
+                if (!p.viagem_id) return;
+                fees[p.viagem_id] = (fees[p.viagem_id] || 0) + feeCentsToReais(p.fee_cents || 0);
+            });
+            setFeesByTrip(fees);
+        };
+
+        fetchFees();
+    }, []);
 
     // 1. Process all enrollments to create financial entries
     const financialEntries = useMemo(() => {
@@ -92,16 +119,21 @@ export const Financeiro: React.FC = () => {
                 const entriesInTrip = financialEntries.filter(e => e.enrollment.viagem_id === trip.id);
                 const totalArrecadado = entriesInTrip.reduce((sum, e) => sum + (e.enrollment.valor_pago || 0), 0);
                 const totalMeta = (trip as any).meta_financeira || (entriesInTrip.length * (trip.preco || 0));
+                // Real Woovi fees summed from pagamentos.fee_cents
+                const totalTaxa = feesByTrip[trip.id] || 0;
+                const totalLiquido = parseFloat((totalArrecadado - totalTaxa).toFixed(2));
                 return {
                     trip,
                     entries: entriesInTrip,
                     totalArrecadado,
+                    totalTaxa,
+                    totalLiquido,
                     totalMeta
                 };
             })
             .filter(group => group.entries.length > 0)
             .sort((a, b) => new Date(a.trip.data_ida).getTime() - new Date(b.trip.data_ida).getTime());
-    }, [trips, financialEntries]);
+    }, [trips, financialEntries, feesByTrip]);
 
     const handleUpdateStatus = async (id: string, newStatus: string) => {
         try {
@@ -274,60 +306,75 @@ export const Financeiro: React.FC = () => {
                                 {groupedPassengers.map((group) => (
                                     <React.Fragment key={group.trip.id}>
                                         {/* Trip Section Header */}
-                                        <tr className="bg-emerald-50/50">
-                                            <td colSpan={4} className="px-6 py-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <MapPin size={14} className="text-emerald-600" />
-                                                        <span className="text-xs font-bold text-emerald-700 uppercase tracking-widest">
-                                                            {group.trip.nome} — {formatPrettyDate(group.trip.data_ida)}
-                                                        </span>
+                                        <tr className="bg-emerald-50/30 border-b border-emerald-100/60">
+                                            <td colSpan={4} className="px-6 py-4">
+                                                <div className="flex items-center justify-between gap-6">
+                                                    {/* Left: trip name + date */}
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600 flex-shrink-0">
+                                                            <MapPin size={13} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-black text-emerald-900 uppercase tracking-tight truncate">{group.trip.nome}</p>
+                                                            <p className="text-[10px] font-bold text-emerald-600/60 uppercase">{formatPrettyDate(group.trip.data_ida)}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-6">
+
+                                                    {/* Right: metrics + saque */}
+                                                    <div className="flex items-center gap-4 flex-shrink-0">
+                                                        {/* Secondary: Bruto + Taxa */}
+                                                        {group.totalTaxa > 0 && (
+                                                            <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                                                                <span className="font-mono">R$ {group.totalArrecadado.toFixed(2)}</span>
+                                                                <TrendingDown size={10} className="text-red-300" />
+                                                                <span className="text-red-400 font-mono">− R$ {group.totalTaxa.toFixed(2)}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Divider */}
+                                                        {group.totalTaxa > 0 && <div className="w-px h-6 bg-emerald-100" />}
+
+                                                        {/* Hero: Líquido */}
+                                                        <div className="text-right">
+                                                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5">Líquido</p>
+                                                            <p className="text-lg font-black text-emerald-700 font-mono leading-none">R$ {group.totalLiquido.toFixed(2)}</p>
+                                                        </div>
+
+                                                        {/* Progress vs Meta */}
+                                                        {group.totalMeta > 0 && (
+                                                            <div className="flex flex-col items-end gap-1 w-36">
+                                                                <div className="flex items-center justify-between w-full">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider leading-none">Meta</span>
+                                                                        <span className="text-xs font-black text-gray-600 font-mono leading-tight">R$ {group.totalMeta.toFixed(2)}</span>
+                                                                    </div>
+                                                                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100">
+                                                                        {Math.min(100, Math.floor((group.totalLiquido / group.totalMeta) * 100))}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000 ease-out"
+                                                                        style={{ width: `${Math.min(100, (group.totalLiquido / group.totalMeta) * 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Saque button */}
                                                         {(() => {
                                                             const tripDate = new Date(group.trip.data_ida);
                                                             const isFuture = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000) >= now;
-                                                            return isFuture && group.totalArrecadado >= group.totalMeta && group.totalMeta > 0;
+                                                            return isFuture && group.totalLiquido >= group.totalMeta && group.totalMeta > 0;
                                                         })() && (
                                                             <button
-                                                                onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalArrecadado })}
-                                                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 active:scale-95 translate-y-[-4px]"
+                                                                onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalLiquido, totalBruto: group.totalArrecadado, taxaWoovi: group.totalTaxa })}
+                                                                className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-200 active:scale-95 whitespace-nowrap"
                                                             >
-                                                                <DollarSign size={14} />
+                                                                <DollarSign size={13} />
                                                                 Solicitar Saque
                                                             </button>
                                                         )}
-                                                        <div className="flex flex-col items-end gap-1.5 min-w-[320px]">
-                                                            <div className="flex items-center gap-3 bg-white/80 px-4 py-1.5 rounded-xl border border-emerald-100 shadow-sm transition-all hover:border-emerald-200">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">Arrecadado</span>
-                                                                    <span className="text-sm font-mono font-black text-emerald-600 leading-none">
-                                                                        R$ {group.totalArrecadado.toFixed(2)}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="w-[1px] h-3 bg-emerald-100" />
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">Meta</span>
-                                                                    <span className="text-sm font-mono font-black text-gray-600 leading-none">
-                                                                        R$ {group.totalMeta.toFixed(2)}
-                                                                    </span>
-                                                                </div>
-                                                                {group.totalMeta > 0 && (
-                                                                    <>
-                                                                        <div className="w-[1px] h-3 bg-emerald-100" />
-                                                                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg leading-none border border-emerald-100/50">
-                                                                            {Math.floor((group.totalArrecadado / group.totalMeta) * 100)}%
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden p-[1px] border border-gray-50 flex-shrink-0">
-                                                                <div
-                                                                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(16,185,129,0.2)]"
-                                                                    style={{ width: `${Math.min(100, (group.totalArrecadado / (group.totalMeta || 1)) * 100)}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -382,39 +429,58 @@ export const Financeiro: React.FC = () => {
                                 <div key={group.trip.id} className="space-y-3 pt-4">
                                     {/* Mobile Group Header Card */}
                                     <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
-                                        <div className="bg-emerald-50/50 px-4 py-3 border-b border-emerald-50">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600">
-                                                    <MapPin size={14} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xs font-black text-emerald-900 uppercase tracking-tight">
-                                                        {group.trip.nome}
-                                                    </h3>
-                                                    <p className="text-[10px] font-bold text-emerald-600/60 uppercase">
-                                                        {formatPrettyDate(group.trip.data_ida)}
-                                                    </p>
-                                                </div>
+                                        {/* Trip name */}
+                                        <div className="flex items-center gap-2 px-4 pt-4 pb-3">
+                                            <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600 flex-shrink-0">
+                                                <MapPin size={13} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs font-black text-emerald-900 uppercase tracking-tight">{group.trip.nome}</h3>
+                                                <p className="text-[10px] font-bold text-emerald-500/70 uppercase">{formatPrettyDate(group.trip.data_ida)}</p>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 divide-x divide-emerald-50">
-                                            <div className="p-3 text-center">
-                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Arrecadado</p>
-                                                <p className="text-sm font-mono font-black text-emerald-600">R$ {group.totalArrecadado.toFixed(2)}</p>
-                                            </div>
-                                            <div className="p-3 text-center">
-                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Meta</p>
-                                                <p className="text-sm font-mono font-black text-gray-600">R$ {group.totalMeta.toFixed(2)}</p>
-                                            </div>
+
+                                        {/* Hero: Líquido */}
+                                        <div className="px-4 pb-3 border-b border-emerald-50">
+                                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Líquido</p>
+                                            <p className="text-2xl font-black text-emerald-700 font-mono">R$ {group.totalLiquido.toFixed(2)}</p>
+                                            {/* Secondary: bruto → taxa */}
+                                            {group.totalTaxa > 0 && (
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <span className="text-[10px] font-bold text-gray-400 font-mono">R$ {group.totalArrecadado.toFixed(2)}</span>
+                                                    <TrendingDown size={9} className="text-red-300" />
+                                                    <span className="text-[10px] font-bold text-red-400 font-mono">− R$ {group.totalTaxa.toFixed(2)}</span>
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* Progress bar + Meta */}
+                                        {group.totalMeta > 0 && (
+                                            <div className="px-4 py-3 space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Meta: R$ {group.totalMeta.toFixed(2)}</span>
+                                                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                                                        {Math.min(100, Math.floor((group.totalLiquido / group.totalMeta) * 100))}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000 ease-out"
+                                                        style={{ width: `${Math.min(100, (group.totalLiquido / group.totalMeta) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Saque button */}
                                         {(() => {
                                             const tripDate = new Date(group.trip.data_ida);
                                             const isFuture = new Date(tripDate.getTime() + 24 * 60 * 60 * 1000) >= now;
-                                            return isFuture && group.totalArrecadado >= group.totalMeta && group.totalMeta > 0;
+                                            return isFuture && group.totalLiquido >= group.totalMeta && group.totalMeta > 0;
                                         })() && (
                                             <div className="px-4 pb-4">
                                                 <button
-                                                    onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalArrecadado })}
+                                                    onClick={() => setWithdrawalModal({ isOpen: true, tripName: group.trip.nome, amount: group.totalLiquido, totalBruto: group.totalArrecadado, taxaWoovi: group.totalTaxa })}
                                                     className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 active:scale-95"
                                                 >
                                                     <DollarSign size={16} />
@@ -498,6 +564,8 @@ export const Financeiro: React.FC = () => {
                     onClose={() => setWithdrawalModal(prev => ({ ...prev, isOpen: false }))}
                     tripName={withdrawalModal.tripName}
                     amount={withdrawalModal.amount}
+                    totalBruto={withdrawalModal.totalBruto}
+                    taxaWoovi={withdrawalModal.taxaWoovi}
                 />
             </div>
         </div>

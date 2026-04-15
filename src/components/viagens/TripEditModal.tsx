@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBusStore } from '@/stores/useBusStore';
 import { useToast } from '@/components/ui/Toast';
-import { Save, Bus as BusIcon, Info, Trash2, Plus, AlertCircle } from 'lucide-react';
+import { Save, Bus as BusIcon, Info, Trash2, Plus, AlertCircle, Calculator } from 'lucide-react';
+import { PriceCalculatorModal } from '@/components/viagens/PriceCalculatorModal';
 
 interface TripEditModalProps {
     isOpen: boolean;
@@ -22,6 +23,7 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
     const { buses, fetchOnibus } = useBusStore();
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'info' | 'buses'>('info');
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
 
     const formatForDateTimeLocal = (dateInput: string | Date | undefined) => {
         if (!dateInput) return '';
@@ -124,6 +126,7 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
     );
 
     return (
+        <>
         <Modal
             isOpen={isOpen}
             onClose={onClose}
@@ -204,28 +207,40 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Input
-                                    label="Endereço de Saída Precisão"
+                                    label="Endereço de Saída"
                                     value={formData.origem_endereco}
                                     onChange={(e) => setFormData({ ...formData, origem_endereco: e.target.value })}
                                     placeholder="Ex: Rua X, 123, Bairro, Cidade, SP"
                                 />
                                 <Input
-                                    label="Endereço de Destino Precisão"
+                                    label="Endereço de Destino"
                                     value={formData.destino_endereco}
                                     onChange={(e) => setFormData({ ...formData, destino_endereco: e.target.value })}
                                     placeholder="Ex: Av. Y, 456, Centro, Cidade, UF"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Input
-                                    type="number"
-                                    label="Preço por Pessoa"
-                                    value={formData.preco}
-                                    onChange={(e) => setFormData({ ...formData, preco: e.target.value ? parseFloat(e.target.value) : 0 })}
-                                    placeholder="0.00"
-                                    step="0.01"
-                                    required
-                                />
+                                {/* Price field — opens calculator modal on click */}
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-bold text-gray-700 ml-1">
+                                        Preço por Pessoa <span className="text-red-500">*</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPriceModalOpen(true)}
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-emerald-400 hover:bg-emerald-50/30 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition-all group text-left shadow-sm"
+                                    >
+                                        {formData.preco && Number(formData.preco) > 0 ? (
+                                            <span className="text-base font-black text-gray-900 font-mono">
+                                                R$ {Number(formData.preco).toFixed(2)}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400 font-medium text-sm">Clique para calcular o preço...</span>
+                                        )}
+                                        <Calculator size={16} className="text-gray-300 group-hover:text-emerald-500 transition-colors flex-shrink-0" />
+                                    </button>
+                                    <input type="number" value={formData.preco} required readOnly className="sr-only" tabIndex={-1} />
+                                </div>
                                 <Input
                                     type="number"
                                     label="Meta Financeira Total"
@@ -337,5 +352,13 @@ export const TripEditModal: React.FC<TripEditModalProps> = ({ isOpen, onClose, t
                 </div>
             </div>
         </Modal>
+
+        <PriceCalculatorModal
+            isOpen={isPriceModalOpen}
+            onClose={() => setIsPriceModalOpen(false)}
+            onConfirm={(precoFinal) => setFormData(prev => ({ ...prev, preco: precoFinal }))}
+            initialPrice={formData.preco ? Number(formData.preco) : undefined}
+        />
+        </>
     );
 };

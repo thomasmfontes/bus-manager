@@ -7,7 +7,9 @@ interface WithdrawalModalProps {
     isOpen: boolean;
     onClose: () => void;
     tripName: string;
-    amount: number;
+    amount: number;        // Valor líquido (após taxa)
+    totalBruto?: number;   // Valor bruto arrecadado
+    taxaWoovi?: number;    // Taxa total da Woovi deduzida
 }
 
 export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
@@ -15,6 +17,8 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
     onClose,
     tripName,
     amount,
+    totalBruto,
+    taxaWoovi,
 }) => {
     const [pixKey, setPixKey] = useState('');
     const [isClosing, setIsClosing] = useState(false);
@@ -75,9 +79,30 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
 
                 {/* Content */}
                 <div className="p-5 sm:p-6 space-y-5 sm:space-y-6">
-                    <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100/50">
-                        <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest block mb-1">Valor do Saque</span>
-                        <p className="text-2xl font-black text-emerald-900 font-mono">R$ {amount.toFixed(2)}</p>
+                    <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100/50 space-y-3">
+                        {/* Breakdown when we have real fee data */}
+                        {totalBruto !== undefined && taxaWoovi !== undefined && taxaWoovi > 0 ? (
+                            <>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Arrecadado (bruto)</span>
+                                    <span className="text-sm font-mono font-black text-gray-500">R$ {totalBruto.toFixed(2)}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Taxa</span>
+                                    <span className="text-sm font-mono font-black text-red-400">− R$ {taxaWoovi.toFixed(2)}</span>
+                                </div>
+                                <div className="h-[1px] bg-emerald-100" />
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest block">Valor para Saque</span>
+                                    <p className="text-2xl font-black text-emerald-900 font-mono">R$ {amount.toFixed(2)}</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-[10px] font-black text-emerald-600/60 uppercase tracking-widest block mb-1">Valor do Saque</span>
+                                <p className="text-2xl font-black text-emerald-900 font-mono">R$ {amount.toFixed(2)}</p>
+                            </>
+                        )}
                     </div>
 
                     <div className="space-y-3">
