@@ -20,6 +20,7 @@ export interface BusConfiguration {
     isDoubleDecker: boolean;
     superior?: DeckConfiguration;
     inferior?: DeckConfiguration;
+    comum?: DeckConfiguration;
 }
 
 

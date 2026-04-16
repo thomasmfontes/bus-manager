@@ -220,12 +220,14 @@ export const SeatMap: React.FC<SeatMapProps> = ({
                             )}
                         </div>
                     ) : (
-                        renderDeck({
-                            capacidade: bus.capacidade,
-                            colunas: 4,
-                            corredor: 2,
-                            inicioAssento: 1
-                        })
+                        <div className="animate-in fade-in duration-500 w-full">
+                            {renderDeck(config?.comum || {
+                                capacidade: bus.capacidade,
+                                colunas: 4,
+                                corredor: 2,
+                                inicioAssento: 1
+                            })}
+                        </div>
                     )}
                 </div>
 

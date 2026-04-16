@@ -21,6 +21,7 @@ export const BusForm: React.FC = () => {
         isDoubleDecker: false,
         superior: { capacidade: 44, colunas: 4, corredor: 2, inicioAssento: 1 },
         inferior: { capacidade: 2, colunas: 4, corredor: 2, inicioAssento: 45 },
+        comum: { capacidade: 46, colunas: 4, corredor: 2, inicioAssento: 1 },
     });
 
 
@@ -41,6 +42,7 @@ export const BusForm: React.FC = () => {
                     isDoubleDecker: bus.configuracao_assentos?.isDoubleDecker || false,
                     superior: bus.configuracao_assentos?.superior || { capacidade: 44, colunas: 4, corredor: 2, inicioAssento: 1 },
                     inferior: bus.configuracao_assentos?.inferior || { capacidade: 2, colunas: 4, corredor: 2, inicioAssento: 45 },
+                    comum: bus.configuracao_assentos?.comum || { capacidade: bus.capacidade || 46, colunas: 4, corredor: 2, inicioAssento: 1 },
                 });
             }
 
@@ -60,11 +62,19 @@ export const BusForm: React.FC = () => {
                 isDoubleDecker: formData.isDoubleDecker,
                 superior: formData.isDoubleDecker ? formData.superior : undefined,
                 inferior: formData.isDoubleDecker ? formData.inferior : undefined,
+                comum: !formData.isDoubleDecker ? formData.comum : undefined,
             }
         };
 
 
         try {
+            if (formData.isDoubleDecker) {
+                const totalCalculado = formData.superior.capacidade + formData.inferior.capacidade;
+                if (totalCalculado !== formData.capacidade && formData.capacidade !== totalCalculado) {
+                    // We auto-calculate capacity in busData, but let's ensure the user is aware or just use the sum
+                }
+            }
+
             if (isEditing && id) {
                 await updateOnibus(id, busData);
                 showToast('Ônibus atualizado com sucesso!', 'success');
@@ -132,17 +142,48 @@ export const BusForm: React.FC = () => {
                     </div>
 
                     {!formData.isDoubleDecker ? (
-                        <Input
-                            type="number"
-                            label="Capacidade (Total de Assentos)"
-                            labelClassName="font-bold ml-1"
-                            value={formData.capacidade}
-                            onChange={(e) =>
-                                setFormData({ ...formData, capacidade: parseInt(e.target.value) || 0 })
-                            }
-                            min="1"
-                            required
-                        />
+                        <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <h3 className="font-black text-blue-600 uppercase tracking-widest text-xs">Configuração do Layout</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <Input
+                                    type="number"
+                                    label="Total Assentos"
+                                    value={formData.comum.capacidade}
+                                    onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        capacidade: parseInt(e.target.value) || 0,
+                                        comum: { ...formData.comum, capacidade: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                                <Input
+                                    type="number"
+                                    label="Início Num."
+                                    value={formData.comum.inicioAssento}
+                                    onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        comum: { ...formData.comum, inicioAssento: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                                <Input
+                                    type="number"
+                                    label="Colunas"
+                                    value={formData.comum.colunas}
+                                    onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        comum: { ...formData.comum, colunas: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                                <Input
+                                    type="number"
+                                    label="Corredor"
+                                    value={formData.comum.corredor}
+                                    onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        comum: { ...formData.comum, corredor: parseInt(e.target.value) || 0 }
+                                    })}
+                                />
+                            </div>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                             {/* Superior */}
