@@ -4,9 +4,24 @@ export interface Bus {
     nome: string;
     placa?: string;
     capacidade: number;
+    configuracao_assentos?: BusConfiguration;
     created_at?: string;
     updated_at?: string;
 }
+
+export interface DeckConfiguration {
+    capacidade: number;
+    colunas: number;
+    corredor: number;
+    inicioAssento: number;
+}
+
+export interface BusConfiguration {
+    isDoubleDecker: boolean;
+    superior?: DeckConfiguration;
+    inferior?: DeckConfiguration;
+}
+
 
 // Trip types
 export interface Trip {

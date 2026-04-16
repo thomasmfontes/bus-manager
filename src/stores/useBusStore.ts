@@ -106,7 +106,8 @@ export const useBusStore = create<BusState>((set, get) => ({
                 .insert([{
                     nome: bus.nome,
                     placa: bus.placa,
-                    capacidade
+                    capacidade,
+                    configuracao_assentos: bus.configuracao_assentos
                 }])
                 .select()
                 .single();
@@ -128,6 +129,7 @@ export const useBusStore = create<BusState>((set, get) => ({
             if (bus.nome) updates.nome = bus.nome;
             if (bus.placa !== undefined) updates.placa = bus.placa;
             if (bus.capacidade) updates.capacidade = bus.capacidade;
+            if (bus.configuracao_assentos) updates.configuracao_assentos = bus.configuracao_assentos;
 
             const { data, error } = await supabase
                 .from('onibus')

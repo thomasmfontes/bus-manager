@@ -1,7 +1,9 @@
-import React from 'react';
-import { Bus, SeatAssignment, Passenger, SeatStatus } from '@/types';
+import React, { useState } from 'react';
+
+import { Bus, SeatAssignment, Passenger, SeatStatus, DeckConfiguration } from '@/types';
+
 import { Seat } from './Seat';
-import { Bus as BusIcon, Droplet } from 'lucide-react';
+import { Bus as BusIcon } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 interface SeatMapProps {
@@ -25,26 +27,14 @@ export const SeatMap: React.FC<SeatMapProps> = ({
     onBusSelect,
     selectedBusId
 }) => {
-    // Generate default configuration if not present
-    const getConfiguration = () => {
-        if ((bus as any).configuracaoAssentos) {
-            return (bus as any).configuracaoAssentos;
-        }
-        // Default configuration based on capacity
-        const columns = 4;
-        const rows = Math.ceil(bus.capacidade / columns);
-        return {
-            rows,
-            columns,
-            corridorAfterColumn: 2,
-            excludedSeats: [] as string[],
-        };
-    };
+    const config = bus.configuracao_assentos;
+    const isDD = config?.isDoubleDecker && config.superior && config.inferior;
 
-    const { rows, columns, corridorAfterColumn, excludedSeats } = getConfiguration();
+    const [activeDeck, setActiveDeck] = useState<'superior' | 'inferior'>('superior');
+
 
     const getSeatAssignment = (seatCode: string): SeatAssignment | undefined => {
-        return assignments.find((a) => a.assentoCodigo === seatCode);
+        return assignments.find((a) => a.assentoCodigo === String(seatCode));
     };
 
     const getPassengerName = (passengerId?: string): string | undefined => {
@@ -52,30 +42,24 @@ export const SeatMap: React.FC<SeatMapProps> = ({
         return passengers.find((p) => p.id === passengerId)?.nome_completo;
     };
 
-    const renderRow = (rowNumber: number) => {
-        const seats = [];
-        for (let col = 0; col < columns; col++) {
-            // Calculate sequential seat number: (row - 1) * columns + col + 1
-            const seatNumber = (rowNumber - 1) * columns + col + 1;
-            const seatCode = seatNumber.toString();
-            const isExcluded = excludedSeats?.includes(seatCode);
+    const renderDeckRow = (rowNumber: number, deckConfig: DeckConfiguration) => {
 
-            if (seatNumber > bus.capacidade) {
+        const { colunas, corredor, inicioAssento, capacidade: deckCapacidade } = deckConfig;
+        const seats = [];
+
+        for (let col = 0; col < colunas; col++) {
+            // Calculate sequential seat number
+            const seatNumber = inicioAssento + ((rowNumber - 1) * colunas) + col;
+            const seatCode = seatNumber.toString();
+
+            // Check if this seat exceeds the deck's capacity or the total bus capacity
+            // Note: in a deck, the last row might not be full
+            const seatIndexInDeck = (rowNumber - 1) * colunas + col;
+
+            if (seatIndexInDeck >= deckCapacidade) {
                 // Render a placeholder to maintain grid alignment
                 seats.push(
-                    <div key={`ghost-${seatCode}`} className="w-10 h-10 sm:w-12 sm:h-12" />
-                );
-            } else if (isExcluded) {
-                // Bathroom indicator
-                seats.push(
-                    <div
-                        key={seatCode}
-                        className="w-10 h-10 sm:w-12 sm:h-12 flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg border-2 border-blue-300 shadow-sm"
-                        title="Banheiro"
-                    >
-                        <Droplet size={14} className="text-blue-600 sm:size-4" />
-                        <span className="text-[7px] sm:text-[8px] font-bold text-blue-700">WC</span>
-                    </div>
+                    <div key={`ghost-${seatCode}-${col}`} className="w-10 h-10 sm:w-12 sm:h-12" />
                 );
             } else {
                 const assignment = getSeatAssignment(seatCode);
@@ -94,13 +78,36 @@ export const SeatMap: React.FC<SeatMapProps> = ({
             }
 
             // Add corridor space
-            if (corridorAfterColumn !== undefined && col === corridorAfterColumn - 1) {
+            if (corredor !== undefined && col === corredor - 1) {
                 seats.push(
-                    <div key={`corridor-${rowNumber}`} className="w-2 sm:w-4" />
+                    <div key={`corridor-${rowNumber}-${col}`} className="w-2 sm:w-4" />
                 );
             }
         }
         return seats;
+    };
+
+    const renderDeck = (deckConfig: DeckConfiguration, title?: string) => {
+
+        const { colunas, capacidade } = deckConfig;
+        const rows = Math.ceil(capacidade / colunas);
+
+        return (
+            <div className="space-y-4">
+                {title && (
+                    <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 w-fit mx-auto shadow-sm">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{title}</span>
+                    </div>
+                )}
+                <div className="flex flex-col items-center gap-2 sm:gap-2.5">
+                    {Array.from({ length: rows }, (_, i) => (
+                        <div key={i + 1} className="flex gap-1.5 sm:gap-2">
+                            {renderDeckRow(i + 1, deckConfig)}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -158,10 +165,42 @@ export const SeatMap: React.FC<SeatMapProps> = ({
                 </div>
             </div>
 
+            {/* Deck Selector (Only for DD) */}
+            {isDD && (
+                <div className="flex justify-center my-6">
+                    <div className="inline-flex p-1 bg-gray-100/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-inner">
+                        <button
+                            onClick={() => setActiveDeck('superior')}
+                            className={cn(
+                                "px-6 py-2.5 rounded-xl text-xs font-black transition-all duration-300 uppercase tracking-[0.1em] min-w-[140px]",
+                                activeDeck === 'superior' 
+                                    ? "bg-white text-blue-600 shadow-[0_4px_12px_-2px_rgba(37,99,235,0.15)] ring-1 ring-black/5" 
+                                    : "text-gray-400 hover:text-gray-600"
+                            )}
+                        >
+                            Piso Superior
+                        </button>
+                        <button
+                            onClick={() => setActiveDeck('inferior')}
+                            className={cn(
+                                "px-6 py-2.5 rounded-xl text-xs font-black transition-all duration-300 uppercase tracking-[0.1em] min-w-[140px]",
+                                activeDeck === 'inferior' 
+                                    ? "bg-white text-blue-600 shadow-[0_4px_12px_-2px_rgba(37,99,235,0.15)] ring-1 ring-black/5" 
+                                    : "text-gray-400 hover:text-gray-600"
+                            )}
+                        >
+                            Piso Inferior
+                        </button>
+                    </div>
+                </div>
+            )}
+
+
             {/* Seat Grid Container */}
+
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 overflow-x-hidden">
                 {/* Front Indicator */}
-                <div className="mb-6 pb-4 border-b-2 border-blue-500">
+                <div className="mb-8 pb-4 border-b-2 border-blue-500 relative">
                     <div className="text-center">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full">
                             <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
@@ -171,21 +210,34 @@ export const SeatMap: React.FC<SeatMapProps> = ({
                 </div>
 
                 {/* Seats */}
-                <div className="flex flex-col items-center gap-2 sm:gap-2.5">
-                    {Array.from({ length: rows }, (_, i) => (
-                        <div key={i + 1} className="flex gap-1.5 sm:gap-2">
-                            {renderRow(i + 1)}
+                <div className="py-4 min-h-[300px] flex items-center justify-center">
+                    {isDD ? (
+                        <div className="animate-in fade-in zoom-in-95 duration-500 w-full">
+                            {activeDeck === 'superior' ? (
+                                renderDeck(config.superior!, "Piso Superior")
+                            ) : (
+                                renderDeck(config.inferior!, "Piso Inferior")
+                            )}
                         </div>
-                    ))}
+                    ) : (
+                        renderDeck({
+                            capacidade: bus.capacidade,
+                            colunas: 4,
+                            corredor: 2,
+                            inicioAssento: 1
+                        })
+                    )}
                 </div>
 
+
                 {/* Back Indicator */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="mt-8 pt-4 border-t border-gray-200">
                     <div className="text-center">
-                        <p className="text-xs text-gray-500">Fundo do Ônibus</p>
+                        <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Fundo do Ônibus</p>
                     </div>
                 </div>
             </div>
         </div>
+
     );
 };

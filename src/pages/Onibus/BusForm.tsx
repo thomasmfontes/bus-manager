@@ -18,7 +18,11 @@ export const BusForm: React.FC = () => {
         nome: '',
         placa: '',
         capacidade: 46,
+        isDoubleDecker: false,
+        superior: { capacidade: 44, colunas: 4, corredor: 2, inicioAssento: 1 },
+        inferior: { capacidade: 2, colunas: 4, corredor: 2, inicioAssento: 45 },
     });
+
 
     useEffect(() => {
         if (isEditing) {
@@ -34,8 +38,12 @@ export const BusForm: React.FC = () => {
                     nome: bus.nome,
                     placa: bus.placa || '',
                     capacidade: bus.capacidade || 46,
+                    isDoubleDecker: bus.configuracao_assentos?.isDoubleDecker || false,
+                    superior: bus.configuracao_assentos?.superior || { capacidade: 44, colunas: 4, corredor: 2, inicioAssento: 1 },
+                    inferior: bus.configuracao_assentos?.inferior || { capacidade: 2, colunas: 4, corredor: 2, inicioAssento: 45 },
                 });
             }
+
         }
     }, [isEditing, id, buses]);
 
@@ -45,8 +53,16 @@ export const BusForm: React.FC = () => {
         const busData = {
             nome: formData.nome,
             placa: formData.placa,
-            capacidade: formData.capacidade,
+            capacidade: formData.isDoubleDecker 
+                ? (formData.superior.capacidade + formData.inferior.capacidade) 
+                : formData.capacidade,
+            configuracao_assentos: {
+                isDoubleDecker: formData.isDoubleDecker,
+                superior: formData.isDoubleDecker ? formData.superior : undefined,
+                inferior: formData.isDoubleDecker ? formData.inferior : undefined,
+            }
         };
+
 
         try {
             if (isEditing && id) {
@@ -102,17 +118,131 @@ export const BusForm: React.FC = () => {
                         placeholder="Ex: ABC-1234"
                     />
 
-                    <Input
-                        type="number"
-                        label="Capacidade (Total de Assentos)"
-                        labelClassName="font-bold ml-1"
-                        value={formData.capacidade}
-                        onChange={(e) =>
-                            setFormData({ ...formData, capacidade: parseInt(e.target.value) || 0 })
-                        }
-                        min="1"
-                        required
-                    />
+                    <div className="flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                className="sr-only peer"
+                                checked={formData.isDoubleDecker}
+                                onChange={(e) => setFormData({ ...formData, isDoubleDecker: e.target.checked })}
+                            />
+                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                        <span className="font-bold text-gray-700">Ônibus de Dois Andares</span>
+                    </div>
+
+                    {!formData.isDoubleDecker ? (
+                        <Input
+                            type="number"
+                            label="Capacidade (Total de Assentos)"
+                            labelClassName="font-bold ml-1"
+                            value={formData.capacidade}
+                            onChange={(e) =>
+                                setFormData({ ...formData, capacidade: parseInt(e.target.value) || 0 })
+                            }
+                            min="1"
+                            required
+                        />
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            {/* Superior */}
+                            <div className="space-y-4">
+                                <h3 className="font-black text-blue-600 uppercase tracking-widest text-xs">Piso Superior</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        type="number"
+                                        label="Assentos"
+                                        value={formData.superior.capacidade}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            superior: { ...formData.superior, capacidade: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Início Num."
+                                        value={formData.superior.inicioAssento}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            superior: { ...formData.superior, inicioAssento: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        type="number"
+                                        label="Colunas"
+                                        value={formData.superior.colunas}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            superior: { ...formData.superior, colunas: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Corredor"
+                                        value={formData.superior.corredor}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            superior: { ...formData.superior, corredor: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Inferior */}
+                            <div className="space-y-4">
+                                <h3 className="font-black text-indigo-600 uppercase tracking-widest text-xs">Piso Inferior</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        type="number"
+                                        label="Assentos"
+                                        value={formData.inferior.capacidade}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            inferior: { ...formData.inferior, capacidade: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Início Num."
+                                        value={formData.inferior.inicioAssento}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            inferior: { ...formData.inferior, inicioAssento: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input
+                                        type="number"
+                                        label="Colunas"
+                                        value={formData.inferior.colunas}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            inferior: { ...formData.inferior, colunas: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                    <Input
+                                        type="number"
+                                        label="Corredor"
+                                        value={formData.inferior.corredor}
+                                        onChange={(e) => setFormData({ 
+                                            ...formData, 
+                                            inferior: { ...formData.inferior, corredor: parseInt(e.target.value) || 0 }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="md:col-span-2 pt-2 border-t border-gray-200">
+                                <p className="text-sm font-bold text-gray-500 text-center">
+                                    Capacidade Total: <span className="text-blue-600">{formData.superior.capacidade + formData.inferior.capacidade} assentos</span>
+                                </p>
+                            </div>
+                        </div>
+                    ) }
+
 
                     <div className="flex flex-col-reverse sm:flex-row gap-4 pt-6 mt-4 border-t border-gray-100">
                         <Button

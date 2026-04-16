@@ -20,14 +20,18 @@ export const BusInlineForm: React.FC<BusInlineFormProps> = ({ isOpen, onClose, o
         nome: '',
         placa: '',
         capacidade: 46,
+        isDoubleDecker: false,
     });
+
 
     const resetForm = () => {
         setFormData({
             nome: '',
             placa: '',
             capacidade: 46,
+            isDoubleDecker: false,
         });
+
     };
 
     const handleClose = () => {
@@ -38,11 +42,20 @@ export const BusInlineForm: React.FC<BusInlineFormProps> = ({ isOpen, onClose, o
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const busData = {
+        const busData: any = {
             nome: formData.nome,
             placa: formData.placa,
             capacidade: formData.capacidade,
         };
+
+        if (formData.isDoubleDecker) {
+            busData.configuracao_assentos = {
+                isDoubleDecker: true,
+                superior: { capacidade: 44, colunas: 4, corredor: 2, inicioAssento: 1 },
+                inferior: { capacidade: (formData.capacidade - 44) > 0 ? (formData.capacidade - 44) : 12, colunas: 4, corredor: 2, inicioAssento: 45 }
+            };
+        }
+
 
         try {
             // we await the result directly, so createOnibus needs to return the created bus.
@@ -93,7 +106,7 @@ export const BusInlineForm: React.FC<BusInlineFormProps> = ({ isOpen, onClose, o
 
                 <Input
                     type="number"
-                    label="Capacidade (Total de Assentos)"
+                    label="Capacidade"
                     labelClassName="font-bold ml-1"
                     value={formData.capacidade}
                     onChange={(e) =>
@@ -102,6 +115,20 @@ export const BusInlineForm: React.FC<BusInlineFormProps> = ({ isOpen, onClose, o
                     min="1"
                     required
                 />
+
+                <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={formData.isDoubleDecker}
+                            onChange={(e) => setFormData({ ...formData, isDoubleDecker: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                    <span className="text-sm font-bold text-gray-700">Dois Andares (DD)</span>
+                </div>
+
 
                 <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 mt-2 border-t border-gray-100">
                     <Button
