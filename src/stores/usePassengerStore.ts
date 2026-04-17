@@ -132,20 +132,30 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
 
             // 2. Create Enrollment if viagemId is provided
             if (viagemId) {
-                const { error: enrollError } = await supabase
+                // Check if already enrolled to avoid duplicates
+                const { data: existing } = await supabase
                     .from('viagem_passageiros')
-                    .insert([{
-                        passageiro_id: identity!.id,
-                        viagem_id: viagemId,
-                        onibus_id: enrollmentData?.onibus_id,
-                        assento: enrollmentData?.assento,
-                        pagamento: enrollmentData?.pagamento || 'Pendente',
-                        valor_pago: enrollmentData?.valor_pago || 0,
-                        pago_por: enrollmentData?.pago_por,
-                        status: enrollmentData?.status || 'APPROVED',
-                    }]);
+                    .select('id')
+                    .eq('viagem_id', viagemId)
+                    .eq('passageiro_id', identity!.id)
+                    .maybeSingle();
 
-                if (enrollError) throw enrollError;
+                if (!existing) {
+                    const { error: enrollError } = await supabase
+                        .from('viagem_passageiros')
+                        .insert([{
+                            passageiro_id: identity!.id,
+                            viagem_id: viagemId,
+                            onibus_id: enrollmentData?.onibus_id,
+                            assento: enrollmentData?.assento,
+                            pagamento: enrollmentData?.pagamento || 'Pendente',
+                            valor_pago: enrollmentData?.valor_pago || 0,
+                            pago_por: enrollmentData?.pago_por,
+                            status: enrollmentData?.status || 'APPROVED',
+                        }]);
+
+                    if (enrollError) throw enrollError;
+                }
             }
 
             await get().fetchPassageiros(viagemId);

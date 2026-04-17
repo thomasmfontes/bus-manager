@@ -300,20 +300,32 @@ export const TripEnrollmentModal: React.FC<TripEnrollmentModalProps> = ({ isOpen
                             <p className="text-sm text-gray-500 font-medium">Selecione se você viajará ou se está apenas pagando para outros.</p>
                         </div>
 
-                        <button
-                            onClick={() => handleInterestSelection(true)}
-                            disabled={isSubmittingInterest}
-                            className="w-full p-4 rounded-2xl border-2 border-transparent bg-blue-50 hover:bg-blue-100 transition-all text-left flex items-center gap-4 group"
-                        >
-                            <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                                <User size={24} />
+                        {user?.id && currentTripEnrollments.has(user.id.toLowerCase().trim()) ? (
+                            <div className="w-full p-4 rounded-2xl border-2 border-blue-100 bg-blue-50/50 flex items-center gap-4 opacity-75">
+                                <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 flex items-center justify-center text-blue-400">
+                                    <Check size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-black text-gray-500 text-sm">Você já está inscrito</p>
+                                    <p className="text-[11px] text-gray-400 font-bold">Sua participação já foi confirmada para esta viagem.</p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <p className="font-black text-gray-900 text-sm">Eu vou nesta viagem</p>
-                                <p className="text-[11px] text-gray-500 font-bold">Reserva a sua vaga + opcionalmente de outras pessoas.</p>
-                            </div>
-                            <ChevronRight className="text-blue-400" />
-                        </button>
+                        ) : (
+                            <button
+                                onClick={() => handleInterestSelection(true)}
+                                disabled={isSubmittingInterest}
+                                className="w-full p-4 rounded-2xl border-2 border-transparent bg-blue-50 hover:bg-blue-100 transition-all text-left flex items-center gap-4 group"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                    <User size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-black text-gray-900 text-sm">Eu vou nesta viagem</p>
+                                    <p className="text-[11px] text-gray-500 font-bold">Reserva a sua vaga + opcionalmente de outras pessoas.</p>
+                                </div>
+                                <ChevronRight className="text-blue-400" />
+                            </button>
+                        )}
 
                         <button
                             onClick={() => handleInterestSelection(false)}
