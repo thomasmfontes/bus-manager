@@ -20,6 +20,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { TripParticipantsList } from '@/components/viagens/TripParticipantsList';
 import { FaWhatsapp } from 'react-icons/fa';
 import { AttendanceScannerModal } from '@/components/viagens/AttendanceScannerModal';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 export const TripSeatMap: React.FC = () => {
     const navigate = useNavigate();
@@ -343,7 +344,9 @@ export const TripSeatMap: React.FC = () => {
             { value: '', label: '-- Selecione um passageiro --' },
             ...filtered.map((p) => ({
                 value: p.id,
-                label: `${p.nome_completo} (${p.cpf_rg || 'Sem documento'})`,
+                label: user?.role === UserRole.ADMIN 
+                    ? `${p.nome_completo} (${p.cpf_rg || 'Sem documento'})`
+                    : p.nome_completo,
             })),
         ];
     }, [passengers, enrollments, id, user]);
@@ -640,17 +643,27 @@ export const TripSeatMap: React.FC = () => {
                         ) : (
                             <>
                                 <p className="text-gray-600">Selecione um passageiro para este assento:</p>
-                                <select
-                                    value={selectedPassengerId}
-                                    onChange={(e) => setSelectedPassengerId(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                >
-                                    {passengerOptions.map((option: any) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                {user?.role === UserRole.ADMIN ? (
+                                    <SearchableSelect
+                                        options={passengerOptions.filter(opt => opt.value !== '')}
+                                        value={selectedPassengerId}
+                                        onChange={setSelectedPassengerId}
+                                        placeholder="Selecione um passageiro..."
+                                        searchPlaceholder="Buscar por nome ou documento..."
+                                    />
+                                ) : (
+                                    <select
+                                        value={selectedPassengerId}
+                                        onChange={(e) => setSelectedPassengerId(e.target.value)}
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    >
+                                        {passengerOptions.map((option: any) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                             </>
                         )}
                     </div>
@@ -674,7 +687,9 @@ export const TripSeatMap: React.FC = () => {
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="font-semibold text-gray-900">{currentPassenger.nome_completo}</p>
-                                                <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
+                                                {user?.role === UserRole.ADMIN && (
+                                                    <p className="text-sm text-gray-600">{currentPassenger.cpf_rg}</p>
+                                                )}
                                                 <p className="text-sm text-gray-600">{currentPassenger.telefone}</p>
                                             </div>
                                             {currentPassenger.telefone && (
