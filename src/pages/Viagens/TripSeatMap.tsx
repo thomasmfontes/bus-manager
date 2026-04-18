@@ -55,6 +55,25 @@ export const TripSeatMap: React.FC = () => {
         }
     }, [id, fetchViagens, fetchOnibus, fetchPassageiros]);
 
+    // Added: Authorization check for passengers
+    useEffect(() => {
+        if (user && user.role === UserRole.PASSAGEIRO && id && enrollments.length > 0) {
+            const myEnrollment = enrollments.find(e => 
+                e.viagem_id?.toLowerCase() === id.toLowerCase() && 
+                e.passageiro_id === user.id
+            );
+
+            const isWithdrawn = myEnrollment?.assento === 'DESISTENTE';
+            const isRemoved = !myEnrollment;
+
+            if (isRemoved || isWithdrawn) {
+                console.warn('🚫 [Auth] Usuário não autorizado para este mapa. Redirecionando...');
+                showToast('Você não tem uma inscrição ativa nesta viagem.', 'error');
+                navigate('/viagens');
+            }
+        }
+    }, [user, id, enrollments, navigate, showToast]);
+
     const trip = trips.find((t) => t.id === id);
 
     // Get all buses associated with the trip
@@ -761,7 +780,7 @@ export const TripSeatMap: React.FC = () => {
                                 Tem certeza que deseja remover <strong>{removeConfirmModal.passengerName}</strong> desta viagem?
                             </p>
                             <p className="text-xs text-red-600 mt-2">
-                                Esta pessoa deixará de aparecer na lista de passageiros e assentos, mas os pagamentos realizados continuarão salvos no Extrato e no Financeiro.
+                                Se o passageiro não tiver pago, ele será excluído permanentemente. Se já tiver pago, será marcado como desistente para preservar o histórico financeiro.
                             </p>
                         </div>
                     </div>

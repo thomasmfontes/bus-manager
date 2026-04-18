@@ -49,6 +49,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
+        // 2. Decide: DELETE or SOFT-DELETE based on payment status
+        const isPaid = ['Pago', 'Realizado'].includes(enrollment.pagamento || '');
+
+        if (!isPaid) {
+            console.log('🗑️ [API] Pagamento pendente: Executando DELETE real.');
+            const { error: deleteError } = await supabase
+                .from('viagem_passageiros')
+                .delete()
+                .eq('id', enrollmentId);
+
+            if (deleteError) {
+                console.error('❌ [API] Supabase Delete Error:', deleteError);
+                throw deleteError;
+            }
+
+            console.log('✅ [API] Inscrição pendente deletada com sucesso.');
+            return res.status(200).json({ success: true, action: 'deleted' });
+        }
+
+        // Soft-delete for PAID users (keep record for financial audit)
+        console.log('📝 [API] Pagamento confirmado: Executando Soft-delete (DESISTENTE).');
         const { data: updated, error: updateError } = await supabase
             .from('viagem_passageiros')
             .update({
@@ -65,12 +86,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             throw updateError;
         }
 
-        if (!updated) {
-            return res.status(404).json({ error: 'Inscrição não encontrada.' });
-        }
-
         console.log('✅ [API] Registro atualizado para DESISTENTE:', updated.id);
-        return res.status(200).json({ success: true, data: updated });
+        return res.status(200).json({ success: true, action: 'withdrawn', data: updated });
     } catch (error: any) {
         console.error('❌ [API] Error in removal:', error);
         return res.status(500).json({ error: error.message || 'Internal server error' });

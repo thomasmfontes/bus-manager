@@ -345,7 +345,7 @@ export const MyItineraries: React.FC = () => {
                                     </div>
 
                                     {/* Button row */}
-                                    {status !== 'Aguardando Aprovação' && status !== 'Recusado' && (
+                                    {status !== 'Aguardando Aprovação' && status !== 'Recusado' && !isWithdrawn && (
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             {/* QR Ticket button — only for own enrollment, not withdrawn, and MUST BE PAID */}
                                             {myEnrollment && !isWithdrawn && isPaid && (
