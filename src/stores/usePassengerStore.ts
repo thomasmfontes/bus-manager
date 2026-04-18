@@ -63,7 +63,9 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
                 }
             }
 
-            const { data, error } = await query.order('nome_completo', { ascending: true });
+            const { data, error } = await query
+                .is('deleted_at', null)
+                .order('nome_completo', { ascending: true });
             if (error) throw error;
 
             // Map and Flatten
@@ -218,8 +220,11 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
                 const { error } = await supabase.from('viagem_passageiros').delete().eq('id', enrollmentId);
                 if (error) throw error;
             } else {
-                // Delete the entire identity (and by cascade, all enrollments)
-                const { error } = await supabase.from('passageiros').delete().eq('id', id);
+                // Soft delete the entire identity
+                const { error } = await supabase
+                    .from('passageiros')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', id);
                 if (error) throw error;
             }
 
@@ -235,7 +240,11 @@ export const usePassengerStore = create<PassengerState>((set, get) => ({
     },
     deleteAllPassageiros: async () => {
         try {
-            const { error } = await supabase.from('passageiros').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const { error } = await supabase
+                .from('passageiros')
+                .update({ deleted_at: new Date().toISOString() })
+                .is('deleted_at', null)
+                .neq('id', '00000000-0000-0000-0000-000000000000');
             if (error) throw error;
             set({ passengers: [] });
         } catch (error) {

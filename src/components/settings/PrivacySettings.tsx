@@ -23,22 +23,28 @@ export const PrivacySettings: React.FC = () => {
         try {
             console.log('🗑️ Iniciando exclusão de dados para o usuário:', user.id);
 
-            // 1. Delete passenger record
-            // In Supabase/Postgrest, we can use { count: 'exact' } to verify if rows were actually affected
+            // 1. Soft delete passenger record (Right to be forgotten with record integrity)
             const { error, count } = await supabase
                 .from('passageiros')
-                .delete({ count: 'exact' })
+                .update({ 
+                    deleted_at: new Date().toISOString(),
+                    nome_completo: 'USUÁRIO EXCLUÍDO',
+                    telefone: null,
+                    cpf_rg: 'EXCLUÍDO',
+                    comum_congregacao: null,
+                    data_nascimento: null,
+                    idade: null
+                }, { count: 'exact' })
                 .eq('id', user.id);
 
             if (error) {
-                console.error('❌ Erro do Supabase na deleção:', error);
+                console.error('❌ Erro do Supabase na deleção lógica:', error);
                 throw error;
             }
 
-            console.log('📊 Linhas afetadas pela deleção:', count);
+            console.log('📊 Linhas afetadas pela exclusão lógica:', count);
 
             if (count === 0) {
-                // If count is 0, it means RLS blocked it or the ID was wrong
                 throw new Error('Permissão negada ou registro não encontrado. Contate o suporte.');
             }
 
