@@ -77,21 +77,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             targetPassengerId = newP.id;
         }
 
-        // 3. Update the enrollment
-        const oldPassengerId = enrollment.passageiro_id;
         const tripId = enrollment.viagem_id;
+        const oldPassengerId = enrollment.passageiro_id;
 
-        const { data: updated, error: updateErr } = await supabase
+        // 2.1 Check if target passenger is already enrolled in this trip
+        const { data: existingEnrollment } = await supabase
             .from('viagem_passageiros')
-            .update({
-                passageiro_id: targetPassengerId,
-                assento: null, // Clear seat so new passenger can choose
-                onibus_id: null,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', enrollmentId)
-            .select()
-            .single();
+            .select('*')
+            .eq('viagem_id', tripId)
+            .eq('passageiro_id', targetPassengerId)
+            .maybeSingle();
+
+        let finalEnrollmentToReturn;
+
+        if (existingEnrollment) {
+            console.log(`⚠️ [API] Passageiro já possui inscrição ${existingEnrollment.id} nesta viagem (Assento: ${existingEnrollment.assento})`);
+            
+            // If it's the exact same enrollment, no-op success
+            if (existingEnrollment.id === enrollmentId) {
+                return res.status(200).json({ success: true, data: existingEnrollment });
+            }
+
+            // If target is DESISTENTE, we can "reactivate" them by transferring the payment from the old enrollment
+            if (existingEnrollment.assento === 'DESISTENTE') {
+                console.log(`✅ [API] Reativando inscrição desistente ${existingEnrollment.id}`);
+                
+                // Transfer payment data from source enrollment to this one
+                const { data: reactivated, error: reactivateErr } = await supabase
+                    .from('viagem_passageiros')
+                    .update({
+                        assento: null,
+                        onibus_id: null,
+                        pagamento: enrollment.pagamento,
+                        valor_pago: enrollment.valor_pago,
+                        pago_por: enrollment.pago_por,
+                        status: enrollment.status,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existingEnrollment.id)
+                    .select()
+                    .single();
+
+                if (reactivateErr) throw reactivateErr;
+
+                // Mark the ORIGINAL enrollment as deleted/canceled since we merged it
+                await supabase.from('viagem_passageiros').delete().eq('id', enrollmentId);
+                
+                finalEnrollmentToReturn = reactivated;
+            } else {
+                // If it's an active enrollment, we can't substitute onto a person who already has a spot
+                return res.status(400).json({ error: 'O passageiro selecionado já possui uma vaga ativa nesta viagem.' });
+            }
+        } else {
+            // 3. Normal Update the enrollment (original logic)
+            const { data: updated, error: updateErr } = await supabase
+                .from('viagem_passageiros')
+                .update({
+                    passageiro_id: targetPassengerId,
+                    assento: null, // Clear seat so new passenger can choose
+                    onibus_id: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', enrollmentId)
+                .select()
+                .single();
+
+            if (updateErr) throw updateErr;
+            finalEnrollmentToReturn = updated;
+        }
 
         // 4. Sync with Pagamentos
         console.log(`🔗 [API] Sincronizando pagamentos para a troca ${oldPassengerId} -> ${targetPassengerId}`);
@@ -145,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         console.log(`✅ [API] Inscrição ${enrollmentId} transferida para passageiro ${targetPassengerId}`);
-        return res.status(200).json({ success: true, data: updated });
+        return res.status(200).json({ success: true, data: finalEnrollmentToReturn });
 
     } catch (error: any) {
         console.error('❌ [API] Error in substitution:', error);

@@ -41,10 +41,10 @@ export const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
     });
 
     useEffect(() => {
-        if (isOpen && passengers.length === 0) {
-            fetchPassageiros();
+        if (isOpen) {
+            fetchPassageiros(); // Force global fetch on open to ensure we can find anyone
         }
-    }, [isOpen, passengers.length, fetchPassageiros]);
+    }, [isOpen, fetchPassageiros]);
 
     useEffect(() => {
         async function fetchTripPayments() {
