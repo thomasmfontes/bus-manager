@@ -104,6 +104,7 @@ export const TripSeatMap: React.FC = () => {
         const targetTripId = id.trim().toLowerCase();
         const targetBusId = currentBus.id.trim().toLowerCase();
         const blockedId = blockedIdentityId?.trim().toLowerCase();
+        const validPassengerIds = new Set(passengers.map(p => p.id));
 
         return enrollments
             .filter(e => {
@@ -116,7 +117,12 @@ export const TripSeatMap: React.FC = () => {
 
                 // Robust Bus ID check (matches if same bus or if no bus specified)
                 const eBusId = (e.onibus_id || '').toString().trim().toLowerCase();
-                return !eBusId || eBusId === targetBusId;
+                if (eBusId && eBusId !== targetBusId) return false;
+
+                // Do not show assignments for soft-deleted passengers
+                if (!validPassengerIds.has(e.passageiro_id)) return false;
+
+                return true;
             })
             .map(e => {
                 const pId = (e.passageiro_id || '').toString().trim().toLowerCase();
@@ -130,7 +136,7 @@ export const TripSeatMap: React.FC = () => {
                     status: isBlocked ? SeatStatus.BLOQUEADO : SeatStatus.OCUPADO
                 };
             });
-    }, [enrollments, id, currentBus, blockedIdentityId]);
+    }, [enrollments, id, currentBus, blockedIdentityId, passengers]);
 
     const handleSeatClick = (seatCode: string) => {
         setSelectedSeat(seatCode);

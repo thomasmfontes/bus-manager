@@ -26,12 +26,15 @@ export const TripList: React.FC = () => {
     const navigate = useNavigate();
 
     const getOccupiedSeats = (tripId: string) => {
-        const { enrollments } = usePassengerStore.getState();
+        const { enrollments, passengers } = usePassengerStore.getState();
+        const validPassengerIds = new Set(passengers.map(p => p.id));
         return enrollments.filter((e) => {
             if (e.viagem_id !== tripId) return false;
             if (e.assento === 'DESISTENTE') return false;
             // Waitlist (pending/rejected approval) does not occupy a seat
             if (e.status === 'PENDING' || e.status === 'REJECTED') return false;
+            // Do not count enrollments of soft-deleted passengers
+            if (!validPassengerIds.has(e.passageiro_id)) return false;
             return true;
         }).length;
     };
